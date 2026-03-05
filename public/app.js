@@ -84,6 +84,100 @@ waitlistForm?.addEventListener("submit", submitWaitlist);
 
 updateSavings();
 
+// Typing headline rotation
+const typedEl = document.getElementById("typed-text");
+const phrases = ["Human Assistant", "Entire Workflow", "Morning Routine", "Creative Energy"];
+let phraseIdx = 0;
+let charIdx = 15;
+let deleting = false;
+
+function typeStep() {
+  if (!typedEl) return;
+  const phrase = phrases[phraseIdx];
+  if (!deleting) {
+    charIdx++;
+    typedEl.textContent = phrase.slice(0, charIdx);
+    if (charIdx >= phrase.length) {
+      setTimeout(() => { deleting = true; typeStep(); }, 2200);
+      return;
+    }
+    setTimeout(typeStep, 70 + Math.random() * 40);
+  } else {
+    charIdx--;
+    typedEl.textContent = phrase.slice(0, charIdx);
+    if (charIdx <= 0) {
+      deleting = false;
+      phraseIdx = (phraseIdx + 1) % phrases.length;
+      setTimeout(typeStep, 400);
+      return;
+    }
+    setTimeout(typeStep, 35);
+  }
+}
+
+if (typedEl) setTimeout(() => { deleting = true; typeStep(); }, 2500);
+
+// Continuous chat message sequencer (sliding window)
+const waTyping = document.getElementById("wa-typing");
+const allMsgs = document.querySelectorAll(".wa-msg:not(.wa-typing)");
+const MAX_VISIBLE = 12;
+let msgIdx = 0;
+
+const waContainer = document.getElementById("wa-messages");
+
+function scrollToBottom() {
+  if (waContainer) waContainer.scrollTop = waContainer.scrollHeight;
+}
+
+function hideOldest() {
+  const visible = [...allMsgs].filter((m) => m.classList.contains("show"));
+  while (visible.length >= MAX_VISIBLE) {
+    const old = visible.shift();
+    old.classList.remove("show");
+    old.style.display = "none";
+  }
+}
+
+function showNextMsg() {
+  if (msgIdx >= allMsgs.length) {
+    setTimeout(() => {
+      allMsgs.forEach((m) => { m.classList.remove("show"); m.style.display = "none"; });
+      if (waTyping) { waTyping.classList.remove("show"); waTyping.style.display = "none"; }
+      msgIdx = 0;
+      setTimeout(showNextMsg, 600);
+    }, 3500);
+    return;
+  }
+
+  const msg = allMsgs[msgIdx];
+  const isOutgoing = msg.classList.contains("outgoing");
+
+  if (isOutgoing && waTyping) {
+    hideOldest();
+    waTyping.classList.add("show");
+    scrollToBottom();
+    setTimeout(() => {
+      waTyping.classList.remove("show");
+      waTyping.style.display = "none";
+      hideOldest();
+      msg.style.display = "";
+      msg.classList.add("show");
+      scrollToBottom();
+      msgIdx++;
+      setTimeout(showNextMsg, 1400);
+    }, 800);
+  } else {
+    hideOldest();
+    msg.style.display = "";
+    msg.classList.add("show");
+    scrollToBottom();
+    msgIdx++;
+    setTimeout(showNextMsg, 1000);
+  }
+}
+
+if (allMsgs.length > 0) setTimeout(showNextMsg, 600);
+
 // Scroll reveal
 const revealElements = document.querySelectorAll(".reveal");
 const revealObserver = new IntersectionObserver(
