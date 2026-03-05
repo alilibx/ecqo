@@ -6,7 +6,7 @@ export const resend = new Resend(components.resend, {
 });
 
 export function verificationEmailHtml(email: string, token: string) {
-  const verifyUrl = `https://www.ecqo.ai/verify?email=${encodeURIComponent(email)}&token=${token}`;
+  const verifyUrl = `https://ecqo.vercel.app/verify?email=${encodeURIComponent(email)}&token=${token}`;
   return `
 <!DOCTYPE html>
 <html>
