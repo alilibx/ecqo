@@ -1,5 +1,5 @@
 {
-  "name": "equo-assistant",
+  "name": "ecqo-assistant",
   "version": "0.1.0",
   "description": "Virtual assistant that listens to chat messages and drafts calendar invites.",
   "main": "server.js",

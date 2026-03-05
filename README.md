@@ -1,8 +1,8 @@
-# Equo Landing + WhatsApp Assistant Backend
+# Ecqo Landing + WhatsApp Assistant Backend
 
 This project now includes:
 
-- A conversion-focused SaaS landing page for **Equo** (high-net-worth ICP).
+- A conversion-focused SaaS landing page for **Ecqo** (high-net-worth ICP).
 - A WhatsApp-only backend ingestion flow using **Meta Cloud API webhooks** (no Twilio).
 
 ## Run

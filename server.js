@@ -6,7 +6,7 @@ const querystring = require("node:querystring");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), "public");
-const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "equo-verify-token";
+const META_WEBHOOK_VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || "ecqo-verify-token";
 
 const state = {
   conversations: new Map(),
@@ -399,7 +399,7 @@ function buildCalendarLinks(proposal) {
 }
 
 function buildIcsText(proposal) {
-  const uid = `${proposal.id}@equo.local`;
+  const uid = `${proposal.id}@ecqo.local`;
   const createdAt = toGoogleDateString(proposal.createdAt);
   const start = toGoogleDateString(proposal.startAt);
   const end = toGoogleDateString(proposal.endAt);
@@ -410,7 +410,7 @@ function buildIcsText(proposal) {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Equo//Chat Assistant//EN",
+    "PRODID:-//Ecqo//Chat Assistant//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:${uid}`,
@@ -811,5 +811,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Equo assistant server running on http://localhost:${PORT}`);
+  console.log(`Ecqo assistant server running on http://localhost:${PORT}`);
 });

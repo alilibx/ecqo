@@ -19,9 +19,9 @@ function formatUsd(value) {
 
 function updateSavings() {
   const current = Math.max(0, Number(currentCostInput?.value) || 0);
-  const equo = Math.max(0, Number(planCostInput?.value) || 0);
+  const ecqo = Math.max(0, Number(planCostInput?.value) || 0);
 
-  const monthlySavings = Math.max(0, current - equo);
+  const monthlySavings = Math.max(0, current - ecqo);
   const annualSavings = monthlySavings * 12;
   const savingsRate = current > 0 ? (monthlySavings / current) * 100 : 0;
 
@@ -51,7 +51,7 @@ function applyPreset(event) {
 }
 
 async function copyReferralLink() {
-  const link = "https://www.equo.ai/?ref=private-network";
+  const link = "https://www.ecqo.ai/?ref=private-network";
   try {
     await navigator.clipboard.writeText(link);
     viralStatus.textContent = "Referral link copied.";
@@ -83,3 +83,26 @@ copyLinkButton?.addEventListener("click", copyReferralLink);
 waitlistForm?.addEventListener("submit", submitWaitlist);
 
 updateSavings();
+
+// Scroll reveal
+const revealElements = document.querySelectorAll(".reveal");
+const revealObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
+);
+revealElements.forEach((el) => revealObserver.observe(el));
+
+// Header scroll effect
+const topbar = document.querySelector(".topbar");
+if (topbar) {
+  const onScroll = () => topbar.classList.toggle("scrolled", window.scrollY > 20);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
