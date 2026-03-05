@@ -44,44 +44,58 @@ function VerifyPage() {
   }, [email, token, verify]);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-      <div style={{ maxWidth: 420, width: "100%", textAlign: "center" }}>
+    <>
+      <div className="grain" />
+      <div className="bg-orb orb-1" />
+      <div className="bg-orb orb-2" />
+
+      <div className="verify-page">
+        <a className="brand" href="/">Ecqo</a>
+        <p className="verify-eyebrow">WhatsApp-Native Executive Assistant</p>
+
         {status === "verifying" && (
-          <p style={{ fontSize: 18, color: "#8a7e6d" }}>Verifying your email...</p>
+          <div className="verify-card">
+            <div className="verify-spinner" />
+            <p className="verify-msg">Verifying your email...</p>
+          </div>
         )}
 
         {status === "success" && (
-          <>
-            <h1 style={{ fontFamily: "'Archivo Black', Impact, sans-serif", fontSize: 32, margin: "0 0 8px", color: "#1a1612" }}>You're in!</h1>
-            <p style={{ fontFamily: "'Archivo Black', Impact, sans-serif", fontSize: 64, color: "#0d7a6a", margin: "16px 0 4px" }}>#{position}</p>
-            <p style={{ color: "#8a7e6d", fontSize: 16, margin: "0 0 32px" }}>in the waitlist queue</p>
-            <p style={{ color: "#8a7e6d", fontSize: 14, lineHeight: 1.6 }}>
-              Check your email for a confirmation with your position.<br />
+          <div className="verify-card">
+            <svg className="verify-check" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12l3 3 5-5" />
+            </svg>
+            <h1 className="verify-title">You're in!</h1>
+            <p className="verify-position">#{position}</p>
+            <p className="verify-subtitle">in the waitlist queue</p>
+            <div className="verify-launch">
+              <strong>Estimated launch:</strong> Q2 2026
+            </div>
+            <p className="verify-msg">
+              Check your email for a confirmation.<br />
               We'll notify you when early access opens.
             </p>
-            <button
-              className="button"
-              style={{ marginTop: 24 }}
-              onClick={() => navigate({ to: "/" })}
-            >
+            <button className="button" onClick={() => navigate({ to: "/" })}>
               Back to Ecqo
             </button>
-          </>
+          </div>
         )}
 
         {status === "error" && (
-          <>
-            <h1 style={{ fontFamily: "'Archivo Black', Impact, sans-serif", fontSize: 28, margin: "0 0 12px", color: "#1a1612" }}>Verification failed</h1>
-            <p style={{ color: "#8a7e6d", fontSize: 16, margin: "0 0 24px" }}>{errorMsg}</p>
-            <button
-              className="button"
-              onClick={() => navigate({ to: "/" })}
-            >
+          <div className="verify-card">
+            <svg className="verify-x" viewBox="0 0 24 24" fill="none" stroke="var(--signal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M15 9l-6 6M9 9l6 6" />
+            </svg>
+            <h1 className="verify-title">Verification failed</h1>
+            <p className="verify-msg">{errorMsg}</p>
+            <button className="button" onClick={() => navigate({ to: "/" })}>
               Back to Ecqo
             </button>
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

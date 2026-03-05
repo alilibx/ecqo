@@ -1550,3 +1550,104 @@ details p {
     padding: 4px 6px 2px;
   }
 }
+
+/* ── Verify page ───────────────────────────── */
+
+.verify-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.verify-page > .brand {
+  font-family: "Archivo Black", Impact, sans-serif;
+  font-size: 1.8rem;
+  color: var(--ink);
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.verify-eyebrow {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 32px;
+}
+
+.verify-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.verify-check,
+.verify-x {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+}
+
+.verify-title {
+  font-family: "Archivo Black", Impact, sans-serif;
+  font-size: 1.8rem;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.verify-position {
+  font-family: "Archivo Black", Impact, sans-serif;
+  font-size: 3.5rem;
+  color: var(--accent);
+  margin: 12px 0 4px;
+}
+
+.verify-subtitle {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 20px;
+}
+
+.verify-launch {
+  background: var(--signal-light);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+
+.verify-msg {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.verify-card .button {
+  width: 100%;
+}
+
+.verify-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
