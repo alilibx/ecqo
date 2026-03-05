@@ -1,3 +1,6 @@
+// Currency state
+let currency = "AED";
+
 const waitlistForm = document.getElementById("waitlist-form");
 const waitlistStatus = document.getElementById("waitlist-status");
 const currentCostInput = document.getElementById("current-cost");
@@ -8,13 +11,15 @@ const savingsRateEl = document.getElementById("savings-rate");
 const copyLinkButton = document.getElementById("copy-link");
 const viralStatus = document.getElementById("viral-status");
 const presetButtons = document.querySelectorAll(".preset");
+const currencyButtons = document.querySelectorAll(".currency-btn");
+const priceElements = document.querySelectorAll(".price");
 
-function formatUsd(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0
-  }).format(value);
+function formatCurrency(value) {
+  const num = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  if (currency === "AED") {
+    return `AED ${num}`;
+  }
+  return `$${num}`;
 }
 
 function updateSavings() {
@@ -26,16 +31,66 @@ function updateSavings() {
   const savingsRate = current > 0 ? (monthlySavings / current) * 100 : 0;
 
   if (monthlySavingsEl) {
-    monthlySavingsEl.textContent = formatUsd(monthlySavings);
+    monthlySavingsEl.textContent = formatCurrency(monthlySavings);
   }
 
   if (annualSavingsEl) {
-    annualSavingsEl.textContent = formatUsd(annualSavings);
+    annualSavingsEl.textContent = formatCurrency(annualSavings);
   }
 
   if (savingsRateEl) {
     savingsRateEl.textContent = `${savingsRate.toFixed(1)}%`;
   }
+}
+
+function switchCurrency(newCurrency) {
+  if (newCurrency === currency) return;
+  currency = newCurrency;
+  const key = currency.toLowerCase();
+
+  // Toggle active class on buttons
+  currencyButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.currency === currency);
+  });
+
+  // Swap static price labels
+  priceElements.forEach((el) => {
+    const text = el.dataset[key];
+    if (text) el.textContent = text;
+  });
+
+  // Swap calculator select options
+  if (planCostInput) {
+    [...planCostInput.options].forEach((opt) => {
+      const val = opt.dataset[key];
+      if (val) {
+        opt.value = val;
+        const name = opt.textContent.split("—")[0].trim();
+        const formatted = currency === "AED"
+          ? `AED ${Number(val).toLocaleString("en-US")}`
+          : `$${Number(val).toLocaleString("en-US")}`;
+        opt.textContent = `${name} — ${formatted}`;
+      }
+    });
+  }
+
+  // Swap preset button data-monthly
+  presetButtons.forEach((btn) => {
+    const val = btn.dataset[`monthly${currency === "AED" ? "Aed" : "Usd"}`];
+    if (val) btn.dataset.monthly = val;
+  });
+
+  // Convert calculator input value
+  if (currentCostInput) {
+    const current = Number(currentCostInput.value) || 0;
+    if (currency === "AED") {
+      currentCostInput.value = String(Math.round(current * 3.67));
+    } else {
+      currentCostInput.value = String(Math.round(current / 3.67));
+    }
+  }
+
+  updateSavings();
 }
 
 function applyPreset(event) {
@@ -72,6 +127,10 @@ function submitWaitlist(event) {
   waitlistStatus.textContent = "Private access request received. We will contact you shortly.";
   waitlistForm.reset();
 }
+
+currencyButtons.forEach((btn) => {
+  btn.addEventListener("click", () => switchCurrency(btn.dataset.currency));
+});
 
 presetButtons.forEach((button) => {
   button.addEventListener("click", applyPreset);

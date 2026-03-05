@@ -56,9 +56,8 @@
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "offers": [
-              { "@type": "Offer", "name": "Founder", "price": "399", "priceCurrency": "USD" },
-              { "@type": "Offer", "name": "Private Office", "price": "899", "priceCurrency": "USD" },
-              { "@type": "Offer", "name": "Family Office", "price": "2499", "priceCurrency": "USD" }
+              { "@type": "Offer", "name": "Founder", "price": "199", "priceCurrency": "USD" },
+              { "@type": "Offer", "name": "Dreamer", "price": "399", "priceCurrency": "USD" }
             ],
             "description": "A WhatsApp-native executive assistant that handles scheduling, calendar checks, email digests, reminders, and calendar execution."
           }
@@ -83,6 +82,10 @@
           <a href="#pricing">Pricing</a>
           <a href="#faq">FAQ</a>
         </nav>
+        <div class="currency-toggle">
+          <button type="button" class="currency-btn active" data-currency="AED">AED</button>
+          <button type="button" class="currency-btn" data-currency="USD">USD</button>
+        </div>
         <a class="button mini" href="#calculator">Get Started</a>
       </div>
     </header>
@@ -228,9 +231,9 @@
             </svg>
           </div>
           <p class="label">Remote VA Midpoint</p>
-          <p class="value">$2,400<span>/mo</span></p>
+          <p class="value"><span class="price" data-aed="AED 8,799" data-usd="$2,400">AED 8,799</span><span>/mo</span></p>
           <p class="copy">Based on global freelance VA midpoint from Upwork hourly bands.</p>
-          <button type="button" class="ghost preset" data-monthly="2400">Use midpoint</button>
+          <button type="button" class="ghost preset" data-monthly="8799" data-monthly-aed="8799" data-monthly-usd="2400">Use midpoint</button>
         </article>
 
         <article class="info-card reveal delay-1">
@@ -241,9 +244,9 @@
             </svg>
           </div>
           <p class="label">Executive Assistant Average</p>
-          <p class="value">$5,945<span>/mo</span></p>
+          <p class="value"><span class="price" data-aed="AED 21,999" data-usd="$5,945">AED 21,999</span><span>/mo</span></p>
           <p class="copy">Based on Indeed US average EA salary converted to monthly cost.</p>
-          <button type="button" class="ghost preset" data-monthly="5945">Use average</button>
+          <button type="button" class="ghost preset" data-monthly="21999" data-monthly-aed="21999" data-monthly-usd="5945">Use average</button>
         </article>
 
         <article class="info-card highlight reveal delay-2">
@@ -255,7 +258,7 @@
             </svg>
           </div>
           <p class="label">Ecqo</p>
-          <p class="value">From $399<span>/mo</span></p>
+          <p class="value">From <span class="price" data-aed="AED 1,499" data-usd="$399">AED 1,499</span><span>/mo</span></p>
           <p class="copy">WhatsApp-native automation designed to replace manual assistant overhead.</p>
           <a class="button" href="#pricing">Get Started</a>
         </article>
@@ -272,14 +275,13 @@
           <div class="inputs">
             <label>
               Current assistant cost (monthly)
-              <input id="current-cost" type="number" min="0" value="2400" />
+              <input id="current-cost" type="number" min="0" value="8799" />
             </label>
             <label>
               Ecqo plan
               <select id="plan-cost">
-                <option value="399">Founder &mdash; $399</option>
-                <option value="899">Private Office &mdash; $899</option>
-                <option value="2499">Family Office &mdash; $2,499</option>
+                <option value="749" data-aed="749" data-usd="199">Founder &mdash; AED 749</option>
+                <option value="1499" data-aed="1499" data-usd="399">Dreamer &mdash; AED 1,499</option>
               </select>
             </label>
           </div>
@@ -287,15 +289,15 @@
           <div class="results">
             <div class="result-row">
               <span>Monthly savings</span>
-              <strong id="monthly-savings">$2,001</strong>
+              <strong id="monthly-savings">AED 8,050</strong>
             </div>
             <div class="result-row">
               <span>Annual savings</span>
-              <strong id="annual-savings">$24,012</strong>
+              <strong id="annual-savings">AED 96,600</strong>
             </div>
             <div class="result-row">
               <span>Savings rate</span>
-              <strong id="savings-rate">83.4%</strong>
+              <strong id="savings-rate">91.5%</strong>
             </div>
           </div>
 
@@ -453,7 +455,7 @@
       <section class="cards three-up pricing-grid">
         <article class="info-card reveal">
           <p class="label">Founder</p>
-          <p class="value">$199<span>/month</span></p>
+          <p class="value"><span class="price" data-aed="AED 749" data-usd="$199">AED 749</span><span>/month</span></p>
           <ul>
             <li>1 principal line</li>
             <li>Unlimited scheduling detections</li>
@@ -464,7 +466,7 @@
         <article class="info-card highlight reveal delay-1">
           <div class="popular-badge">Most Popular</div>
           <p class="label">Dreamer</p>
-          <p class="value">$399<span>/month</span></p>
+          <p class="value"><span class="price" data-aed="AED 1,499" data-usd="$399">AED 1,499</span><span>/month</span></p>
           <ul>
             <li>Up to 5 principals</li>
             <li>Priority rule logic</li>

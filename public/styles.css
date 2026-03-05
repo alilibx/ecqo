@@ -180,6 +180,41 @@ nav a:hover {
   color: var(--accent);
 }
 
+/* ── Currency toggle ────────────────────────── */
+
+.currency-toggle {
+  display: flex;
+  background: var(--border-light);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.currency-btn {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  letter-spacing: 0.04em;
+}
+
+.currency-btn.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.currency-btn:hover:not(.active) {
+  color: var(--ink-light);
+}
+
 /* ── Layout ─────────────────────────────────── */
 
 .layout {
@@ -694,6 +729,13 @@ h3 {
   font-size: 0.85rem;
   font-weight: 400;
   color: var(--muted);
+}
+
+.value .price {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 .copy,
