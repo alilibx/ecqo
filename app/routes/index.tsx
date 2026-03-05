@@ -94,8 +94,13 @@ function Home() {
 
   async function handleJoinWaitlist(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim()) {
+    const trimmed = email.trim();
+    if (!trimmed) {
       setWaitlistStatus("Please enter a valid email.");
+      return;
+    }
+    if (trimmed.split("@")[0]?.includes("+")) {
+      setWaitlistStatus("Please use your main email without '+' aliases.");
       return;
     }
     setWaitlistSubmitting(true);
@@ -109,9 +114,8 @@ function Home() {
       }
       setWaitlistStep("done");
       setEmail("");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setWaitlistStatus(msg);
+    } catch {
+      setWaitlistStatus("Something went wrong. Please try again.");
     } finally {
       setWaitlistSubmitting(false);
     }
