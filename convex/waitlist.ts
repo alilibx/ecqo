@@ -23,8 +23,13 @@ function normalizeEmail(raw: string): string {
   return `${local}@${domain}`;
 }
 
-function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+function generateToken(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < 32; i++) {
+    token += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return token;
 }
 
 export const requestVerification = mutation({
@@ -49,26 +54,25 @@ export const requestVerification = mutation({
       return { status: "already_verified" as const, position: existing.position };
     }
 
-    const code = generateCode();
+    const token = generateToken();
 
     if (existing) {
-      // Update code for existing unverified entry
-      await ctx.db.patch(existing._id, { verificationCode: code });
+      await ctx.db.patch(existing._id, { verificationCode: token });
     } else {
       await ctx.db.insert("waitlist", {
         email: normalized,
         joinedAt: Date.now(),
         verified: false,
-        verificationCode: code,
+        verificationCode: token,
         position: 0,
       });
     }
 
     await resend.sendEmail(ctx, {
-      from: "Ecqo <hello@ecqo.ai>",
+      from: "Ecqo <ecqo@arqq.in>",
       to: normalized,
-      subject: `Your Ecqo verification code: ${code}`,
-      html: verificationEmailHtml(code),
+      subject: "Verify your Ecqo waitlist spot",
+      html: verificationEmailHtml(normalized, token),
     });
 
     return { status: "code_sent" as const };
@@ -76,8 +80,8 @@ export const requestVerification = mutation({
 });
 
 export const verify = mutation({
-  args: { email: v.string(), code: v.string() },
-  handler: async (ctx, { email, code }) => {
+  args: { email: v.string(), token: v.string() },
+  handler: async (ctx, { email, token }) => {
     const normalized = email.trim().toLowerCase();
 
     // Rate limit verification attempts
@@ -92,15 +96,15 @@ export const verify = mutation({
       .unique();
 
     if (!entry) {
-      throw new Error("No signup found for this email. Please request a new code.");
+      throw new Error("No signup found for this email.");
     }
 
     if (entry.verified) {
       return { position: entry.position, alreadyVerified: true };
     }
 
-    if (entry.verificationCode !== code) {
-      throw new Error("Invalid verification code.");
+    if (entry.verificationCode !== token) {
+      throw new Error("Invalid or expired verification link.");
     }
 
     // Assign position
@@ -110,18 +114,17 @@ export const verify = mutation({
       .order("desc")
       .first();
 
-    // Highest position is either a verified user's position or 0 (unverified)
     const maxPosition = latest && latest.position > 0 ? latest.position : 0;
     const position = maxPosition + 1;
 
     await ctx.db.patch(entry._id, {
       verified: true,
       position,
-      verificationCode: "", // Clear code
+      verificationCode: "",
     });
 
     await resend.sendEmail(ctx, {
-      from: "Ecqo <hello@ecqo.ai>",
+      from: "Ecqo <ecqo@arqq.in>",
       to: normalized,
       subject: `You're #${position} on the Ecqo waitlist!`,
       html: waitlistEmailHtml(position),

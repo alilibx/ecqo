@@ -68,13 +68,11 @@ function Home() {
   const [selectedPlan, setSelectedPlan] = useState(0);
   const [burgerOpen, setBurgerOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [waitlistStep, setWaitlistStep] = useState<"email" | "code" | "done">("email");
+  const [waitlistStep, setWaitlistStep] = useState<"email" | "done">("email");
   const [waitlistStatus, setWaitlistStatus] = useState("");
   const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
 
   const requestVerification = useMutation(api.waitlist.requestVerification);
-  const verifyCode = useMutation(api.waitlist.verify);
 
   const planCost = currency === "AED" ? PLANS[selectedPlan].aed : PLANS[selectedPlan].usd;
   const monthlySavings = Math.max(0, currentCost - planCost);
@@ -94,7 +92,7 @@ function Home() {
 
   const closeBurger = useCallback(() => setBurgerOpen(false), []);
 
-  async function handleRequestCode(e: FormEvent) {
+  async function handleJoinWaitlist(e: FormEvent) {
     e.preventDefault();
     if (!email.trim()) {
       setWaitlistStatus("Please enter a valid email.");
@@ -106,41 +104,13 @@ function Home() {
       const result = await requestVerification({ email: email.trim() });
       if (result.status === "already_verified") {
         setWaitlistStatus(`You're already verified at position #${result.position}.`);
-        setWaitlistStep("done");
       } else {
-        setWaitlistStatus("Check your email for a 6-digit verification code.");
-        setWaitlistStep("code");
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setWaitlistStatus(msg);
-    } finally {
-      setWaitlistSubmitting(false);
-    }
-  }
-
-  async function handleVerify(e: FormEvent) {
-    e.preventDefault();
-    if (!verificationCode.trim()) {
-      setWaitlistStatus("Please enter the 6-digit code.");
-      return;
-    }
-    setWaitlistSubmitting(true);
-    setWaitlistStatus("");
-    try {
-      const result = await verifyCode({ email: email.trim(), code: verificationCode.trim() });
-      if (result.alreadyVerified) {
-        setWaitlistStatus(`You're already verified at position #${result.position}.`);
-      } else {
-        setWaitlistStatus(
-          `You're #${result.position} on the waitlist! Check your email for confirmation.`,
-        );
+        setWaitlistStatus("Check your email and click the link to verify your spot.");
       }
       setWaitlistStep("done");
       setEmail("");
-      setVerificationCode("");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Invalid code. Please try again.";
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setWaitlistStatus(msg);
     } finally {
       setWaitlistSubmitting(false);
@@ -501,7 +471,7 @@ function Home() {
             </div>
 
             {waitlistStep === "email" && (
-              <form className="waitlist" onSubmit={handleRequestCode}>
+              <form className="waitlist" onSubmit={handleJoinWaitlist}>
                 <label>
                   Your email
                   <input
@@ -514,38 +484,6 @@ function Home() {
                 </label>
                 <button type="submit" className="button" disabled={waitlistSubmitting}>
                   {waitlistSubmitting ? "Sending..." : "Join the waitlist"}
-                </button>
-                {waitlistStatus && (
-                  <p className="status" role="status" aria-live="polite">{waitlistStatus}</p>
-                )}
-              </form>
-            )}
-
-            {waitlistStep === "code" && (
-              <form className="waitlist" onSubmit={handleVerify}>
-                <label>
-                  Verification code
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    required
-                    placeholder="000000"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
-                    autoFocus
-                  />
-                </label>
-                <button type="submit" className="button" disabled={waitlistSubmitting}>
-                  {waitlistSubmitting ? "Verifying..." : "Verify"}
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={() => { setWaitlistStep("email"); setWaitlistStatus(""); setVerificationCode(""); }}
-                >
-                  Use a different email
                 </button>
                 {waitlistStatus && (
                   <p className="status" role="status" aria-live="polite">{waitlistStatus}</p>

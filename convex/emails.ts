@@ -5,7 +5,8 @@ export const resend = new Resend(components.resend, {
   testMode: false,
 });
 
-export function verificationEmailHtml(code: string) {
+export function verificationEmailHtml(email: string, token: string) {
+  const verifyUrl = `https://www.ecqo.ai/verify?email=${encodeURIComponent(email)}&token=${token}`;
   return `
 <!DOCTYPE html>
 <html>
@@ -16,13 +17,16 @@ export function verificationEmailHtml(code: string) {
     <p style="color:#8a7e6d;font-size:13px;margin:0 0 32px;letter-spacing:0.12em;text-transform:uppercase;">WhatsApp-Native Executive Assistant</p>
 
     <div style="background:#ffffff;border:1px solid #e8e0d0;border-radius:16px;padding:32px;text-align:center;">
-      <p style="font-size:16px;color:#1a1612;margin:0 0 8px;">Your verification code</p>
-      <p style="font-family:'JetBrains Mono',monospace;font-size:48px;letter-spacing:0.2em;color:#0d7a6a;margin:0 0 8px;font-weight:700;">${code}</p>
-      <p style="color:#8a7e6d;font-size:14px;margin:0;">Enter this code on ecqo.ai to confirm your spot.</p>
+      <p style="font-size:16px;color:#1a1612;margin:0 0 20px;">Confirm your waitlist spot</p>
+      <a href="${verifyUrl}" style="display:inline-block;background:#0d7a6a;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:10px;">Verify my email</a>
     </div>
 
     <p style="margin-top:24px;font-size:13px;color:#8a7e6d;text-align:center;line-height:1.6;">
-      This code expires in 15 minutes.<br/>
+      If the button doesn't work, copy and paste this link:<br/>
+      <a href="${verifyUrl}" style="color:#0d7a6a;word-break:break-all;">${verifyUrl}</a>
+    </p>
+
+    <p style="margin-top:16px;font-size:13px;color:#8a7e6d;text-align:center;line-height:1.6;">
       If you didn't request this, you can safely ignore this email.
     </p>
 
