@@ -185,7 +185,7 @@ nav a:hover {
 }
 
 .mobile-cta {
-  display: none;
+  display: none !important;
 }
 
 /* ── Burger menu ────────────────────────────── */
@@ -1461,25 +1461,14 @@ details p {
   }
 
   .mobile-cta {
-    display: inline-flex;
+    display: inline-flex !important;
     padding: 0.55rem 0.7rem;
     font-size: 0.7rem;
     width: auto !important;
   }
 
   .topbar-inner .currency-toggle {
-    position: fixed;
-    top: 1rem;
-    right: 4rem;
-    z-index: 106;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-  }
-
-  .topbar-inner .currency-toggle.open {
-    opacity: 1;
-    pointer-events: auto;
+    order: unset;
   }
 
   .layout {

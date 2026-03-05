@@ -263,18 +263,15 @@ if (topbar) {
 // Burger menu
 const burger = document.getElementById("burger");
 const navEl = document.querySelector(".topbar-inner nav");
-const currencyToggleEl = document.querySelector(".currency-toggle");
 if (burger && navEl) {
   burger.addEventListener("click", () => {
     const isOpen = burger.classList.toggle("open");
     navEl.classList.toggle("open", isOpen);
-    if (currencyToggleEl) currencyToggleEl.classList.toggle("open", isOpen);
   });
   navEl.querySelectorAll("a").forEach((a) => {
     a.addEventListener("click", () => {
       burger.classList.remove("open");
       navEl.classList.remove("open");
-      if (currencyToggleEl) currencyToggleEl.classList.remove("open");
     });
   });
 }
