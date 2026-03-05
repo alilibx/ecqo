@@ -75,6 +75,7 @@
       <div class="topbar-inner">
         <a class="brand" href="#">Ecqo</a>
         <nav>
+          <a href="#top" class="nav-brand">Ecqo</a>
           <a href="#savings">Savings</a>
           <a href="#calculator">Calculator</a>
           <a href="#workflow">Workflow</a>
@@ -86,7 +87,11 @@
           <button type="button" class="currency-btn active" data-currency="AED">AED</button>
           <button type="button" class="currency-btn" data-currency="USD">USD</button>
         </div>
-        <a class="button mini" href="#calculator">Get Started</a>
+        <a class="button mini desktop-only" href="#calculator">Get Started</a>
+        <a class="button mini mobile-cta" href="#calculator">Get Started</a>
+        <button type="button" class="burger" id="burger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </header>
 
@@ -258,7 +263,7 @@
             </svg>
           </div>
           <p class="label">Ecqo</p>
-          <p class="value">From <span class="price" data-aed="AED 1,499" data-usd="$399">AED 1,499</span><span>/mo</span></p>
+          <p class="value">From <span class="price" data-aed="AED 749" data-usd="$199">AED 749</span><span>/mo</span></p>
           <p class="copy">WhatsApp-native automation designed to replace manual assistant overhead.</p>
           <a class="button" href="#pricing">Get Started</a>
         </article>
