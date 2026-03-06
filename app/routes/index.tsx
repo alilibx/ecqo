@@ -28,10 +28,19 @@ function price(aed: number, usd: number, currency: string, aedLabel: string) {
 
 /* ── Component ──────────────────────────────── */
 
+function getDefaultCurrency(): "AED" | "USD" {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz === "Asia/Dubai" ? "AED" : "USD";
+  } catch {
+    return "USD";
+  }
+}
+
 function Home() {
   const { locale, setLocale, t } = useLocale();
-  const [currency, setCurrency] = useState("AED");
-  const [currentCost, setCurrentCost] = useState(8799);
+  const [currency, setCurrency] = useState(getDefaultCurrency);
+  const [currentCost, setCurrentCost] = useState(() => getDefaultCurrency() === "AED" ? 8799 : 2400);
   const [selectedPlan, setSelectedPlan] = useState(0);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [burgerOpen, setBurgerOpen] = useState(false);
