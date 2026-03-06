@@ -174,17 +174,27 @@ function Home() {
     return () => clearTimeout(timer);
   }, [phrases]);
 
-  // Chat message sequencer — re-run when locale changes
+  // Chat message sequencer + agent feed — re-run when locale changes
   useEffect(() => {
     const allMsgs = document.querySelectorAll(".wa-msg:not(.wa-typing)");
     const waTyping = document.getElementById("wa-typing");
     const waContainer = document.getElementById("wa-messages");
+    const feedSlots = document.querySelectorAll(".feed-slot");
+    const iconSrcs: Record<string, string> = {
+      whatsapp: "https://cdn.simpleicons.org/whatsapp/white",
+      gcal: "https://cdn.simpleicons.org/googlecalendar",
+      gmail: "https://cdn.simpleicons.org/gmail",
+      outlook: "/icons/outlook.svg",
+    };
     const MAX_VISIBLE = 12;
     let msgIdx = 0;
+    let feedIdx = 0;
+    let slotIdx = 0;
     let timer: ReturnType<typeof setTimeout>;
 
-    // Reset all messages on locale change
+    // Reset all messages and feed on locale change
     allMsgs.forEach((m) => { m.classList.remove("show"); (m as HTMLElement).style.display = "none"; });
+    feedSlots.forEach((s) => { s.classList.remove("show", "flash"); s.className = "agent-feed-item feed-slot"; });
     if (waTyping) { waTyping.classList.remove("show"); waTyping.style.display = "none"; }
 
     function scrollBottom() {
@@ -200,12 +210,53 @@ function Home() {
       }
     }
 
+    function showFeedItem() {
+      if (feedIdx >= t.agentFeed.length) return;
+      const data = t.agentFeed[feedIdx];
+      const slot = feedSlots[slotIdx % feedSlots.length] as HTMLElement;
+
+      // Remove flash from all slots
+      feedSlots.forEach((s) => s.classList.remove("flash"));
+
+      // If slot already shown, fade out first then fill
+      if (slot.classList.contains("show")) {
+        slot.classList.remove("show");
+        setTimeout(() => fillSlot(slot, data), 350);
+      } else {
+        fillSlot(slot, data);
+      }
+
+      feedIdx++;
+      slotIdx++;
+    }
+
+    function fillSlot(slot: HTMLElement, data: { icon: string; label: string; detail: string }) {
+      // Update icon
+      const iconEl = slot.querySelector(".agent-feed-icon") as HTMLElement;
+      iconEl.className = `agent-feed-icon icon-${data.icon}`;
+      iconEl.innerHTML = `<img src="${iconSrcs[data.icon]}" alt="${data.icon}" width="16" height="16" />`;
+
+      // Update text
+      const labelEl = slot.querySelector(".agent-feed-label") as HTMLElement;
+      const detailEl = slot.querySelector(".agent-feed-detail") as HTMLElement;
+      labelEl.textContent = data.label;
+      detailEl.textContent = data.detail;
+
+      // Reveal with flash
+      slot.classList.add("show");
+      requestAnimationFrame(() => { slot.classList.add("flash"); });
+      setTimeout(() => { slot.classList.remove("flash"); }, 1200);
+    }
+
     function showNext() {
       if (msgIdx >= allMsgs.length) {
         timer = setTimeout(() => {
           allMsgs.forEach((m) => { m.classList.remove("show"); (m as HTMLElement).style.display = "none"; });
+          feedSlots.forEach((s) => { s.classList.remove("show", "flash"); });
           if (waTyping) { waTyping.classList.remove("show"); waTyping.style.display = "none"; }
           msgIdx = 0;
+          feedIdx = 0;
+          slotIdx = 0;
           timer = setTimeout(showNext, 600);
         }, 3500);
         return;
@@ -217,6 +268,7 @@ function Home() {
       if (isOutgoing && waTyping) {
         hideOldest();
         waTyping.classList.add("show");
+        showFeedItem();
         scrollBottom();
         timer = setTimeout(() => {
           waTyping.classList.remove("show");
@@ -300,6 +352,23 @@ function Home() {
           </div>
 
           <div className="hero-visual reveal delay-1">
+            <div className="agent-feed" id="agent-feed">
+              <div className="agent-feed-header">
+                <span className="agent-pulse" />
+                <span className="agent-feed-title">{t.brandName} Agent</span>
+              </div>
+              <div className="agent-feed-list" id="agent-feed-list">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={`${locale}-slot-${i}`} className="agent-feed-item feed-slot">
+                    <div className="agent-feed-icon" />
+                    <div className="agent-feed-text">
+                      <span className="agent-feed-label" />
+                      <span className="agent-feed-detail" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="phone-frame">
               <div className="phone-notch" />
               <div className="phone-screen">
