@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import { LocaleProvider } from "../i18n/locale";
 import "../styles.css";
 
 const jsonLd = {
@@ -120,7 +121,7 @@ export const Route = createRootRouteWithContext<{
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -137,7 +138,9 @@ function RootComponent() {
         />
       </head>
       <body>
-        <Outlet />
+        <LocaleProvider>
+          <Outlet />
+        </LocaleProvider>
         <Scripts />
       </body>
     </html>

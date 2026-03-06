@@ -25,6 +25,8 @@
   --radius-md: 16px;
   --radius-lg: 24px;
   --radius-xl: 32px;
+
+  --font: "DM Sans", sans-serif;
 }
 
 *,
@@ -40,7 +42,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-size: 1rem;
   color: var(--ink);
   background: var(--bg);
@@ -148,7 +150,7 @@ svg {
 
 .brand {
   text-decoration: none;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1.4rem;
   letter-spacing: -0.02em;
@@ -174,7 +176,7 @@ nav {
 
 nav a {
   text-decoration: none;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.76rem;
   font-weight: 500;
   padding: 0.4rem 0.7rem;
@@ -242,7 +244,7 @@ nav a:hover {
 }
 
 .currency-btn {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.68rem;
   font-weight: 600;
   padding: 0.3rem 0.6rem;
@@ -281,7 +283,8 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: "Archivo Black", sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -302,7 +305,7 @@ h3 {
 
 .eyebrow {
   margin: 0;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -581,7 +584,7 @@ h3 {
   max-width: 82%;
   padding: 5px 8px 3px;
   border-radius: 8px;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-size: 0.72rem;
   line-height: 1.45;
   color: var(--wa-text);
@@ -650,7 +653,7 @@ h3 {
   color: #fff;
   font-size: 0.52rem;
   font-weight: 600;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   padding: 1px 5px;
   border-radius: 3px;
   margin-bottom: 2px;
@@ -764,23 +767,24 @@ h3 {
 
 .label {
   margin: 0;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent);
-  font-size: 0.7rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .value {
   margin: 0;
-  font-family: "Archivo Black", sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: clamp(1.4rem, 2.5vw, 2.2rem);
   letter-spacing: -0.02em;
 }
 
 .value span {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-size: 0.85rem;
   font-weight: 400;
   color: var(--muted);
@@ -803,7 +807,8 @@ h3 {
 /* ── Workflow cards ──────────────────────────── */
 
 .step-number {
-  font-family: "Archivo Black", sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 0.85rem;
   color: var(--accent);
   opacity: 0.4;
@@ -843,7 +848,7 @@ h3 {
 label {
   display: grid;
   gap: 0.4rem;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--ink-light);
@@ -862,7 +867,7 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-size: 0.95rem;
   color: var(--ink);
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -898,7 +903,8 @@ select:focus {
 }
 
 .result-row strong {
-  font-family: "Archivo Black", sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.05rem;
   color: var(--accent);
   letter-spacing: -0.01em;
@@ -912,7 +918,7 @@ select:focus {
 
 .status {
   margin: 0;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.72rem;
   color: var(--muted);
 }
@@ -1053,11 +1059,75 @@ select:focus {
   display: inline-block;
   margin-top: auto;
   padding-top: 0.5rem;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.7rem;
   font-style: italic;
   color: var(--muted);
   border-top: 1px solid var(--border-light);
+}
+
+/* ── Billing toggle ──────────────────────────── */
+
+.billing-toggle {
+  display: inline-flex;
+  background: var(--border-light);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+  margin-top: 1.25rem;
+}
+
+.billing-btn {
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.billing-btn.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.billing-btn:hover:not(.active) {
+  color: var(--ink-light);
+}
+
+.save-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.price-old {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: line-through;
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.billed-note {
+  margin: -0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 /* ── Pricing grid ────────────────────────────── */
@@ -1081,7 +1151,7 @@ select:focus {
   transform: translateX(-50%);
   background: var(--accent);
   color: #fff;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -1145,7 +1215,7 @@ details[open] {
 summary {
   cursor: pointer;
   padding: 1rem 1.25rem;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-weight: 600;
   font-size: 0.95rem;
   display: flex;
@@ -1162,7 +1232,7 @@ summary::-webkit-details-marker {
 
 summary::after {
   content: "+";
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 1.2rem;
   font-weight: 400;
   color: var(--muted);
@@ -1295,7 +1365,8 @@ details p {
 }
 
 .footer-col h4 {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1360,7 +1431,7 @@ details p {
 .button {
   background: var(--signal);
   color: #fff;
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 0.9rem;
   padding: 0.75rem 1.5rem;
@@ -1383,7 +1454,7 @@ details p {
 .ghost {
   background: var(--surface);
   border: 1px solid var(--border);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font);
   font-size: 0.78rem;
   font-weight: 500;
   padding: 0.72rem 1.1rem;
@@ -1533,7 +1604,7 @@ details p {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: "DM Sans", sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 1.3rem;
     letter-spacing: -0.02em;
@@ -1655,7 +1726,7 @@ details p {
 }
 
 .verify-page > .brand {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font);
   font-weight: 700;
   font-size: 1.8rem;
   color: var(--ink);
@@ -1691,14 +1762,16 @@ details p {
 }
 
 .verify-title {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.8rem;
   color: var(--ink);
   margin: 0 auto;
 }
 
 .verify-position {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 3.5rem;
   color: var(--accent);
   margin: 12px 0 4px;
@@ -1753,7 +1826,8 @@ details p {
 }
 
 .legal-page h1 {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 2rem;
   color: var(--ink);
   margin: 0 0 4px;
@@ -1770,7 +1844,8 @@ details p {
 }
 
 .legal-page h2 {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: var(--font);
+  font-weight: 700;
   font-size: 1.1rem;
   color: var(--ink);
   margin: 0 0 0.5rem;
@@ -1809,4 +1884,119 @@ details p {
 
 .legal-page a:hover {
   text-decoration: underline;
+}
+
+/* ── Locale toggle ──────────────────────────── */
+
+.locale-toggle {
+  display: flex;
+  background: var(--border-light);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.locale-btn {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  letter-spacing: 0.04em;
+}
+
+.locale-btn.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.locale-btn:hover:not(.active) {
+  color: var(--ink-light);
+}
+
+/* ── RTL / Arabic ──────────────────────────── */
+
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] {
+  --font: "Noto Sans Arabic", sans-serif;
+}
+
+[dir="rtl"] .hero-content {
+  text-align: right;
+}
+
+[dir="rtl"] .hero-content .eyebrow {
+  margin-bottom: 0.75rem;
+}
+
+[dir="rtl"] .currency-toggle,
+[dir="rtl"] .locale-toggle {
+  direction: ltr;
+}
+
+[dir="rtl"] .wa-messages {
+  direction: ltr;
+}
+
+[dir="rtl"] .wa-bubble {
+  direction: rtl;
+}
+
+[dir="rtl"] .wa-input-bar {
+  direction: ltr;
+}
+
+[dir="rtl"] .wa-input-field {
+  direction: rtl;
+}
+
+[dir="rtl"] .section-header {
+  text-align: center;
+}
+
+[dir="rtl"] .pricing-grid .info-card {
+  text-align: center;
+}
+
+[dir="rtl"] .pricing-grid .label {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+[dir="rtl"] .source-strip {
+  text-align: center;
+}
+
+@media (max-width: 1024px) {
+  [dir="rtl"] .hero-content {
+    text-align: center;
+  }
+
+  [dir="rtl"] .hero-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  [dir="rtl"] .topbar-inner nav {
+    right: 0;
+    left: auto;
+    transform: translateX(100%);
+    align-items: flex-start;
+  }
+
+  [dir="rtl"] .topbar-inner nav.open {
+    transform: translateX(0);
+  }
 }
