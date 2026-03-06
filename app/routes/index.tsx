@@ -1,11 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "h3";
 import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useLocale } from "../i18n/locale";
 
+const getCountry = createServerFn({ method: "GET" }).handler(async ({ context }) => {
+  const headers = getRequestHeaders(context.event);
+  const country = headers["x-vercel-ip-country"] || headers["cf-ipcountry"] || "";
+  return country.toUpperCase();
+});
+
 export const Route = createFileRoute("/")({
   component: Home,
+  loader: async () => {
+    const country = await getCountry();
+    return { country };
+  },
 });
 
 /* ── Constants ──────────────────────────────── */
@@ -28,19 +40,12 @@ function price(aed: number, usd: number, currency: string, aedLabel: string) {
 
 /* ── Component ──────────────────────────────── */
 
-function getDefaultCurrency(): "AED" | "USD" {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return tz === "Asia/Dubai" ? "AED" : "USD";
-  } catch {
-    return "USD";
-  }
-}
-
 function Home() {
+  const { country } = Route.useLoaderData();
+  const isUAE = country === "AE";
   const { locale, setLocale, t } = useLocale();
-  const [currency, setCurrency] = useState(getDefaultCurrency);
-  const [currentCost, setCurrentCost] = useState(() => getDefaultCurrency() === "AED" ? 8799 : 2400);
+  const [currency, setCurrency] = useState<string>(isUAE ? "AED" : "USD");
+  const [currentCost, setCurrentCost] = useState(isUAE ? 8799 : 2400);
   const [selectedPlan, setSelectedPlan] = useState(0);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [burgerOpen, setBurgerOpen] = useState(false);
