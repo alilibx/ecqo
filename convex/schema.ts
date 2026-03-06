@@ -7,6 +7,7 @@ export default defineSchema({
     joinedAt: v.number(),
     verified: v.boolean(),
     verificationCode: v.string(),
+    tokenExpiresAt: v.number(),
     position: v.number(), // 0 = pending verification
   })
     .index("by_email", ["email"])

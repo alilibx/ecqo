@@ -4,12 +4,11 @@ import { RateLimiter, MINUTE, HOUR } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 import { resend, verificationEmailHtml, waitlistEmailHtml } from "./emails";
 
+const TOKEN_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 const rateLimiter = new RateLimiter(components.rateLimiter, {
-  // Global: max 30 signups per minute
   waitlistGlobal: { kind: "fixed window", rate: 30, period: MINUTE },
-  // Per-email: max 3 attempts per hour (prevents spamming one address)
   waitlistPerEmail: { kind: "token bucket", rate: 3, period: HOUR, capacity: 3 },
-  // Per-email verification attempts: max 5 per 15 minutes
   verifyAttempt: { kind: "token bucket", rate: 5, period: 15 * MINUTE, capacity: 5 },
 });
 
@@ -32,14 +31,28 @@ function generateToken(): string {
   return token;
 }
 
+// Cheap cached query — use this to check status before calling mutations
+export const getStatus = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const normalized = email.trim().toLowerCase();
+    const entry = await ctx.db
+      .query("waitlist")
+      .withIndex("by_email", (q) => q.eq("email", normalized))
+      .unique();
+
+    if (!entry) return { found: false, verified: false, position: 0 };
+    if (entry.verified) return { found: true, verified: true, position: entry.position };
+    return { found: true, verified: false, position: 0 };
+  },
+});
+
 export const requestVerification = mutation({
   args: { email: v.string() },
   handler: async (ctx, { email }) => {
     const normalized = normalizeEmail(email);
 
-    // Rate limit: global
     await rateLimiter.limit(ctx, "waitlistGlobal", { throws: true });
-    // Rate limit: per-email
     await rateLimiter.limit(ctx, "waitlistPerEmail", {
       key: normalized,
       throws: true,
@@ -55,15 +68,17 @@ export const requestVerification = mutation({
     }
 
     const token = generateToken();
+    const tokenExpiresAt = Date.now() + TOKEN_TTL;
 
     if (existing) {
-      await ctx.db.patch(existing._id, { verificationCode: token });
+      await ctx.db.patch(existing._id, { verificationCode: token, tokenExpiresAt });
     } else {
       await ctx.db.insert("waitlist", {
         email: normalized,
         joinedAt: Date.now(),
         verified: false,
         verificationCode: token,
+        tokenExpiresAt,
         position: 0,
       });
     }
@@ -84,12 +99,6 @@ export const verify = mutation({
   handler: async (ctx, { email, token }) => {
     const normalized = email.trim().toLowerCase();
 
-    // Rate limit verification attempts
-    await rateLimiter.limit(ctx, "verifyAttempt", {
-      key: normalized,
-      throws: true,
-    });
-
     const entry = await ctx.db
       .query("waitlist")
       .withIndex("by_email", (q) => q.eq("email", normalized))
@@ -103,11 +112,20 @@ export const verify = mutation({
       return { position: entry.position, alreadyVerified: true };
     }
 
-    if (entry.verificationCode !== token) {
-      throw new Error("Invalid or expired verification link.");
+    // Rate limit only unverified attempts
+    await rateLimiter.limit(ctx, "verifyAttempt", {
+      key: normalized,
+      throws: true,
+    });
+
+    if (Date.now() > entry.tokenExpiresAt) {
+      throw new Error("This verification link has expired. Please request a new one.");
     }
 
-    // Assign position
+    if (entry.verificationCode !== token) {
+      throw new Error("Invalid verification link.");
+    }
+
     const latest = await ctx.db
       .query("waitlist")
       .withIndex("by_position")

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { useMutation } from "convex/react";
+import { useState, useEffect, useRef } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/verify")({
@@ -14,34 +14,40 @@ export const Route = createFileRoute("/verify")({
 function VerifyPage() {
   const { email, token } = Route.useSearch();
   const navigate = useNavigate();
+
+  // Cached query — free for repeat visits, reactive updates
+  const status = useQuery(api.waitlist.getStatus, email ? { email } : "skip");
+
   const verify = useMutation(api.waitlist.verify);
-  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
-  const [position, setPosition] = useState(0);
+  const [verifyState, setVerifyState] = useState<"idle" | "verifying" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const attempted = useRef(false);
+
+  // If already verified via query, skip the mutation entirely
+  const alreadyVerified = status?.verified === true;
+  const position = status?.position ?? 0;
 
   useEffect(() => {
-    if (!email || !token) {
-      setStatus("error");
-      setErrorMsg("Invalid verification link.");
-      return;
-    }
+    // Don't call mutation if: no params, already verified, already attempted, or query still loading
+    if (!email || !token || alreadyVerified || attempted.current || status === undefined) return;
 
-    let cancelled = false;
+    attempted.current = true;
+    setVerifyState("verifying");
 
     verify({ email, token })
-      .then((result) => {
-        if (cancelled) return;
-        setPosition(result.position);
-        setStatus("success");
+      .then(() => {
+        setVerifyState("done");
       })
-      .catch((err) => {
-        if (cancelled) return;
-        setStatus("error");
-        setErrorMsg(err instanceof Error ? err.message : "Verification failed.");
+      .catch(() => {
+        setVerifyState("error");
+        setErrorMsg("This link is invalid or has expired. Please request a new one.");
       });
+  }, [email, token, alreadyVerified, status, verify]);
 
-    return () => { cancelled = true; };
-  }, [email, token, verify]);
+  // Determine what to show
+  const showSuccess = alreadyVerified || verifyState === "done";
+  const showError = !showSuccess && verifyState === "error";
+  const showLoading = !showSuccess && !showError;
 
   return (
     <>
@@ -53,14 +59,14 @@ function VerifyPage() {
         <a className="brand" href="/">Ecqo</a>
         <p className="verify-eyebrow">WhatsApp-Native Executive Assistant</p>
 
-        {status === "verifying" && (
+        {showLoading && (
           <div className="verify-card">
             <div className="verify-spinner" />
             <p className="verify-msg">Verifying your email...</p>
           </div>
         )}
 
-        {status === "success" && (
+        {showSuccess && (
           <div className="verify-card">
             <svg className="verify-check" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -82,7 +88,7 @@ function VerifyPage() {
           </div>
         )}
 
-        {status === "error" && (
+        {showError && (
           <div className="verify-card">
             <svg className="verify-x" viewBox="0 0 24 24" fill="none" stroke="var(--signal)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
