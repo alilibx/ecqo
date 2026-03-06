@@ -421,7 +421,7 @@ function Home() {
               <span>/mo</span>
             </p>
             <p className="copy">WhatsApp-native automation designed to replace manual assistant overhead.</p>
-            <a className="button" href="#pricing">Get Started</a>
+            <a className="button" href="#calculator">Get Started</a>
           </article>
         </section>
 
