@@ -121,16 +121,6 @@ function Home() {
     }
   }
 
-  async function copyReferralLink() {
-    const link = "https://www.ecqo.ai/?ref=private-network";
-    try {
-      await navigator.clipboard.writeText(link);
-      document.getElementById("viral-status")!.textContent = "Referral link copied.";
-    } catch {
-      document.getElementById("viral-status")!.textContent = `Copy this link: ${link}`;
-    }
-  }
-
   /* ── Client-only animations ───────────────── */
 
   useEffect(() => {
@@ -695,32 +685,35 @@ function Home() {
           </div>
         </section>
 
-        {/* ── Referral ── */}
-        <section className="referral reveal" id="referral">
-          <div className="referral-content">
-            <p className="eyebrow">Referral Loop</p>
-            <h2>Share Ecqo with Your Operator Network</h2>
-            <p>Invite two qualified operators and unlock one free month.</p>
-          </div>
-          <div className="ref-actions">
-            <button className="button" type="button" onClick={copyReferralLink}>Copy Referral Link</button>
-            <a
-              className="ghost"
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://wa.me/?text=Ecqo%20replaces%20EA%2FVA%20work%20inside%20WhatsApp.%20See%20it%20here%3A%20https%3A%2F%2Fwww.ecqo.ai%2F"
-            >
-              Share on WhatsApp
-            </a>
-            <p id="viral-status" className="status" role="status" aria-live="polite" />
-          </div>
-        </section>
+        {/* ── Referral (hidden for now) ── */}
       </main>
 
       <footer className="footer">
         <div className="footer-inner">
-          <a className="brand" href="#">Ecqo</a>
-          <p>WhatsApp-native executive assistant automation.</p>
+          <div className="footer-top">
+            <div className="footer-brand">
+              <a className="brand" href="#">Ecqo</a>
+              <p>WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.</p>
+            </div>
+            <div className="footer-links">
+              <div className="footer-col">
+                <h4>Product</h4>
+                <a href="#savings">Savings</a>
+                <a href="#calculator">Calculator</a>
+                <a href="#workflow">Workflow</a>
+                <a href="#pricing">Pricing</a>
+              </div>
+              <div className="footer-col">
+                <h4>Company</h4>
+                <a href="#faq">FAQ</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+              </div>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>&copy; 2026 Ecqo. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </>
