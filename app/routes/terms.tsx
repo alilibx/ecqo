@@ -13,7 +13,7 @@ function TermsPage() {
 
       <header className="topbar scrolled">
         <div className="topbar-inner">
-          <a className="brand" href="/">Ecqo</a>
+          <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
           <nav>
             <a href="/#savings">Savings</a>
             <a href="/#calculator">Calculator</a>
@@ -31,12 +31,12 @@ function TermsPage() {
 
         <section>
           <h2>1. Acceptance of Terms</h2>
-          <p>By accessing or using Ecqo's website and services, you agree to be bound by these Terms of Service. If you do not agree, do not use our services.</p>
+          <p>By accessing or using Ecqqo's website and services, you agree to be bound by these Terms of Service. If you do not agree, do not use our services.</p>
         </section>
 
         <section>
           <h2>2. Service Description</h2>
-          <p>Ecqo provides a WhatsApp-native executive assistant that automates scheduling, calendar management, email digests, reminders, and related productivity tasks. The service is currently in pre-launch and available via waitlist only.</p>
+          <p>Ecqqo provides a WhatsApp-native executive assistant that automates scheduling, calendar management, email digests, reminders, and related productivity tasks. The service is currently in pre-launch and available via waitlist only.</p>
         </section>
 
         <section>
@@ -56,17 +56,17 @@ function TermsPage() {
 
         <section>
           <h2>5. Intellectual Property</h2>
-          <p>All content, branding, and technology on ecqo.ai are owned by Ecqo. You may not copy, modify, distribute, or reverse-engineer any part of our service without written permission.</p>
+          <p>All content, branding, and technology on ecqqo.com are owned by Ecqqo. You may not copy, modify, distribute, or reverse-engineer any part of our service without written permission.</p>
         </section>
 
         <section>
           <h2>6. Third-Party Services</h2>
-          <p>Ecqo integrates with third-party services including WhatsApp (Meta), Google Calendar, and email providers. Your use of these integrations is also subject to their respective terms and policies.</p>
+          <p>Ecqqo integrates with third-party services including WhatsApp (Meta), Google Calendar, and email providers. Your use of these integrations is also subject to their respective terms and policies.</p>
         </section>
 
         <section>
           <h2>7. Limitation of Liability</h2>
-          <p>Ecqo is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service. Our total liability shall not exceed the amount you paid us in the preceding 12 months.</p>
+          <p>Ecqqo is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the service. Our total liability shall not exceed the amount you paid us in the preceding 12 months.</p>
         </section>
 
         <section>
@@ -86,7 +86,7 @@ function TermsPage() {
 
         <section>
           <h2>11. Contact</h2>
-          <p>For questions about these Terms of Service, contact us at <a href="mailto:legal@ecqo.ai">legal@ecqo.ai</a>.</p>
+          <p>For questions about these Terms of Service, contact us at <a href="mailto:legal@ecqqo.com">legal@ecqqo.com</a>.</p>
         </section>
       </main>
 
@@ -94,7 +94,7 @@ function TermsPage() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <a className="brand" href="/">Ecqo</a>
+              <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
               <p>WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.</p>
             </div>
             <div className="footer-links">
@@ -114,7 +114,7 @@ function TermsPage() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 Ecqo. All rights reserved.</p>
+            <p>&copy; 2026 Ecqqo. All rights reserved.</p>
           </div>
         </div>
       </footer>

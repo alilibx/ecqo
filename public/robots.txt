@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.ecqo.ai/sitemap.xml
+Sitemap: https://www.ecqqo.com/sitemap.xml

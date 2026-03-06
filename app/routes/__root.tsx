@@ -12,13 +12,13 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "Organization",
-      name: "Ecqo",
-      url: "https://www.ecqo.ai/",
-      logo: "https://www.ecqo.ai/logo.png",
+      name: "Ecqqo",
+      url: "https://www.ecqqo.com/",
+      logo: "https://www.ecqqo.com/logo.png",
     },
     {
       "@type": "SoftwareApplication",
-      name: "Ecqo",
+      name: "Ecqqo",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       offers: [
@@ -50,12 +50,12 @@ export const Route = createRootRouteWithContext<{
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
       {
-        title: "Ecqo | Empower your Human Assistant",
+        title: "Ecqqo | Empower your Human Assistant",
       },
       {
         name: "description",
         content:
-          "Ecqo is a WhatsApp-native executive assistant for high-net-worth operators. Replace EA/VA workflows with automated scheduling and approvals.",
+          "Ecqqo is a WhatsApp-native executive assistant for high-net-worth operators. Replace EA/VA workflows with automated scheduling and approvals.",
       },
       {
         name: "keywords",
@@ -63,20 +63,24 @@ export const Route = createRootRouteWithContext<{
           "WhatsApp executive assistant, replace virtual assistant, executive assistant automation, HNWI productivity",
       },
       { name: "robots", content: "index,follow,max-image-preview:large" },
+      { name: "msapplication-TileColor", content: "#faf7f0" },
+      { name: "msapplication-TileImage", content: "/favicons/ms-icon-144x144.png" },
+      { name: "msapplication-config", content: "/favicons/browserconfig.xml" },
+      { name: "theme-color", content: "#faf7f0" },
       { property: "og:type", content: "website" },
       {
         property: "og:title",
-        content: "Ecqo | Empower your Human Assistant",
+        content: "Ecqqo | Empower your Human Assistant",
       },
       {
         property: "og:description",
         content:
           "From WhatsApp chat to confirmed calendar actions. Built for principals, founders, and family-office teams.",
       },
-      { property: "og:url", content: "https://www.ecqo.ai/" },
-      { property: "og:image", content: "https://www.ecqo.ai/og-image.png" },
+      { property: "og:url", content: "https://www.ecqqo.com/" },
+      { property: "og:image", content: "https://www.ecqqo.com/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Ecqo | Empower" },
+      { name: "twitter:title", content: "Ecqqo | Empower" },
       {
         name: "twitter:description",
         content:
@@ -84,11 +88,30 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "twitter:image",
-        content: "https://www.ecqo.ai/og-image.png",
+        content: "https://www.ecqqo.com/og-image.png",
       },
     ],
     links: [
-      { rel: "canonical", href: "https://www.ecqo.ai/" },
+      { rel: "canonical", href: "https://www.ecqqo.com/" },
+      // Favicons
+      { rel: "icon", type: "image/x-icon", href: "/favicons/favicon.ico" },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicons/favicon-16x16.png" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicons/favicon-32x32.png" },
+      { rel: "icon", type: "image/png", sizes: "96x96", href: "/favicons/favicon-96x96.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicons/android-icon-192x192.png" },
+      // Apple touch icons
+      { rel: "apple-touch-icon", sizes: "57x57", href: "/favicons/apple-icon-57x57.png" },
+      { rel: "apple-touch-icon", sizes: "60x60", href: "/favicons/apple-icon-60x60.png" },
+      { rel: "apple-touch-icon", sizes: "72x72", href: "/favicons/apple-icon-72x72.png" },
+      { rel: "apple-touch-icon", sizes: "76x76", href: "/favicons/apple-icon-76x76.png" },
+      { rel: "apple-touch-icon", sizes: "114x114", href: "/favicons/apple-icon-114x114.png" },
+      { rel: "apple-touch-icon", sizes: "120x120", href: "/favicons/apple-icon-120x120.png" },
+      { rel: "apple-touch-icon", sizes: "144x144", href: "/favicons/apple-icon-144x144.png" },
+      { rel: "apple-touch-icon", sizes: "152x152", href: "/favicons/apple-icon-152x152.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/favicons/apple-icon-180x180.png" },
+      // Manifest
+      { rel: "manifest", href: "/favicons/manifest.json" },
+      // Fonts
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "preconnect",

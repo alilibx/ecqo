@@ -13,7 +13,7 @@ Use bun as the package manager and script runner.
 
 ## Architecture
 
-**Ecqo** is a WhatsApp-native executive assistant MVP built with:
+**Ecqqo** is a WhatsApp-native executive assistant MVP built with:
 
 ### Frontend — TanStack Start + React (`app/`)
 - `app/router.tsx` — Router setup with Convex + TanStack Query providers

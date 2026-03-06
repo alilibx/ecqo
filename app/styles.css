@@ -148,10 +148,20 @@ svg {
 
 .brand {
   text-decoration: none;
-  font-family: "Archivo Black", sans-serif;
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
   font-size: 1.4rem;
   letter-spacing: -0.02em;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.brand-icon {
+  height: 1.6rem;
+  width: auto;
+  display: block;
 }
 
 nav {
@@ -433,13 +443,18 @@ h3 {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--wa-teal);
+  background: var(--signal);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Archivo Black", sans-serif;
-  font-size: 0.75rem;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.wa-avatar-icon {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
 }
 
 .wa-contact {
@@ -629,7 +644,7 @@ h3 {
   letter-spacing: -2px;
 }
 
-.ecqo-tag {
+.ecqqo-tag {
   display: inline-block;
   background: var(--wa-teal);
   color: #fff;
@@ -1257,6 +1272,10 @@ details p {
   font-size: 1.15rem;
 }
 
+.footer-brand .brand-icon {
+  height: 1.3rem;
+}
+
 .footer-brand p {
   margin: 0.6rem 0 0;
   color: var(--muted);
@@ -1511,8 +1530,11 @@ details p {
   }
 
   .topbar-inner nav .nav-brand {
-    display: block;
-    font-family: "Archivo Black", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: "DM Sans", sans-serif;
+    font-weight: 700;
     font-size: 1.3rem;
     letter-spacing: -0.02em;
     padding: 0 0.4rem 0.75rem;
@@ -1633,7 +1655,8 @@ details p {
 }
 
 .verify-page > .brand {
-  font-family: "Archivo Black", Impact, sans-serif;
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
   font-size: 1.8rem;
   color: var(--ink);
   text-decoration: none;

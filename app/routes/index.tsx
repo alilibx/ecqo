@@ -264,9 +264,9 @@ function Home() {
       {/* ── Header ── */}
       <header className="topbar">
         <div className="topbar-inner">
-          <a className="brand" href="#">Ecqo</a>
+          <a className="brand" href="#"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
           <nav className={burgerOpen ? "open" : ""}>
-            <a href="#top" className="nav-brand" onClick={closeBurger}>Ecqo</a>
+            <a href="#top" className="nav-brand" onClick={closeBurger}><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
             <a href="#savings" onClick={closeBurger}>Savings</a>
             <a href="#calculator" onClick={closeBurger}>Calculator</a>
             <a href="#workflow" onClick={closeBurger}>Workflow</a>
@@ -299,7 +299,7 @@ function Home() {
               </span>
             </h1>
             <p className="subtitle">
-              Ecqo watches your WhatsApp chats for scheduling, calendar checks, email summaries,
+              Ecqqo watches your WhatsApp chats for scheduling, calendar checks, email summaries,
               reminders, and more &mdash; then acts on your behalf. No extra apps. No handoffs. No
               follow-up leaks.
             </p>
@@ -316,9 +316,9 @@ function Home() {
                 {/* WhatsApp header */}
                 <div className="wa-header">
                   <svg className="wa-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
-                  <div className="wa-avatar">E</div>
+                  <div className="wa-avatar"><img src="/logos/logo-icon-light.png" alt="Ecqqo" className="wa-avatar-icon" /></div>
                   <div className="wa-contact">
-                    <span className="wa-name">Ecqo Assistant</span>
+                    <span className="wa-name">Ecqqo Assistant</span>
                     <span className="wa-online">online</span>
                   </div>
                   <svg className="wa-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15.1 4.55a8 8 0 01.9 11.62l.01.01L22 22l-5.82-5.99A8 8 0 1115.1 4.55z" /><path d="M13 10v3l2.5 1.5" /></svg>
@@ -335,7 +335,7 @@ function Home() {
                         dangerouslySetInnerHTML={{
                           __html:
                             (msg.tag
-                              ? `<span class="ecqo-tag ${msg.tagClass || ""}">${msg.tag}</span>`
+                              ? `<span class="ecqqo-tag ${msg.tagClass || ""}">${msg.tag}</span>`
                               : "") +
                             msg.html +
                             `<span class="wa-meta">${msg.time}${
@@ -405,7 +405,7 @@ function Home() {
             <div className="card-icon accent-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="14" rx="3" /><path d="M8 12h8M8 16h5" /><path d="M16 8l3 3-3 3" /></svg>
             </div>
-            <p className="label">Ecqo</p>
+            <p className="label">Ecqqo</p>
             <p className="value">
               From <span className="price">{price(749, 199, currency)}</span>
               <span>/mo</span>
@@ -420,7 +420,7 @@ function Home() {
           <div className="calculator-intro reveal">
             <p className="eyebrow">Savings Calculator</p>
             <h2>Make the Decision in 15 Seconds</h2>
-            <p>Enter your current monthly assistant cost and compare it directly with your Ecqo plan.</p>
+            <p>Enter your current monthly assistant cost and compare it directly with your Ecqqo plan.</p>
           </div>
 
           <div className="calculator-main reveal delay-1">
@@ -435,7 +435,7 @@ function Home() {
                 />
               </label>
               <label>
-                Ecqo plan
+                Ecqqo plan
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(Number(e.target.value))}
@@ -524,7 +524,7 @@ function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 8h14v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8z" /><path d="M3 8l3-4h12l3 4" /><path d="M9 12h6M9 16h4" /></svg>
             </div>
             <h3>Capture</h3>
-            <p>Ecqo reads approved WhatsApp threads and detects scheduling intent in real time.</p>
+            <p>Ecqqo reads approved WhatsApp threads and detects scheduling intent in real time.</p>
           </article>
           <article className="info-card reveal delay-1">
             <div className="step-number">02</div>
@@ -540,7 +540,7 @@ function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
             </div>
             <h3>Execute</h3>
-            <p>Once approved, Ecqo finalizes the event flow and keeps records synchronized.</p>
+            <p>Once approved, Ecqqo finalizes the event flow and keeps records synchronized.</p>
           </article>
         </section>
 
@@ -583,7 +583,7 @@ function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
             </div>
             <h3>Reminders &amp; Follow-ups</h3>
-            <p>Set reminders via chat. Ecqo nudges you at the right time so nothing slips through.</p>
+            <p>Set reminders via chat. Ecqqo nudges you at the right time so nothing slips through.</p>
             <span className="usecase-example">"Remind me to call Sarah at 5pm"</span>
           </article>
 
@@ -592,7 +592,7 @@ function Home() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-1 1 3 2 2 3 1-1v-3l3-2 3.7 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z" /></svg>
             </div>
             <h3>Travel Coordination</h3>
-            <p>Share flight details or hotel confirmations &mdash; Ecqo adds them to your calendar automatically.</p>
+            <p>Share flight details or hotel confirmations &mdash; Ecqqo adds them to your calendar automatically.</p>
             <span className="usecase-example">"Add my flight LHR to JFK on Friday"</span>
           </article>
 
@@ -660,7 +660,7 @@ function Home() {
           <div className="faq-list reveal">
             <details>
               <summary>Is this WhatsApp-only?</summary>
-              <p>Yes. Ecqo is intentionally focused on direct WhatsApp Meta Cloud API integration. Everything happens inside the chat you already use.</p>
+              <p>Yes. Ecqqo is intentionally focused on direct WhatsApp Meta Cloud API integration. Everything happens inside the chat you already use.</p>
             </details>
             <details>
               <summary>Can we enforce approvals before scheduling?</summary>
@@ -668,19 +668,19 @@ function Home() {
             </details>
             <details>
               <summary>How does calendar check work?</summary>
-              <p>Just ask "What's on my calendar today?" or "Am I free Friday afternoon?" and Ecqo pulls your schedule in real time, giving you a clean summary right in chat.</p>
+              <p>Just ask "What's on my calendar today?" or "Am I free Friday afternoon?" and Ecqqo pulls your schedule in real time, giving you a clean summary right in chat.</p>
             </details>
             <details>
               <summary>Which email providers are supported?</summary>
-              <p>Ecqo integrates with Gmail and Outlook. Ask for unread summaries, search for emails from specific contacts, or get flagged thread digests on demand.</p>
+              <p>Ecqqo integrates with Gmail and Outlook. Ask for unread summaries, search for emails from specific contacts, or get flagged thread digests on demand.</p>
             </details>
             <details>
-              <summary>Can Ecqo set reminders and follow-ups?</summary>
-              <p>Yes. Say "Remind me to call Sarah at 5pm" or "Follow up with the investor next Monday" and Ecqo will notify you at the right time via WhatsApp.</p>
+              <summary>Can Ecqqo set reminders and follow-ups?</summary>
+              <p>Yes. Say "Remind me to call Sarah at 5pm" or "Follow up with the investor next Monday" and Ecqqo will notify you at the right time via WhatsApp.</p>
             </details>
             <details>
               <summary>Is this still cost-effective vs remote assistant models?</summary>
-              <p>Yes. The calculator above compares against both remote VA midpoint and EA averages. Ecqo handles the repetitive coordination so your human assistant can focus on high-value work.</p>
+              <p>Yes. The calculator above compares against both remote VA midpoint and EA averages. Ecqqo handles the repetitive coordination so your human assistant can focus on high-value work.</p>
             </details>
           </div>
         </section>
@@ -692,7 +692,7 @@ function Home() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <a className="brand" href="#">Ecqo</a>
+              <a className="brand" href="#"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
               <p>WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.</p>
             </div>
             <div className="footer-links">
@@ -712,7 +712,7 @@ function Home() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 Ecqo. All rights reserved.</p>
+            <p>&copy; 2026 Ecqqo. All rights reserved.</p>
           </div>
         </div>
       </footer>

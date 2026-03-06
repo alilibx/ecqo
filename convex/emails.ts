@@ -6,14 +6,14 @@ export const resend = new Resend(components.resend, {
 });
 
 export function verificationEmailHtml(email: string, token: string) {
-  const verifyUrl = `https://ecqo.vercel.app/verify?email=${encodeURIComponent(email)}&token=${token}`;
+  const verifyUrl = `https://ecqqo.com/verify?email=${encodeURIComponent(email)}&token=${token}`;
   return `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
 <body style="margin:0;padding:0;background:#faf7f0;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
   <div style="max-width:480px;margin:0 auto;padding:40px 24px;">
-    <h1 style="font-family:'Archivo Black',Impact,sans-serif;font-size:28px;margin:0 0 4px;color:#1a1612;">Ecqo</h1>
+    <h1 style="font-family:'Archivo Black',Impact,sans-serif;font-size:28px;margin:0 0 4px;color:#1a1612;">Ecqqo</h1>
     <p style="color:#8a7e6d;font-size:13px;margin:0 0 32px;letter-spacing:0.12em;text-transform:uppercase;">WhatsApp-Native Executive Assistant</p>
 
     <div style="background:#ffffff;border:1px solid #e8e0d0;border-radius:16px;padding:32px;text-align:center;">
@@ -32,7 +32,7 @@ export function verificationEmailHtml(email: string, token: string) {
 
     <hr style="border:none;border-top:1px solid #e8e0d0;margin:32px 0 16px;" />
     <p style="font-size:11px;color:#8a7e6d;text-align:center;margin:0;">
-      &copy; 2026 Ecqo &middot; ecqo.ai
+      &copy; 2026 Ecqqo &middot; ecqqo.com
     </p>
   </div>
 </body>
@@ -46,7 +46,7 @@ export function waitlistEmailHtml(position: number) {
 <head><meta charset="utf-8" /></head>
 <body style="margin:0;padding:0;background:#faf7f0;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
   <div style="max-width:480px;margin:0 auto;padding:40px 24px;">
-    <h1 style="font-family:'Archivo Black',Impact,sans-serif;font-size:28px;margin:0 0 4px;color:#1a1612;">Ecqo</h1>
+    <h1 style="font-family:'Archivo Black',Impact,sans-serif;font-size:28px;margin:0 0 4px;color:#1a1612;">Ecqqo</h1>
     <p style="color:#8a7e6d;font-size:13px;margin:0 0 32px;letter-spacing:0.12em;text-transform:uppercase;">WhatsApp-Native Executive Assistant</p>
 
     <div style="background:#ffffff;border:1px solid #e8e0d0;border-radius:16px;padding:32px;text-align:center;">
@@ -68,7 +68,7 @@ export function waitlistEmailHtml(position: number) {
 
     <hr style="border:none;border-top:1px solid #e8e0d0;margin:32px 0 16px;" />
     <p style="font-size:11px;color:#8a7e6d;text-align:center;margin:0;">
-      &copy; 2026 Ecqo &middot; ecqo.ai
+      &copy; 2026 Ecqqo &middot; ecqqo.com
     </p>
   </div>
 </body>

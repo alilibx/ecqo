@@ -13,7 +13,7 @@ function PrivacyPage() {
 
       <header className="topbar scrolled">
         <div className="topbar-inner">
-          <a className="brand" href="/">Ecqo</a>
+          <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
           <nav>
             <a href="/#savings">Savings</a>
             <a href="/#calculator">Calculator</a>
@@ -31,7 +31,7 @@ function PrivacyPage() {
 
         <section>
           <h2>1. Introduction</h2>
-          <p>Ecqo ("we", "us", "our") operates the website ecqo.ai and provides a WhatsApp-native executive assistant service. This Privacy Policy explains how we collect, use, and protect your personal information.</p>
+          <p>Ecqqo ("we", "us", "our") operates the website ecqqo.com and provides a WhatsApp-native executive assistant service. This Privacy Policy explains how we collect, use, and protect your personal information.</p>
         </section>
 
         <section>
@@ -80,7 +80,7 @@ function PrivacyPage() {
 
         <section>
           <h2>7. Your Rights</h2>
-          <p>You may request to access, correct, or delete your personal information at any time by contacting us at <a href="mailto:privacy@ecqo.ai">privacy@ecqo.ai</a>.</p>
+          <p>You may request to access, correct, or delete your personal information at any time by contacting us at <a href="mailto:privacy@ecqqo.com">privacy@ecqqo.com</a>.</p>
         </section>
 
         <section>
@@ -90,7 +90,7 @@ function PrivacyPage() {
 
         <section>
           <h2>9. Contact</h2>
-          <p>For questions about this Privacy Policy, contact us at <a href="mailto:privacy@ecqo.ai">privacy@ecqo.ai</a>.</p>
+          <p>For questions about this Privacy Policy, contact us at <a href="mailto:privacy@ecqqo.com">privacy@ecqqo.com</a>.</p>
         </section>
       </main>
 
@@ -98,7 +98,7 @@ function PrivacyPage() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <a className="brand" href="/">Ecqo</a>
+              <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
               <p>WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.</p>
             </div>
             <div className="footer-links">
@@ -118,7 +118,7 @@ function PrivacyPage() {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2026 Ecqo. All rights reserved.</p>
+            <p>&copy; 2026 Ecqqo. All rights reserved.</p>
           </div>
         </div>
       </footer>

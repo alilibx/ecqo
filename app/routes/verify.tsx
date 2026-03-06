@@ -56,7 +56,7 @@ function VerifyPage() {
       <div className="bg-orb orb-2" />
 
       <div className="verify-page">
-        <a className="brand" href="/">Ecqo</a>
+        <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
         <p className="verify-eyebrow">WhatsApp-Native Executive Assistant</p>
 
         {showLoading && (
@@ -83,7 +83,7 @@ function VerifyPage() {
               We'll notify you when early access opens.
             </p>
             <button className="button" onClick={() => navigate({ to: "/" })}>
-              Back to Ecqo
+              Back to Ecqqo
             </button>
           </div>
         )}
@@ -97,7 +97,7 @@ function VerifyPage() {
             <h1 className="verify-title">Verification failed</h1>
             <p className="verify-msg">{errorMsg}</p>
             <button className="button" onClick={() => navigate({ to: "/" })}>
-              Back to Ecqo
+              Back to Ecqqo
             </button>
           </div>
         )}
