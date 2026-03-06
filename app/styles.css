@@ -1603,7 +1603,7 @@ details p {
   font-family: "Archivo Black", Impact, sans-serif;
   font-size: 1.8rem;
   color: var(--ink);
-  margin: 0 0 8px;
+  margin: 0 auto;
 }
 
 .verify-position {
