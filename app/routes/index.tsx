@@ -179,7 +179,8 @@ function Home() {
     const allMsgs = document.querySelectorAll(".wa-msg:not(.wa-typing)");
     const waTyping = document.getElementById("wa-typing");
     const waContainer = document.getElementById("wa-messages");
-    const feedSlots = document.querySelectorAll(".feed-slot");
+    const feedSlots = [...document.querySelectorAll(".feed-slot")] as HTMLElement[];
+    const SLOT_COUNT = feedSlots.length;
     const iconSrcs: Record<string, string> = {
       whatsapp: "https://cdn.simpleicons.org/whatsapp/white",
       gcal: "https://cdn.simpleicons.org/googlecalendar",
@@ -189,7 +190,6 @@ function Home() {
     const MAX_VISIBLE = 12;
     let msgIdx = 0;
     let feedIdx = 0;
-    let slotIdx = 0;
     let timer: ReturnType<typeof setTimeout>;
 
     // Reset all messages and feed on locale change
@@ -210,42 +210,55 @@ function Home() {
       }
     }
 
-    function showFeedItem() {
-      if (feedIdx >= t.agentFeed.length) return;
-      const data = t.agentFeed[feedIdx];
-      const slot = feedSlots[slotIdx % feedSlots.length] as HTMLElement;
-
-      // Remove flash from all slots
-      feedSlots.forEach((s) => s.classList.remove("flash"));
-
-      // If slot already shown, fade out first then fill
-      if (slot.classList.contains("show")) {
-        slot.classList.remove("show");
-        setTimeout(() => fillSlot(slot, data), 350);
-      } else {
-        fillSlot(slot, data);
-      }
-
-      feedIdx++;
-      slotIdx++;
-    }
-
     function fillSlot(slot: HTMLElement, data: { icon: string; label: string; detail: string }) {
-      // Update icon
       const iconEl = slot.querySelector(".agent-feed-icon") as HTMLElement;
       iconEl.className = `agent-feed-icon icon-${data.icon}`;
       iconEl.innerHTML = `<img src="${iconSrcs[data.icon]}" alt="${data.icon}" width="16" height="16" />`;
-
-      // Update text
       const labelEl = slot.querySelector(".agent-feed-label") as HTMLElement;
       const detailEl = slot.querySelector(".agent-feed-detail") as HTMLElement;
       labelEl.textContent = data.label;
       detailEl.textContent = data.detail;
+    }
 
-      // Reveal with flash
-      slot.classList.add("show");
-      requestAnimationFrame(() => { slot.classList.add("flash"); });
-      setTimeout(() => { slot.classList.remove("flash"); }, 1200);
+    function showFeedItem() {
+      if (feedIdx >= t.agentFeed.length) return;
+      const data = t.agentFeed[feedIdx];
+      feedSlots.forEach((s) => s.classList.remove("flash"));
+
+      if (feedIdx < SLOT_COUNT) {
+        // Still filling — just reveal the next slot
+        const slot = feedSlots[feedIdx];
+        fillSlot(slot, data);
+        slot.classList.add("show");
+        requestAnimationFrame(() => slot.classList.add("flash"));
+        setTimeout(() => slot.classList.remove("flash"), 1200);
+      } else {
+        // All slots full — shift content up, new item at bottom
+        // 1. Fade out top slot
+        feedSlots[0].classList.remove("show");
+        setTimeout(() => {
+          // 2. Shift content: slot[1]→[0], [2]→[1], ..., [n-1]→[n-2]
+          for (let i = 0; i < SLOT_COUNT - 1; i++) {
+            const src = feedSlots[i + 1];
+            const dst = feedSlots[i];
+            dst.querySelector(".agent-feed-icon")!.className = src.querySelector(".agent-feed-icon")!.className;
+            dst.querySelector(".agent-feed-icon")!.innerHTML = src.querySelector(".agent-feed-icon")!.innerHTML;
+            dst.querySelector(".agent-feed-label")!.textContent = src.querySelector(".agent-feed-label")!.textContent;
+            dst.querySelector(".agent-feed-detail")!.textContent = src.querySelector(".agent-feed-detail")!.textContent;
+            dst.classList.add("show");
+          }
+          // 3. Fill last slot with new data
+          const lastSlot = feedSlots[SLOT_COUNT - 1];
+          lastSlot.classList.remove("show");
+          fillSlot(lastSlot, data);
+          requestAnimationFrame(() => {
+            lastSlot.classList.add("show");
+            requestAnimationFrame(() => lastSlot.classList.add("flash"));
+            setTimeout(() => lastSlot.classList.remove("flash"), 1200);
+          });
+        }, 350);
+      }
+      feedIdx++;
     }
 
     function showNext() {
@@ -256,7 +269,6 @@ function Home() {
           if (waTyping) { waTyping.classList.remove("show"); waTyping.style.display = "none"; }
           msgIdx = 0;
           feedIdx = 0;
-          slotIdx = 0;
           timer = setTimeout(showNext, 600);
         }, 3500);
         return;
