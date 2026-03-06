@@ -1595,7 +1595,8 @@ details p {
 .verify-x {
   width: 56px;
   height: 56px;
-  margin-bottom: 16px;
+  margin: 0 auto 16px;
+  display: block;
 }
 
 .verify-title {
