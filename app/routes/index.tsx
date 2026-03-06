@@ -349,46 +349,39 @@ function Home() {
         <div className="section-header reveal" id="savings">
           <p className="eyebrow">{t.savings.eyebrow}</p>
           <h2>{t.savings.title}</h2>
+          <p className="section-subtitle">{t.savings.subtitle}</p>
         </div>
 
-        <section className="cards three-up">
-          <article className="info-card reveal">
-            <div className="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M7 9h10M7 13h7M7 17h4" /></svg>
+        <section className="savings-section reveal">
+          <div className="savings-old">
+            <article className="old-card" onClick={() => setCurrentCost(currency === "AED" ? 8799 : 2400)}>
+              <p className="old-label">{t.savings.vaMidpoint}</p>
+              <p className="old-price">{price(8799, 2400, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
+              <p className="old-copy">{t.savings.vaCopy}</p>
+              <span className="old-save">{t.savings.savingsLabel} {t.savings.savingsVa}</span>
+            </article>
+            <article className="old-card" onClick={() => setCurrentCost(currency === "AED" ? 21999 : 5945)}>
+              <p className="old-label">{t.savings.eaAverage}</p>
+              <p className="old-price">{price(21999, 5945, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
+              <p className="old-copy">{t.savings.eaCopy}</p>
+              <span className="old-save">{t.savings.savingsLabel} {t.savings.savingsEa}</span>
+            </article>
+          </div>
+          <div className="savings-arrow reveal delay-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+          </div>
+          <article className="new-card reveal delay-1">
+            <div className="new-card-inner">
+              <div className="new-card-left">
+                <img src="/logos/logo-icon-light.png" alt={t.brandName} className="new-card-logo" />
+                <p className="new-label">{t.savings.ecqqoLabel}</p>
+                <p className="new-price">{t.savings.from} {price(749, 199, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
+              </div>
+              <div className="new-card-right">
+                <p className="new-copy">{t.savings.ecqqoCopy}</p>
+                <a className="button" href="#calculator">{t.nav.getStarted}</a>
+              </div>
             </div>
-            <p className="label">{t.savings.vaMidpoint}</p>
-            <p className="value">
-              <span className="price">{price(8799, 2400, currency, t.currencyLabels.AED)}</span>
-              <span>{t.savings.mo}</span>
-            </p>
-            <p className="copy">{t.savings.vaCopy}</p>
-            <button type="button" className="ghost preset" onClick={() => setCurrentCost(currency === "AED" ? 8799 : 2400)}>{t.savings.useMiddpoint}</button>
-          </article>
-
-          <article className="info-card reveal delay-1">
-            <div className="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V7l5-3 4 3 4-3 5 3v14z" /><path d="M7 12h10M7 16h6" /></svg>
-            </div>
-            <p className="label">{t.savings.eaAverage}</p>
-            <p className="value">
-              <span className="price">{price(21999, 5945, currency, t.currencyLabels.AED)}</span>
-              <span>{t.savings.mo}</span>
-            </p>
-            <p className="copy">{t.savings.eaCopy}</p>
-            <button type="button" className="ghost preset" onClick={() => setCurrentCost(currency === "AED" ? 21999 : 5945)}>{t.savings.useAverage}</button>
-          </article>
-
-          <article className="info-card highlight reveal delay-2">
-            <div className="card-icon accent-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="14" rx="3" /><path d="M8 12h8M8 16h5" /><path d="M16 8l3 3-3 3" /></svg>
-            </div>
-            <p className="label">{t.savings.ecqqoLabel}</p>
-            <p className="value">
-              {t.savings.from} <span className="price">{price(749, 199, currency, t.currencyLabels.AED)}</span>
-              <span>{t.savings.mo}</span>
-            </p>
-            <p className="copy">{t.savings.ecqqoCopy}</p>
-            <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
         </section>
 
@@ -419,7 +412,7 @@ function Home() {
                 >
                   {PLANS.map((p, i) => (
                     <option key={i} value={i}>
-                      {locale === "ar" ? p.nameAr : p.name} &mdash; {price(p.aed, p.usd, currency, t.currencyLabels.AED)}
+                      {locale === "ar" ? p.nameAr : p.name} - {price(p.aed, p.usd, currency, t.currencyLabels.AED)}
                     </option>
                   ))}
                 </select>
@@ -478,15 +471,6 @@ function Home() {
             )}
           </div>
         </section>
-
-        <div className="source-strip reveal">
-          <p>
-            {t.sources.text}{" "}
-            <a href="https://www.indeed.com/career/executive-assistant/salaries" target="_blank" rel="noopener noreferrer">{t.sources.indeed}</a>
-            {" "}{t.sources.and}{" "}
-            <a href="https://www.upwork.com/hire/virtual-assistants/cost/" target="_blank" rel="noopener noreferrer">{t.sources.upwork}</a>.
-          </p>
-        </div>
 
         {/* ── Workflow ── */}
         <div className="section-header reveal" id="workflow">
