@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeaders } from "h3";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { useState, useEffect, useRef, useCallback, type FormEvent } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useLocale } from "../i18n/locale";
 
-const getCountry = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const headers = getRequestHeaders(context.event);
-  const country = headers["x-vercel-ip-country"] || headers["cf-ipcountry"] || "";
+const getCountry = createServerFn({ method: "GET" }).handler(async () => {
+  const country = getRequestHeader("x-vercel-ip-country") || getRequestHeader("cf-ipcountry") || "";
   return country.toUpperCase();
 });
 
