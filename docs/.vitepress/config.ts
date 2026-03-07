@@ -14,6 +14,28 @@ export default withMermaid(
           href: "/logo.png",
         },
       ],
+      [
+        "link",
+        {
+          rel: "preconnect",
+          href: "https://fonts.googleapis.com",
+        },
+      ],
+      [
+        "link",
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossorigin: "",
+        },
+      ],
+      [
+        "link",
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&display=swap",
+        },
+      ],
     ],
     themeConfig: {
       logo: {
@@ -111,7 +133,54 @@ export default withMermaid(
       outline: { level: [2, 3] },
     },
     mermaid: {
-      theme: "neutral",
+      theme: "base",
+      themeVariables: {
+        // Primary colors - Ecqqo teal accent
+        primaryColor: "#e8f5f2",
+        primaryTextColor: "#094f44",
+        primaryBorderColor: "#0d7a6a",
+        // Secondary - signal red-orange
+        secondaryColor: "#fff0ec",
+        secondaryTextColor: "#1a1612",
+        secondaryBorderColor: "#e04b2c",
+        // Tertiary
+        tertiaryColor: "#fef9f2",
+        tertiaryTextColor: "#3d362d",
+        tertiaryBorderColor: "#e8e0d0",
+        // Lines and text
+        lineColor: "#8a7e6d",
+        textColor: "#1a1612",
+        // Notes
+        noteBkgColor: "#fef9f2",
+        noteTextColor: "#3d362d",
+        noteBorderColor: "#e8e0d0",
+        // Sequence diagrams
+        actorBkg: "#e8f5f2",
+        actorBorder: "#0d7a6a",
+        actorTextColor: "#094f44",
+        actorLineColor: "#8a7e6d",
+        signalColor: "#1a1612",
+        signalTextColor: "#1a1612",
+        activationBkgColor: "#e8f5f2",
+        activationBorderColor: "#0d7a6a",
+        sequenceNumberColor: "#ffffff",
+        // State diagrams
+        labelColor: "#1a1612",
+        altBackground: "#fef9f2",
+        // Flowchart
+        nodeBkg: "#e8f5f2",
+        nodeBorder: "#0d7a6a",
+        clusterBkg: "#faf7f0",
+        clusterBorder: "#e8e0d0",
+        defaultLinkColor: "#8a7e6d",
+        titleColor: "#1a1612",
+        // Fonts
+        fontFamily: "DM Sans, Inter, sans-serif",
+        fontSize: "14px",
+      },
+    },
+    mermaidPlugin: {
+      class: "mermaid",
     },
   })
 );

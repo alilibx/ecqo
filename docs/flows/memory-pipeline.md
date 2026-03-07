@@ -204,14 +204,11 @@ flowchart TD
 
 ### TTL Extension Logic
 
-```
-  Episodic or Semantic fact referenced in a new agent run?
-       │
-       ├──── YES ──> Reset TTL to full duration
-       │             Bump relevance score += 0.1 (capped at 1.0)
-       │
-       └──── NO  ──> TTL continues counting down
-                     No change to relevance score
+```mermaid
+flowchart TD
+    A{"Episodic or Semantic fact<br/>referenced in a new agent run?"}
+    A -- YES --> B["Reset TTL to full duration<br/>Bump relevance score += 0.1 (capped at 1.0)"]
+    A -- NO --> C["TTL continues counting down<br/>No change to relevance score"]
 ```
 
 ## Memory Quality and Confidence Scoring
