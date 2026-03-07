@@ -2,6 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/terms")({
   component: TermsPage,
+  head: () => ({
+    meta: [
+      { title: "Terms of Service | Ecqqo" },
+      { name: "description", content: "Terms of Service for Ecqqo, a WhatsApp-native executive assistant. Read about account responsibilities, data usage, and service terms." },
+      { property: "og:title", content: "Terms of Service | Ecqqo" },
+      { property: "og:description", content: "Terms of Service for Ecqqo, a WhatsApp-native executive assistant." },
+      { property: "og:url", content: "https://ecqqo.com/terms" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ecqqo.com/terms" },
+    ],
+  }),
 });
 
 function TermsPage() {

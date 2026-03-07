@@ -1,0 +1,39 @@
+# Ecqqo
+
+> WhatsApp-native executive assistant for high-net-worth operators, founders, and family-office teams.
+
+Ecqqo automates executive assistant workflows directly inside WhatsApp. No extra apps, no handoffs, no follow-up leaks.
+
+## What Ecqqo Does
+
+- Scheduling: "Book a meeting with Ahmad tomorrow at 3pm" — Ecqqo checks calendars, proposes slots, sends invites.
+- Calendar management: Morning briefings, conflict detection, timezone handling.
+- Email digests: Summarizes unread emails, drafts replies, flags urgent items.
+- Reminders: Smart follow-ups, deadline tracking, recurring tasks.
+- Travel coordination: Flight lookups, hotel bookings, itinerary assembly.
+- Daily briefs: Consolidated morning summary of calendar, email, and tasks.
+
+## How It Works
+
+1. Capture: You send a natural-language message via WhatsApp.
+2. Propose: Ecqqo interprets intent, checks integrations, and proposes a structured action plan.
+3. Execute: Upon approval, Ecqqo executes — books meetings, sends emails, sets reminders.
+
+## Pricing
+
+- Founder plan: $199/mo (749 AED/mo)
+- Dreamer plan: $399/mo (1,499 AED/mo)
+- Custom/Enterprise: Contact for pricing
+- 30% discount on annual billing
+
+## Links
+
+- Website: https://ecqqo.com/
+- Privacy Policy: https://ecqqo.com/privacy
+- Terms of Service: https://ecqqo.com/terms
+
+## Contact
+
+- General: hello@ecqqo.com
+- Privacy: privacy@ecqqo.com
+- Legal: legal@ecqqo.com

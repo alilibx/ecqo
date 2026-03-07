@@ -84,7 +84,7 @@ export const requestVerification = mutation({
     }
 
     await resend.sendEmail(ctx, {
-      from: "Ecqqo <ecqqo@arqq.in>",
+      from: "Ecqqo <hello@updates.ecqqo.com>",
       to: normalized,
       subject: "Verify your Ecqqo waitlist spot",
       html: verificationEmailHtml(normalized, token),
@@ -142,7 +142,7 @@ export const verify = mutation({
     });
 
     await resend.sendEmail(ctx, {
-      from: "Ecqqo <ecqqo@arqq.in>",
+      from: "Ecqqo <hello@updates.ecqqo.com>",
       to: normalized,
       subject: `You're #${position} on the Ecqqo waitlist!`,
       html: waitlistEmailHtml(position),

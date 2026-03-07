@@ -14,8 +14,18 @@ const jsonLd = {
     {
       "@type": "Organization",
       name: "Ecqqo",
-      url: "https://www.ecqqo.com/",
-      logo: "https://www.ecqqo.com/logo.png",
+      url: "https://ecqqo.com/",
+      logo: "https://ecqqo.com/logos/logo-icon.png",
+      contactPoint: {
+        "@type": "ContactPoint",
+        email: "hello@ecqqo.com",
+        contactType: "customer support",
+      },
+    },
+    {
+      "@type": "WebSite",
+      name: "Ecqqo",
+      url: "https://ecqqo.com/",
     },
     {
       "@type": "SoftwareApplication",
@@ -38,6 +48,59 @@ const jsonLd = {
       ],
       description:
         "A WhatsApp-native executive assistant that handles scheduling, calendar checks, email digests, reminders, and calendar execution.",
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Is this WhatsApp-only?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Ecqqo is intentionally focused on direct WhatsApp Meta Cloud API integration. Everything happens inside the chat you already use.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can we enforce approvals before scheduling?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Events remain pending until required participants approve. Nothing gets added to your calendar without your explicit confirmation.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does calendar check work?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Just ask 'What's on my calendar today?' or 'Am I free Friday afternoon?' and Ecqqo pulls your schedule in real time, giving you a clean summary right in chat.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Which email providers are supported?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Ecqqo integrates with Gmail and Outlook. Ask for unread summaries, search for emails from specific contacts, or get flagged thread digests on demand.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can Ecqqo set reminders and follow-ups?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Say 'Remind me to call Sarah at 5pm' or 'Follow up with the investor next Monday' and Ecqqo will notify you at the right time via WhatsApp.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is this still cost-effective vs remote assistant models?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Ecqqo handles the repetitive coordination so your human assistant can focus on high-value work, saving 60-90% compared to VA and EA costs.",
+          },
+        },
+      ],
     },
   ],
 };
@@ -68,6 +131,7 @@ export const Route = createRootRouteWithContext<{
       { name: "msapplication-TileImage", content: "/favicons/ms-icon-144x144.png" },
       { name: "msapplication-config", content: "/favicons/browserconfig.xml" },
       { name: "theme-color", content: "#faf7f0" },
+      { property: "og:site_name", content: "Ecqqo" },
       { property: "og:type", content: "website" },
       {
         property: "og:title",
@@ -78,8 +142,8 @@ export const Route = createRootRouteWithContext<{
         content:
           "From WhatsApp chat to confirmed calendar actions. Built for principals, founders, and family-office teams.",
       },
-      { property: "og:url", content: "https://www.ecqqo.com/" },
-      { property: "og:image", content: "https://www.ecqqo.com/og-image.png" },
+      { property: "og:url", content: "https://ecqqo.com/" },
+      { property: "og:image", content: "https://ecqqo.com/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Ecqqo | Empower" },
       {
@@ -89,11 +153,11 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "twitter:image",
-        content: "https://www.ecqqo.com/og-image.png",
+        content: "https://ecqqo.com/og-image.png",
       },
     ],
     links: [
-      { rel: "canonical", href: "https://www.ecqqo.com/" },
+      { rel: "canonical", href: "https://ecqqo.com/" },
       // Favicons
       { rel: "icon", type: "image/x-icon", href: "/favicons/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicons/favicon-16x16.png" },

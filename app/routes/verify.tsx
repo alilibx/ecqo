@@ -9,6 +9,12 @@ export const Route = createFileRoute("/verify")({
     token: (search.token as string) || "",
   }),
   component: VerifyPage,
+  head: () => ({
+    meta: [
+      { title: "Verify Email | Ecqqo" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 function VerifyPage() {

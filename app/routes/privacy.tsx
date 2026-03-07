@@ -2,6 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
+  head: () => ({
+    meta: [
+      { title: "Privacy Policy | Ecqqo" },
+      { name: "description", content: "How Ecqqo collects, uses, and protects your personal information. Read our privacy policy for our WhatsApp-native executive assistant service." },
+      { property: "og:title", content: "Privacy Policy | Ecqqo" },
+      { property: "og:description", content: "How Ecqqo collects, uses, and protects your personal information." },
+      { property: "og:url", content: "https://ecqqo.com/privacy" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ecqqo.com/privacy" },
+    ],
+  }),
 });
 
 function PrivacyPage() {
