@@ -2,118 +2,53 @@
 
 ## Overview
 
-The WhatsApp connection flow links a user's personal WhatsApp account to Ecqo so the agent can read and act on their conversations. This uses the **wacli** library (an unofficial WhatsApp Web client) running on a dedicated Fly.io Machine per user. The flow mirrors how WhatsApp Web works: the user scans a QR code from the Linked Devices screen on their phone, and the wacli instance authenticates as a linked device.
+The WhatsApp connection flow links a user's personal WhatsApp account to Ecqqo so the agent can read and act on their conversations. This uses the **wacli** library (an unofficial WhatsApp Web client) running on a dedicated Fly.io Machine per user. The flow mirrors how WhatsApp Web works: the user scans a QR code from the Linked Devices screen on their phone, and the wacli instance authenticates as a linked device.
 
 The entire flow is orchestrated through Convex, which manages session state, relays QR codes to the dashboard in real time, and records the connection outcome.
 
 ## Sequence Diagram
 
-```
- Dashboard (Browser)          Convex                   Fly.io (wacli worker)
- ───────────────────          ──────                   ─────────────────────
-        │                        │                              │
-        │  1. Click "Connect     │                              │
-        │     WhatsApp"          │                              │
-        │───────────────────────>│                              │
-        │                        │                              │
-        │                        │  2. Create waConnectSession  │
-        │                        │     state = "created"        │
-        │                        │                              │
-        │                        │  3. Allocate Fly.io Machine  │
-        │                        │     Start wacli auth mode    │
-        │                        │─────────────────────────────>│
-        │                        │                              │
-        │                        │                              │  4. wacli generates
-        │                        │                              │     QR code
-        │                        │                              │
-        │                        │  5. QR_READY event (signed)  │
-        │                        │<─────────────────────────────│
-        │                        │                              │
-        │                        │  6. Update session:          │
-        │                        │     state = "qr_ready"       │
-        │                        │     qrData = <base64>        │
-        │                        │                              │
-        │  7. Real-time push:    │                              │
-        │     QR code appears    │                              │
-        │<───────────────────────│                              │
-        │                        │                              │
-        │  8. User scans QR      │                              │
-        │     from WhatsApp      │                              │
-        │     Linked Devices     │                              │
-        │                        │                              │
-        │                        │  9. SCANNED event (signed)   │
-        │                        │<─────────────────────────────│
-        │                        │                              │
-        │                        │  10. Update session:         │
-        │                        │      state = "scanned"       │
-        │                        │                              │
-        │                        │  11. CONNECTED event (signed)│
-        │                        │<─────────────────────────────│
-        │                        │                              │
-        │                        │  12. Update session:         │
-        │                        │      state = "connected"     │
-        │                        │      Store auth credentials  │
-        │                        │      Create waAccount record │
-        │                        │                              │
-        │  13. Dashboard shows   │                              │
-        │      "Connected"       │                              │
-        │<───────────────────────│                              │
-        │                        │                              │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant D as Dashboard (Browser)
+    participant C as Convex
+    participant W as Fly.io (wacli Worker)
+
+    D->>C: Click "Connect WhatsApp"
+    Note over C: Create waConnectSession<br/>state = "created"
+    C->>W: Allocate Fly.io Machine<br/>Start wacli auth mode
+    Note over W: wacli generates QR code
+    W->>C: QR_READY event (signed)
+    Note over C: Update session:<br/>state = "qr_ready"<br/>qrData = base64
+    C->>D: Real-time push: QR code appears
+    Note over D: User scans QR from<br/>WhatsApp Linked Devices
+    W->>C: SCANNED event (signed)
+    Note over C: Update session:<br/>state = "scanned"
+    W->>C: CONNECTED event (signed)
+    Note over C: Update session:<br/>state = "connected"<br/>Store auth credentials<br/>Create waAccount record
+    C->>D: Dashboard shows "Connected"
 ```
 
 ## Session State Machine
 
-```
-                  ┌─────────────────────────────────────────────────────────┐
-                  │              waConnectSession States                    │
-                  └─────────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> created
+    created --> qr_ready : Fly.io Machine allocated,<br>wacli started
 
-                          ┌───────────┐
-                          │  created  │
-                          └─────┬─────┘
-                                │ Fly.io Machine allocated,
-                                │ wacli started
-                                v
-                  ┌──────  ┌──────────┐  ──────┐
-                  │        │ qr_ready │        │
-                  │        └────┬─────┘        │
-                  │             │               │
-                  │  QR scanned │               │ QR not scanned
-                  │  by user    │               │ within 60s
-                  │             v               v
-                  │        ┌─────────┐    ┌─────────┐
-                  │        │ scanned │    │ expired │
-                  │        └────┬────┘    └─────────┘
-                  │             │               │
-                  │  Auth       │               │ Terminal
-                  │  completes  │               v
-                  │             v            [*] END
-                  │       ┌───────────┐
-                  │       │ connected │
-                  │       └───────────┘
-                  │             │
-                  │             │ Terminal
-                  │             v
-                  │          [*] END
-                  │
-                  │  wacli error or
-                  │  transient failure
-                  │             ┌───────────────┐
-                  └────────────>│ retry_pending │
-                                └───────┬───────┘
-                                        │
-                        ┌───────────────┤
-                        │               │
-                        │ Retry ok      │ Max retries
-                        │ (< 3)         │ exceeded
-                        v               v
-                   ┌──────────┐    ┌────────┐
-                   │ qr_ready │    │ failed │
-                   └──────────┘    └────────┘
-                                        │
-                                        │ Terminal
-                                        v
-                                     [*] END
+    qr_ready --> scanned : QR scanned by user
+    qr_ready --> expired : QR not scanned within 60s
+    qr_ready --> retry_pending : wacli error or transient failure
+
+    scanned --> connected : Auth completes
+
+    retry_pending --> qr_ready : Retry ok (< 3 retries)
+    retry_pending --> failed : Max retries exceeded (>= 3)
+
+    connected --> [*]
+    expired --> [*]
+    failed --> [*]
 ```
 
 ## State Transition Table

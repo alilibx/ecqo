@@ -1,101 +1,54 @@
 # Deployment & Infrastructure
 
-This document covers how Ecqo's components are deployed, why specific infrastructure choices were made, and how the monorepo is structured.
+This document covers how Ecqqo's components are deployed, why specific infrastructure choices were made, and how the monorepo is structured.
 
 ## Deployment Topology
 
-```
-+-----------------------------------------------------------------------------------+
-|                              VERCEL                                               |
-|                                                                                   |
-|   +---------------------------+     +-------------------------------+             |
-|   |  Edge Network (CDN)       |     |  Serverless Functions         |             |
-|   |                           |     |                               |             |
-|   |  - Static assets          |     |  - TanStack Start SSR         |             |
-|   |  - CSS, JS bundles        |     |  - Server-side rendering      |             |
-|   |  - Images, fonts          |     |  - API routes (if needed)     |             |
-|   |  - Cache headers          |     |  - Clerk webhook handler      |             |
-|   |                           |     |                               |             |
-|   +---------------------------+     +---------------+---------------+             |
-|                                                     |                             |
-+-----------------------------------------------------|-----------------------------+
-                                                      |
-                            Convex client SDK         |  Clerk JWT
-                            (queries, mutations,      |  verification
-                             subscriptions)            |
-                                                      |
-+-----------------------------------------------------|-----------------------------+
-|                         CONVEX CLOUD                 |                             |
-|                                                      v                            |
-|   +-----------------------------------------------------------+                  |
-|   |                  Convex Deployment                         |                  |
-|   |                                                            |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |   | Query Engine     |  | Mutation Engine  |              |                  |
-|   |   | (real-time subs) |  | (transactional)  |              |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |                                                            |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |   | Action Runner    |  | Scheduler        |              |                  |
-|   |   | (external calls) |  | (cron + delayed) |              |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |                                                            |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |   | Vector Index     |  | File Storage     |              |                  |
-|   |   | (embeddings)     |  | (media, docs)    |              |                  |
-|   |   +------------------+  +------------------+              |                  |
-|   |                                                            |                  |
-|   +-----------------------------------------------------------+                  |
-|                         |              |            |                              |
-|   Managed, auto-scaling |              |            |  No infrastructure           |
-|   Zero-ops              |              |            |  to manage                   |
-+-------------------------|--------------|------------|-----------------------------+
-                          |              |            |
-           AI provider    |   lifecycle  |            |  webhooks
-           API calls      |   commands   |            |
-                          |              |            |
-          +---------------+    +---------+--------+   |
-          |                    |                  |   |
-          v                    v                  |   |
-+-----------------+  +---------------------+     |   |
-| AI PROVIDERS    |  | FLY.IO              |     |   |
-|                 |  |                     |     |   |
-| - OpenAI API   |  |  +--------------+   |     |   |
-| - Anthropic    |  |  | Machine A    |   |     |   |
-| - Groq         |  |  | (User 1)    |   |     |   |
-| - OpenRouter   |  |  | wacli proc  |   |     |   |
-| - Azure OpenAI |  |  +--------------+   |     |   |
-|                 |  |                     |     |   |
-|                 |  |  +--------------+   |     |   |
-|                 |  |  | Machine B    |   |     |   |
-|                 |  |  | (User 2)    |   |     |   |
-|                 |  |  | wacli proc  |   |     |   |
-|                 |  |  +--------------+   |     |   |
-|                 |  |                     |     |   |
-|                 |  |  +--------------+   |     |   |
-|                 |  |  | Machine C    |   |     |   |
-|                 |  |  | (stopped)   |   |     |   |
-|                 |  |  | $0/mo       |   |     |   |
-|                 |  |  +--------------+   |     |   |
-|                 |  |                     |     |   |
-+-----------------+  +---------------------+     |   |
-                                                 |   |
-                     +---------------------+     |   |
-                     | META CLOUD API      |<----+   |
-                     |                     |         |
-                     | - WhatsApp Business |<--------+
-                     |   API               |
-                     | - Webhook delivery  |
-                     | - Message sending   |
-                     +---------------------+
+```mermaid
+flowchart TB
+    subgraph VERCEL["Vercel"]
+        EDGE["Edge Network (CDN)<br/>Static assets · CSS/JS bundles<br/>Images · Fonts · Cache headers"]
+        SSR["Serverless Functions<br/>TanStack Start SSR<br/>API routes · Clerk webhook handler"]
+    end
 
-                     +---------------------+
-                     | EXTERNAL APIS       |<--- Convex Actions
-                     |                     |
-                     | - Google Calendar   |
-                     | - Gmail API         |
-                     | - Stripe API        |
-                     +---------------------+
+    subgraph CONVEX["Convex Cloud"]
+        subgraph DEPLOY["Convex Deployment (managed, auto-scaling, zero-ops)"]
+            QE["Query Engine<br/>(real-time subs)"]
+            ME["Mutation Engine<br/>(transactional)"]
+            AR["Action Runner<br/>(external calls)"]
+            SCH["Scheduler<br/>(cron + delayed)"]
+            VI["Vector Index<br/>(embeddings)"]
+            FS["File Storage<br/>(media, docs)"]
+        end
+    end
+
+    subgraph FLYIO["Fly.io"]
+        MA["Machine A<br/>(User 1) wacli"]
+        MB["Machine B<br/>(User 2) wacli"]
+        MC["Machine C<br/>(stopped, $0/mo)"]
+    end
+
+    subgraph AI["AI Providers"]
+        AIP["OpenAI · Anthropic<br/>Groq · OpenRouter · Azure OpenAI"]
+    end
+
+    subgraph META["Meta Cloud API"]
+        METAAPI["WhatsApp Business API<br/>Webhook delivery · Message sending"]
+    end
+
+    subgraph EXTAPI["External APIs"]
+        EXT["Google Calendar · Gmail API<br/>Stripe API"]
+    end
+
+    SSR -- "Convex client SDK<br/>(queries, mutations, subscriptions)" --> DEPLOY
+    SSR -. "Clerk JWT verification" .-> DEPLOY
+
+    AR -- "AI provider API calls" --> AIP
+    AR -- "lifecycle commands" --> FLYIO
+    FLYIO -- "signed events" --> DEPLOY
+    AR -- "webhooks" --> METAAPI
+    METAAPI -- "webhook delivery" --> DEPLOY
+    AR -- "Convex Actions" --> EXT
 ```
 
 ## Why Fly.io for Connector Workers
@@ -132,7 +85,7 @@ At MVP scale (under 100 users), Fly.io is roughly 3x cheaper and requires a frac
 ## Monorepo Structure
 
 ```
-ecqo/
+ecqqo/
   app/                          # TanStack Start frontend (deploys to Vercel)
     client.tsx                  #   Client hydration entry
     ssr.tsx                     #   SSR entry (createStartHandler)
@@ -233,51 +186,22 @@ ecqo/
 
 ## CI/CD Pipeline
 
-```
-  +------------------+
-  |  git push        |
-  |  (main branch)   |
-  +--------+---------+
-           |
-           v
-  +--------+---------+     +-------------------+     +-------------------+
-  |  GitHub Actions   |     |                   |     |                   |
-  |                   |---->|  Lint + Type Check|---->|  Unit Tests       |
-  |  Triggered on:    |     |  (bun run check)  |     |  (bun run test)   |
-  |  - push to main   |     |                   |     |                   |
-  |  - PR to main     |     +-------------------+     +--------+----------+
-  |                   |                                        |
-  +-------------------+                                        |
-                                                               | all pass
-                                                               v
-                         +-------------------------------------+-----+
-                         |                                           |
-                         v                                           v
-               +---------+----------+                   +------------+---------+
-               |  Vercel Auto       |                   |  Convex Auto         |
-               |  Deploy            |                   |  Deploy              |
-               |                    |                   |                      |
-               |  - Builds app/     |                   |  - Pushes convex/    |
-               |  - SSR functions   |                   |  - Runs migrations   |
-               |  - Edge assets     |                   |  - Updates functions |
-               |                    |                   |                      |
-               |  (via Vercel Git   |                   |  (via npx convex     |
-               |   integration)     |                   |   deploy)            |
-               +--------------------+                   +----------------------+
+```mermaid
+flowchart TB
+    GIT["git push<br/>(main branch)"]
+    GHA["GitHub Actions<br/>Triggered on: push to main · PR to main"]
+    LINT["Lint + Type Check<br/>(bun run check)"]
+    TEST["Unit Tests<br/>(bun run test)"]
+    VERCEL["Vercel Auto Deploy<br/>Builds app/ · SSR functions · Edge assets<br/>(via Vercel Git integration)"]
+    CONVEX["Convex Auto Deploy<br/>Pushes convex/ · Runs migrations<br/>Updates functions<br/>(via npx convex deploy)"]
+    FLY["Fly.io Deploy (Manual or CI)<br/>flyctl deploy services/connector/<br/>Triggered when services/connector/ changes"]
 
-               +--------------------+
-               |  Fly.io Deploy     |
-               |  (Manual or CI)    |
-               |                    |
-               |  - flyctl deploy   |
-               |    services/       |
-               |    connector/      |
-               |                    |
-               |  Triggered:        |
-               |  - When services/  |
-               |    connector/      |
-               |    changes         |
-               +--------------------+
+    GIT --> GHA
+    GHA --> LINT
+    LINT --> TEST
+    TEST -- "all pass" --> VERCEL
+    TEST -- "all pass" --> CONVEX
+    TEST -- "all pass" --> FLY
 ```
 
 ### Deployment Notes
@@ -293,5 +217,5 @@ ecqo/
 2. Clerk application configured with correct redirect URLs
 3. Meta WhatsApp Business account verified and webhook URL configured
 4. Stripe products and prices created, webhook endpoint registered
-5. Fly.io app created with `flyctl apps create ecqo-connector`
+5. Fly.io app created with `flyctl apps create ecqqo-connector`
 6. Convex project linked with `npx convex init` or `npx convex link`

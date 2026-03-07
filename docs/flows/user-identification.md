@@ -2,158 +2,68 @@
 
 ## Problem Statement
 
-Ecqo operates through a **single WhatsApp Business number** powered by the Meta Cloud API. Every user -- whether an owner, principal, or operator -- messages this same number. The system must reliably identify which user is sending each inbound message and route it to the correct agent context, workspace, and conversation state.
+Ecqqo operates through a **single WhatsApp Business number** powered by the Meta Cloud API. Every user -- whether an owner, principal, or operator -- messages this same number. The system must reliably identify which user is sending each inbound message and route it to the correct agent context, workspace, and conversation state.
 
-This is fundamentally different from the wacli-based connection (where Ecqo reads a user's personal WhatsApp). Here, Ecqo's own Business number **receives** messages from users. The identification challenge: given an inbound message from phone number `+971501234567`, determine which Ecqo user account this belongs to, and which workspace/agent context to activate.
+This is fundamentally different from the wacli-based connection (where Ecqqo reads a user's personal WhatsApp). Here, Ecqqo's own Business number **receives** messages from users. The identification challenge: given an inbound message from phone number `+971501234567`, determine which Ecqqo user account this belongs to, and which workspace/agent context to activate.
 
 ## Inbound Message Identification Flow
 
-```
-    User's WhatsApp                Meta Cloud API              Convex
-    ──────────────                 ──────────────              ──────
-         │                              │                        │
-         │  1. User sends message       │                        │
-         │     to Ecqo's number         │                        │
-         │─────────────────────────────>│                        │
-         │                              │                        │
-         │                              │  2. Webhook fires      │
-         │                              │     POST /webhook      │
-         │                              │     payload includes:  │
-         │                              │     - sender phone     │
-         │                              │     - message body     │
-         │                              │     - timestamp        │
-         │                              │─────────────────────────>│
-         │                              │                        │
-         │                              │                        │  3. Validate webhook
-         │                              │                        │     signature (HMAC)
-         │                              │                        │
-         │                              │                        │  4. Normalize phone
-         │                              │                        │     to E.164 format
-         │                              │                        │
-         │                              │                        │  5. Lookup phone in
-         │                              │                        │     waAccounts table
-         │                              │                        │
-         │                              │                        │     ┌──────────────┐
-         │                              │                        │     │ Phone found? │
-         │                              │                        │     └──────┬───────┘
-         │                              │                        │            │
-         │                              │                        │     YES    │    NO
-         │                              │                        │     ┌──────┴──────┐
-         │                              │                        │     v             v
-         │                              │                        │  Route to      Send
-         │                              │                        │  user's        onboarding
-         │                              │                        │  agent         message
-         │                              │                        │  context
-         │                              │                        │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User's WhatsApp
+    participant M as Meta Cloud API
+    participant C as Convex
+
+    U->>M: User sends message to Ecqqo's number
+    M->>C: Webhook fires POST /webhook<br/>(sender phone, message body, timestamp)
+    Note over C: Validate webhook signature (HMAC)
+    Note over C: Normalize phone to E.164 format
+    Note over C: Lookup phone in waAccounts table
+
+    alt Phone found
+        Note over C: Route to user's agent context
+    else Phone not found
+        Note over C: Send onboarding message
+    end
 ```
 
 ## Registration and Phone Binding Flow
 
-Before a user can interact with Ecqo via WhatsApp, their phone number must be bound to their account. This happens during onboarding:
+Before a user can interact with Ecqqo via WhatsApp, their phone number must be bound to their account. This happens during onboarding:
 
-```
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │                        Phone Number Binding Flow                           │
- └─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    A["**Step 1: Sign Up**<br/>User signs up via Dashboard (Clerk)<br/>Provides: email, phone, workspace name"]
+    B["**Step 2: Verify**<br/>Ecqqo sends OTP via WhatsApp<br/>User enters OTP in dashboard<br/>Convex validates OTP + marks phone verified"]
+    C["**Step 3: Bind**<br/>waAccount record created<br/>with verified phone number<br/>Phone bound to user and workspace<br/>Inbound msgs will route here"]
 
-  Step 1: Sign Up                Step 2: Verify               Step 3: Bind
-  ─────────────                  ──────────────                ──────────────
-
-  ┌──────────────┐          ┌───────────────────┐        ┌──────────────────┐
-  │   User signs │          │  Ecqo sends OTP   │        │  waAccount       │
-  │   up via     │          │  via WhatsApp to  │        │  record created  │
-  │   Dashboard  │────────> │  provided number  │──────> │  with verified   │
-  │   (Clerk)    │          │                   │        │  phone number    │
-  │              │          │  User enters OTP  │        │                  │
-  │  Provides:   │          │  in dashboard     │        │  Phone is now    │
-  │  - email     │          │                   │        │  bound to user   │
-  │  - phone     │          │  Convex validates │        │  and workspace   │
-  │  - workspace │          │  OTP + marks      │        │                  │
-  │    name      │          │  phone verified   │        │  Inbound msgs    │
-  └──────────────┘          └───────────────────┘        │  will route here │
-                                                         └──────────────────┘
+    A --> B --> C
 ```
 
 ### Why OTP via WhatsApp?
 
-The OTP is sent via Ecqo's WhatsApp Business number to the user's phone. This serves dual purpose:
+The OTP is sent via Ecqqo's WhatsApp Business number to the user's phone. This serves dual purpose:
 
 1. **Verifies phone ownership** -- only the person with the phone can read the OTP.
-2. **Establishes the conversation** -- the user now has a chat thread with Ecqo, making future interactions seamless.
+2. **Establishes the conversation** -- the user now has a chat thread with Ecqqo, making future interactions seamless.
 
 ## Complete Identification Pipeline
 
-```
-  ┌─────────────────────────────────────────────────────────────────────────────────┐
-  │                     Inbound Message Identification Pipeline                     │
-  └─────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["Meta Cloud API Webhook"] --> B{"Validate webhook<br/>HMAC signature"}
+    B -- FAIL --> R["Reject (401)"]
+    B -- PASS --> C["Extract sender phone<br/>number from payload"]
+    C --> D["Normalize to E.164 format"]
+    D --> E["Query waAccounts<br/>by phone number"]
 
-  Meta Cloud API Webhook
-         │
-         v
-  ┌──────────────────┐
-  │ Validate webhook │──── FAIL ──> Reject (401)
-  │ HMAC signature   │
-  └────────┬─────────┘
-           │ PASS
-           v
-  ┌──────────────────┐
-  │ Extract sender   │
-  │ phone number     │
-  │ from payload     │
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐
-  │ Normalize to     │     +971-50-123-4567  -->  +971501234567
-  │ E.164 format     │     00971501234567    -->  +971501234567
-  │                  │     0501234567 (AE)   -->  +971501234567
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐     ┌────────────────────────────────────┐
-  │ Query waAccounts │     │  waAccounts table                  │
-  │ by phone number  │────>│  index: by_phone (E.164)           │
-  │                  │     │  fields: userId, workspaceId,      │
-  │                  │     │          phone, verified, role      │
-  └────────┬─────────┘     └────────────────────────────────────┘
-           │
-           ├─── FOUND ──────────────────────────┐
-           │                                    v
-           │                          ┌───────────────────┐
-           │                          │ Load user context  │
-           │                          │ - workspace        │
-           │                          │ - role (owner /    │
-           │                          │   principal /      │
-           │                          │   operator)        │
-           │                          │ - agent state      │
-           │                          │ - memory context   │
-           │                          └─────────┬─────────┘
-           │                                    │
-           │                                    v
-           │                          ┌───────────────────┐
-           │                          │ Check if message  │
-           │                          │ is an approval    │──── YES ──> Route to
-           │                          │ response          │            approval
-           │                          └─────────┬─────────┘            handler
-           │                                    │ NO
-           │                                    v
-           │                          ┌───────────────────┐
-           │                          │ Dispatch to agent │
-           │                          │ orchestrator for  │
-           │                          │ this user         │
-           │                          └───────────────────┘
-           │
-           └─── NOT FOUND ──────────────────────┐
-                                                v
-                                      ┌───────────────────┐
-                                      │ Send onboarding   │
-                                      │ message:          │
-                                      │ "Welcome to Ecqo! │
-                                      │  Sign up at       │
-                                      │  ecqo.com to get  │
-                                      │  started."        │
-                                      └───────────────────┘
+    E -- FOUND --> F["Load user context<br/>(workspace, role, agent state,<br/>memory context)"]
+    F --> G{"Is message an<br/>approval response?"}
+    G -- YES --> H["Route to approval handler"]
+    G -- NO --> I["Dispatch to agent<br/>orchestrator for this user"]
+
+    E -- NOT FOUND --> J["Send onboarding message:<br/>Welcome to Ecqqo!<br/>Sign up at ecqqo.com"]
 ```
 
 ## Edge Cases
@@ -174,12 +84,12 @@ Database constraint: `waAccounts` table has a unique index on `phone`.
    - Any pending approval requests on the old number are migrated.
 4. Messages from the old number will no longer route to this user.
 
-### Unregistered User Messages Ecqo
+### Unregistered User Messages Ecqqo
 
-When someone who hasn't signed up sends a message to Ecqo's WhatsApp number:
+When someone who hasn't signed up sends a message to Ecqqo's WhatsApp number:
 
 - The phone lookup returns no match.
-- Ecqo responds with a friendly onboarding message (templated, pre-approved by Meta).
+- Ecqqo responds with a friendly onboarding message (templated, pre-approved by Meta).
 - The message is logged for analytics but no agent context is created.
 - Rate limiting applies: max 3 onboarding messages per phone per 24h to prevent abuse.
 
@@ -215,33 +125,12 @@ The Meta Cloud API provides strong guarantees against phone number spoofing:
 
 4. **Binding verification** -- The OTP flow during registration proves the user controls the phone number at binding time. Combined with Meta's ongoing device verification, this provides continuous assurance.
 
-```
-  Security Layers
-  ───────────────
+```mermaid
+flowchart TD
+    L1["**Layer 1: Meta Cloud API**<br/>Meta verifies sender identity via<br/>SIM/device binding. Cannot be spoofed<br/>at the WhatsApp protocol level."]
+    L2["**Layer 2: Webhook HMAC**<br/>HMAC-SHA256 signature on every webhook.<br/>Prevents forged HTTP calls to our endpoint."]
+    L3["**Layer 3: OTP Binding**<br/>Phone ownership verified during signup.<br/>Only verified phones are bound to accounts."]
+    L4["**Layer 4: Role-based**<br/>Sensitive operations require Clerk auth<br/>via dashboard. WhatsApp used for routing<br/>and approvals only."]
 
-  Layer 1: Meta Cloud API
-  ┌─────────────────────────────────────────────┐
-  │ Meta verifies sender identity via           │
-  │ SIM/device binding. Cannot be spoofed       │
-  │ at the WhatsApp protocol level.             │
-  └──────────────────────┬──────────────────────┘
-                         │
-  Layer 2: Webhook HMAC  │
-  ┌──────────────────────┴──────────────────────┐
-  │ HMAC-SHA256 signature on every webhook.     │
-  │ Prevents forged HTTP calls to our endpoint. │
-  └──────────────────────┬──────────────────────┘
-                         │
-  Layer 3: OTP Binding   │
-  ┌──────────────────────┴──────────────────────┐
-  │ Phone ownership verified during signup.     │
-  │ Only verified phones are bound to accounts. │
-  └──────────────────────┬──────────────────────┘
-                         │
-  Layer 4: Role-based    │
-  ┌──────────────────────┴──────────────────────┐
-  │ Sensitive operations require Clerk auth     │
-  │ via dashboard. WhatsApp used for routing    │
-  │ and approvals only.                         │
-  └─────────────────────────────────────────────┘
+    L1 --> L2 --> L3 --> L4
 ```

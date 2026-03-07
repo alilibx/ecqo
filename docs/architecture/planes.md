@@ -1,94 +1,62 @@
 # Architectural Planes
 
-Ecqo's architecture is organized into four distinct planes, each with a clear responsibility boundary. This separation ensures that concerns like user interaction, data management, connectivity, and intelligence remain decoupled, allowing independent evolution and failure isolation.
+Ecqqo's architecture is organized into four distinct planes, each with a clear responsibility boundary. This separation ensures that concerns like user interaction, data management, connectivity, and intelligence remain decoupled, allowing independent evolution and failure isolation.
 
 ## Plane Interaction Diagram
 
-```
-+=======================================================================+
-||                                                                     ||
-||                       EXPERIENCE PLANE                              ||
-||                                                                     ||
-||   +-------------------+     +------------+     +----------------+   ||
-||   | TanStack Start    |     | Clerk      |     | WhatsApp       |   ||
-||   | Dashboard         |     | Auth       |     | Chat UI        |   ||
-||   | (Vercel)          |     | (JWT/RBAC) |     | (Meta API)     |   ||
-||   +--------+----------+     +------+-----+     +-------+--------+   ||
-||            |                       |                    |            ||
-+=============|=======================|====================|============+
-              |  queries/mutations    |  identity          |  webhooks
-              |  subscriptions        |  tokens            |  messages
-              v                       v                    v
-+=============|=======================|====================|============+
-||            |                       |                    |            ||
-||            +----------+------------+--------------------+            ||
-||                       |                                             ||
-||                       v                                             ||
-||              +--------+---------------------------+                 ||
-||              |        CONVEX (Source of Truth)     |                 ||
-||              |                                    |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |  | Identity   | | Message Store |  |                 ||
-||              |  | & Roles    | | & History     |  |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |                                    |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |  | Policies & | | Agent Runs &  |  |                 ||
-||              |  | Approvals  | | Audit Log     |  |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |                                    |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |  | Memory &   | | Ingestion     |  |                 ||
-||              |  | Vectors    | | State/Cursors |  |                 ||
-||              |  +------------+ +---------------+  |                 ||
-||              |                                    |                 ||
-||              +--------+-------+----------+--------+                 ||
-||                       |       |          |                          ||
-||                 CONTROL PLANE |          |                          ||
-||                               |          |                          ||
-+===============================|==========|===========================+
-              lifecycle commands |          | orchestration calls
-              signed events     |          | AI provider requests
-                                |          |
-+===============================|==========|===========================+
-||                              |          |                           ||
-||   +-------------+    +------+------+   |    +-------------------+  ||
-||   | WhatsApp    |    | Fly.io      |   |    |                   |  ||
-||   | Web Network |<---| Machine     |   |    |                   |  ||
-||   |             |    |             |   |    |                   |  ||
-||   +-------------+    | - wacli     |   |    |                   |  ||
-||                      | - 1 per user|   |    |                   |  ||
-||                      | - isolated  |   |    |                   |  ||
-||                      +-------------+   |    |                   |  ||
-||                                        |    |                   |  ||
-||   CONNECTOR PLANE                      |    |                   |  ||
-||                                        |    |                   |  ||
-+=========================================|====|===================+  |
-                                          |    |                      |
-+=========================================|====|======================+
-||                                        |    |                      ||
-||   +----------------+    +-------------+|   +|------------------+   ||
-||   | Specialist     |    | Memory      ||    | Vercel AI SDK    |   ||
-||   | Agents         |    | Retrieval   ||    |                  |   ||
-||   |                |    |             ||    | - OpenAI         |   ||
-||   | - Scheduler    |    | - Vector    |v    | - Anthropic      |   ||
-||   | - Communicator |    |   search    +---->| - Groq           |   ||
-||   | - Researcher   |    | - Context   |    | - OpenRouter     |   ||
-||   | - Operator     |    |   assembly  |    | - Azure          |   ||
-||   +-------+--------+    +------+------+    +-------------------+   ||
-||           |                    |                                    ||
-||           +------>  Orchestrator  <----+                            ||
-||                   (Convex Action)                                   ||
-||                        |                                            ||
-||                        v                                            ||
-||               +--------+--------+     +------------------------+   ||
-||               | Tool Execution  |---->| External Services      |   ||
-||               | & Approval Flow |     | (Google, Stripe, etc.) |   ||
-||               +-----------------+     +------------------------+   ||
-||                                                                    ||
-||   INTELLIGENCE PLANE                                               ||
-||                                                                    ||
-+=====================================================================+
+```mermaid
+flowchart TB
+    subgraph EP["Experience Plane"]
+        DASH["TanStack Start Dashboard<br/>(Vercel)"]
+        CLERK["Clerk Auth<br/>(JWT / RBAC)"]
+        WACHAT["WhatsApp Chat UI<br/>(Meta API)"]
+    end
+
+    subgraph CP["Control Plane"]
+        subgraph CONVEX["Convex (Source of Truth)"]
+            ID["Identity & Roles"]
+            MSG["Message Store & History"]
+            POL["Policies & Approvals"]
+            RUNS["Agent Runs & Audit Log"]
+            MEM["Memory & Vectors"]
+            ING["Ingestion State / Cursors"]
+        end
+    end
+
+    subgraph CONN["Connector Plane"]
+        WAWEB["WhatsApp Web Network"]
+        FLY["Fly.io Machine<br/>wacli · 1 per user · isolated"]
+    end
+
+    subgraph IP["Intelligence Plane"]
+        AGENTS["Specialist Agents<br/>Scheduler · Communicator<br/>Researcher · Operator"]
+        MEMRET["Memory Retrieval<br/>Vector search · Context assembly"]
+        AISDK["Vercel AI SDK<br/>OpenAI · Anthropic · Groq<br/>OpenRouter · Azure"]
+        ORCH["Orchestrator<br/>(Convex Action)"]
+        TOOLS["Tool Execution<br/>& Approval Flow"]
+        EXTSVC["External Services<br/>(Google, Stripe, etc.)"]
+    end
+
+    DASH -- "queries / mutations<br/>subscriptions" --> CONVEX
+    CLERK -- "identity tokens" --> CONVEX
+    WACHAT -- "webhooks / messages" --> CONVEX
+
+    CONVEX -- "lifecycle commands" --> FLY
+    FLY -- "signed events" --> CONVEX
+    FLY -- "wacli session" --> WAWEB
+
+    CONVEX -- "orchestration calls" --> ORCH
+    ORCH --> AGENTS
+    ORCH --> MEMRET
+    MEMRET -- "AI provider requests" --> AISDK
+    AGENTS --> ORCH
+    ORCH --> TOOLS
+    TOOLS --> EXTSVC
+
+    style EP fill:#e3f2fd,stroke:#1565c0,color:#000
+    style CP fill:#fff3e0,stroke:#e65100,color:#000
+    style CONN fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style IP fill:#f3e5f5,stroke:#6a1b9a,color:#000
 ```
 
 ## 1. Experience Plane
@@ -96,7 +64,7 @@ Ecqo's architecture is organized into four distinct planes, each with a clear re
 The Experience Plane handles all user-facing interactions across two surfaces: the WhatsApp chat interface (primary) and the web dashboard (secondary).
 
 ### WhatsApp Interface
-- Users interact with a single Ecqo WhatsApp Business number
+- Users interact with a single Ecqqo WhatsApp Business number
 - Messages arrive via Meta Cloud API webhooks into Convex
 - Responses are sent back through the Meta Cloud API send endpoint
 - The phone number serves as the identity anchor -- no login required for WhatsApp interactions
@@ -156,26 +124,26 @@ The official Meta Cloud API only provides messages sent after the business numbe
 - Media download and processing
 
 ### Lifecycle Management
-```
-  Convex (Control Plane)                    Fly.io Machine
-  +---------------------+                  +------------------+
-  |                     |   POST /start    |                  |
-  |  User onboards  ----|----------------->|  Machine boots   |
-  |                     |                  |  wacli starts    |
-  |                     |   POST /status   |  QR generated    |
-  |  Poll status    ----|----------------->|                  |
-  |                     |<-----------------+--- returns QR    |
-  |                     |                  |                  |
-  |  User scans QR      |                  |  Session active  |
-  |                     |                  |                  |
-  |                     |   signed events  |                  |
-  |  Receive events <---|<-----------------+--- sync messages |
-  |  Validate sigs      |                  |    contacts      |
-  |  Store data         |                  |    groups        |
-  |                     |                  |                  |
-  |  User churns    ----|-- POST /stop --->|  Machine stops   |
-  |                     |                  |  ($0 when off)   |
-  +---------------------+                  +------------------+
+```mermaid
+sequenceDiagram
+    participant Convex as Convex (Control Plane)
+    participant Fly as Fly.io Machine
+
+    Convex->>Fly: POST /start
+    Note right of Fly: Machine boots<br/>wacli starts<br/>QR generated
+
+    Convex->>Fly: POST /status
+    Fly-->>Convex: Returns QR code
+
+    Note over Convex,Fly: User scans QR — session active
+
+    loop Ongoing sync
+        Fly->>Convex: Signed events (messages, contacts, groups)
+        Note left of Convex: Validate signatures<br/>Store data
+    end
+
+    Convex->>Fly: POST /stop
+    Note right of Fly: Machine stops ($0 when off)
 ```
 
 ### Isolation Guarantees
@@ -204,24 +172,20 @@ The Intelligence Plane contains all AI reasoning, tool execution, and approval w
 
 ### Provider Agnosticism
 The Vercel AI SDK provides a unified interface across providers:
-```
-  +-------------------+
-  | Orchestrator      |
-  | (Convex Action)   |
-  +--------+----------+
-           |
-           v
-  +--------+----------+
-  | Vercel AI SDK     |
-  | generateText()    |
-  | streamText()      |
-  | generateObject()  |
-  +---+-----+-----+--+
-      |     |     |
-      v     v     v
-  +-----+ +---+ +------+
-  | OAI | | A | | Groq |  ...
-  +-----+ +---+ +------+
+```mermaid
+flowchart TB
+    ORCH["Orchestrator<br/>(Convex Action)"]
+    SDK["Vercel AI SDK<br/>generateText() · streamText()<br/>generateObject()"]
+    OAI["OpenAI"]
+    ANT["Anthropic"]
+    GROQ["Groq"]
+    MORE["OpenRouter<br/>Azure · ..."]
+
+    ORCH --> SDK
+    SDK --> OAI
+    SDK --> ANT
+    SDK --> GROQ
+    SDK --> MORE
 ```
 
 Switching providers is a configuration change, not a code change. Different specialists can use different providers optimized for their task (e.g., fast models for classification, powerful models for planning).

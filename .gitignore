@@ -4,4 +4,5 @@ dist
 .vercel/output
 
 .env.local
-.vitepress
+.vitepress/cache
+.vitepress/dist

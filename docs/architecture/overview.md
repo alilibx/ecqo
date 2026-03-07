@@ -1,96 +1,64 @@
 # System Overview
 
-Ecqo is a WhatsApp-native executive assistant that lets high-net-worth operators delegate scheduling, communications, and administrative tasks through natural WhatsApp conversations. The system identifies users by phone number, processes requests through an AI orchestration layer, and executes actions across integrated services with human-in-the-loop approval.
+Ecqqo is a WhatsApp-native executive assistant that lets high-net-worth operators delegate scheduling, communications, and administrative tasks through natural WhatsApp conversations. The system identifies users by phone number, processes requests through an AI orchestration layer, and executes actions across integrated services with human-in-the-loop approval.
 
 ## Component Diagram
 
-```
-+-----------------------------------------------------------------------------------+
-|                                   INTERNET                                        |
-+-----------------------------------------------------------------------------------+
+```mermaid
+flowchart TB
+    subgraph User
+        WA["User's WhatsApp App"]
+    end
 
-  +-------------+        +-----------------------+        +------------------------+
-  |             |  msg   |                       | webook |                        |
-  |   User's    |------->|  Meta Cloud API       |------->|  Convex Cloud          |
-  |   WhatsApp  |<-------|  (WhatsApp Business)  |<-------|  (Control Plane)       |
-  |   App       |  reply |                       | send   |                        |
-  +-------------+        +-----------+-----------+        +-----------+------------+
-                                     |                                |
-                                     |                    +-----------+------------+
-                                     |                    |                        |
-                                     |                    |  +------------------+  |
-                                     |                    |  | Database         |  |
-                                     |                    |  | - Users/Identity |  |
-                                     |                    |  | - Messages       |  |
-                                     |                    |  | - Agent Runs     |  |
-                                     |                    |  | - Memory Store   |  |
-                                     |                    |  | - Audit Log      |  |
-                                     |                    |  | - Policies       |  |
-                                     |                    |  +------------------+  |
-                                     |                    |                        |
-                                     |                    |  +------------------+  |
-                                     |                    |  | Functions        |  |
-                                     |                    |  | - Mutations      |  |
-                                     |                    |  | - Queries        |  |
-                                     |                    |  | - Actions        |  |
-                                     |                    |  | - Scheduled Fns  |  |
-                                     |                    |  | - Vector Search  |  |
-                                     |                    |  +------------------+  |
-                                     |                    |                        |
-                                     |                    +---+-----+---------+----+
-                                     |                        |     |         |
-                          +----------+----------+             |     |         |
-                          |                     |   signed    |     |         |
-                          |  WhatsApp Web       |   events    |     |         |
-                          |  Network            |<------+     |     |         |
-                          |                     |       |     |     |         |
-                          +----------+----------+       |     |     |         |
-                                     ^                  |     |     |         |
-                                     | wacli            |     |     |         |
-                                     | session          |     |     |         |
-                          +----------+----------+       |     |     |         |
-                          |                     |-------+     |     |         |
-                          |  Fly.io Machine     |             |     |         |
-                          |  (Connector Worker) |<------------+     |         |
-                          |                     |  lifecycle        |         |
-                          |  - 1 per user       |  commands         |         |
-                          |  - wacli process    |                   |         |
-                          |  - isolated session |                   |         |
-                          +---------------------+                   |         |
-                                                                    |         |
-  +---------------------+        +---------------------+           |         |
-  |                     |        |                     |    AI     |         |
-  |  Vercel             |        |  Clerk              |    calls  |         |
-  |  (Dashboard)        |------->|  (Auth Provider)    |           |         |
-  |                     |        |                     |           |         |
-  |  - TanStack Start   |        |  - JWT tokens       |           |         |
-  |  - React 19 SSR     |        |  - User management  |           |         |
-  |  - Edge + Serverless|        |  - Role-based access|           |         |
-  +----------+----------+        +---------------------+           |         |
-             |                                                     |         |
-             | queries/mutations (Convex client)                   |         |
-             +-----------------------------------------------------+         |
-                                                                             |
-                          +---------------------+                            |
-                          |                     |<---------------------------+
-                          |  AI Providers       |
-                          |  (Vercel AI SDK)    |
-                          |                     |
-                          |  - OpenAI           |
-                          |  - Anthropic        |
-                          |  - Groq             |
-                          |  - OpenRouter       |
-                          |  - Azure OpenAI     |
-                          +---------------------+
+    subgraph "Meta Platform"
+        META["Meta Cloud API<br/>(WhatsApp Business)"]
+    end
 
-                          +---------------------+
-                          |                     |<------ Convex Actions ------+
-                          |  External Services  |
-                          |                     |
-                          |  - Google Calendar  |
-                          |  - Gmail            |
-                          |  - Stripe (billing) |
-                          +---------------------+
+    subgraph "Convex Cloud (Control Plane)"
+        DB[("Database<br/>Users/Identity · Messages<br/>Agent Runs · Memory Store<br/>Audit Log · Policies")]
+        FN["Functions<br/>Mutations · Queries · Actions<br/>Scheduled Fns · Vector Search"]
+    end
+
+    subgraph "Fly.io (Connector Plane)"
+        FLY["Fly.io Machine<br/>(Connector Worker)<br/>1 per user · wacli process<br/>isolated session"]
+    end
+
+    subgraph "WhatsApp Web"
+        WAWEB["WhatsApp Web Network"]
+    end
+
+    subgraph "Vercel (Dashboard)"
+        DASH["TanStack Start<br/>React 19 SSR<br/>Edge + Serverless"]
+    end
+
+    subgraph "Auth"
+        CLERK["Clerk<br/>JWT tokens · User management<br/>Role-based access"]
+    end
+
+    subgraph "AI Providers (Vercel AI SDK)"
+        AI["OpenAI · Anthropic<br/>Groq · OpenRouter · Azure OpenAI"]
+    end
+
+    subgraph "External Services"
+        EXT["Google Calendar · Gmail<br/>Stripe (billing)"]
+    end
+
+    WA -- "message" --> META
+    META -- "reply" --> WA
+    META -- "webhook" --> FN
+    FN -- "send" --> META
+
+    FN -- "lifecycle commands" --> FLY
+    FLY -- "signed events" --> FN
+    FLY -- "wacli session" --> WAWEB
+
+    DASH -- "auth" --> CLERK
+    DASH -- "queries / mutations<br/>subscriptions" --> FN
+
+    FN -- "AI calls" --> AI
+    FN -- "Convex Actions" --> EXT
+
+    DB --- FN
 ```
 
 ## Tech Stack
@@ -125,53 +93,48 @@ Ecqo is a WhatsApp-native executive assistant that lets high-net-worth operators
 
 The system has four distinct trust boundaries that govern how components authenticate and authorize communication:
 
-```
-+-----------------------------------------------------------------------+
-|  TRUST BOUNDARY 1: User Perimeter                                     |
-|                                                                       |
-|  User's WhatsApp App  <--- untrusted input --->  Meta Cloud API       |
-|                                                                       |
-|  - Messages are plain text from end users                             |
-|  - Phone number is the identity anchor (verified by Meta)             |
-|  - All input must be sanitized and validated before processing        |
-+-----------------------------------------------------------------------+
-                                    |
-                                    v
-+-----------------------------------------------------------------------+
-|  TRUST BOUNDARY 2: Platform Perimeter                                 |
-|                                                                       |
-|  Meta Cloud API  <--- webhook signature verification --->  Convex     |
-|  Clerk           <--- JWT verification --->                Convex     |
-|  Vercel          <--- Convex client auth --->              Convex     |
-|                                                                       |
-|  - Webhook payloads verified via Meta signature                       |
-|  - Dashboard requests authenticated via Clerk JWT                     |
-|  - All external calls into Convex go through auth middleware          |
-+-----------------------------------------------------------------------+
-                                    |
-                                    v
-+-----------------------------------------------------------------------+
-|  TRUST BOUNDARY 3: Connector Perimeter                                |
-|                                                                       |
-|  Convex  <--- signed events + lifecycle API --->  Fly.io Machine      |
-|                                                                       |
-|  - Workers authenticate to Convex with scoped service tokens          |
-|  - Events from workers are signed and validated before storage        |
-|  - Convex controls machine lifecycle (start/stop/restart)             |
-|  - Workers have no direct access to other users' data                 |
-+-----------------------------------------------------------------------+
-                                    |
-                                    v
-+-----------------------------------------------------------------------+
-|  TRUST BOUNDARY 4: External Services Perimeter                        |
-|                                                                       |
-|  Convex Actions  <--- OAuth / API keys --->  Google, Stripe, AI      |
-|                                                                       |
-|  - OAuth tokens stored encrypted in Convex, refreshed automatically   |
-|  - API keys stored as Convex environment variables (never in code)    |
-|  - AI provider calls never include raw user credentials               |
-|  - Stripe webhook signatures verified before processing               |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TB
+    subgraph TB1["Trust Boundary 1: User Perimeter"]
+        direction LR
+        U_WA["User's WhatsApp App"]
+        U_META["Meta Cloud API"]
+        U_WA -- "untrusted input" --- U_META
+    end
+
+    subgraph TB2["Trust Boundary 2: Platform Perimeter"]
+        direction LR
+        P_META["Meta Cloud API"]
+        P_CLERK["Clerk"]
+        P_VERCEL["Vercel"]
+        P_CONVEX["Convex"]
+        P_META -- "webhook signature verification" --- P_CONVEX
+        P_CLERK -- "JWT verification" --- P_CONVEX
+        P_VERCEL -- "Convex client auth" --- P_CONVEX
+    end
+
+    subgraph TB3["Trust Boundary 3: Connector Perimeter"]
+        direction LR
+        C_CONVEX["Convex"]
+        C_FLY["Fly.io Machine"]
+        C_CONVEX -- "signed events +<br/>lifecycle API" --- C_FLY
+    end
+
+    subgraph TB4["Trust Boundary 4: External Services Perimeter"]
+        direction LR
+        E_CONVEX["Convex Actions"]
+        E_EXT["Google · Stripe · AI Providers"]
+        E_CONVEX -- "OAuth / API keys" --- E_EXT
+    end
+
+    TB1 --> TB2
+    TB2 --> TB3
+    TB3 --> TB4
+
+    style TB1 fill:#fff3e0,stroke:#e65100,color:#000
+    style TB2 fill:#e3f2fd,stroke:#1565c0,color:#000
+    style TB3 fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style TB4 fill:#fce4ec,stroke:#c62828,color:#000
 ```
 
 Each boundary enforces the principle of least privilege: components only receive the credentials and data they need to perform their specific function. Cross-boundary communication always flows through authenticated, validated channels.

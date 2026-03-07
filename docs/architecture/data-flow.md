@@ -1,158 +1,60 @@
 # End-to-End Data Flow
 
-This document traces the complete path of data through the Ecqo system for two critical flows: an agent-driven scheduling request and the background message sync/ingestion pipeline.
+This document traces the complete path of data through the Ecqqo system for two critical flows: an agent-driven scheduling request and the background message sync/ingestion pipeline.
 
 ## Flow 1: Scheduling Request
 
-A user sends "Schedule meeting with Sarah tomorrow at 3pm" to the Ecqo WhatsApp number. Here is the complete end-to-end flow from message send to calendar confirmation.
+A user sends "Schedule meeting with Sarah tomorrow at 3pm" to the Ecqqo WhatsApp number. Here is the complete end-to-end flow from message send to calendar confirmation.
 
-```
- USER                META CLOUD API         CONVEX (Control Plane)
- +----------+        +---------------+      +------------------------------------------+
- |          |  msg   |               |  webhook (POST /webhook)                        |
- | WhatsApp |------->| WhatsApp      |----->| 1. Verify Meta signature                 |
- | App      |        | Business API  |      |    (HMAC-SHA256 with META_APP_SECRET)     |
- |          |        |               |      |                                          |
- |          |        +---------------+      | 2. Extract phone number + message body   |
- |          |                               |                                          |
- |          |                               | 3. Lookup user by phone number           |
- |          |                               |    +------------------+                  |
- |          |                               |    | users table      |                  |
- |          |                               |    | phone: +971...   |---> user found   |
- |          |                               |    +------------------+                  |
- |          |                               |                                          |
- |          |                               | 4. Store inbound message                 |
- |          |                               |    +------------------+                  |
- |          |                               |    | messages table   |                  |
- |          |                               |    | from: user_123   |                  |
- |          |                               |    | body: "Schedule."|                  |
- |          |                               |    | ts: 1712345600   |                  |
- |          |                               |    +------------------+                  |
- |          |                               |                                          |
- |          |                               | 5. Schedule agent run                    |
- |          |                               |    (ctx.scheduler.runAfter)              |
- |          |                               |                                          |
- +----------+                               +-------------------+----------------------+
-                                                                |
-                                                                | scheduled function fires
-                                                                v
-                                            +-------------------+----------------------+
-                                            |  INTELLIGENCE PLANE (Convex Action)      |
-                                            |                                          |
-                                            |  6. Orchestrator starts                  |
-                                            |                                          |
-                                            |  7. Retrieve context:                    |
-                                            |     +-----------------------------+      |
-                                            |     | a. Recent messages (last 20)|      |
-                                            |     | b. Vector search memories:  |      |
-                                            |     |    "Sarah" -> contact info  |      |
-                                            |     |    "meetings" -> prefs      |      |
-                                            |     | c. User policies:           |      |
-                                            |     |    calendar_approval: true  |      |
-                                            |     |    default_duration: 30min  |      |
-                                            |     +-----------------------------+      |
-                                            |                                          |
-                                            |  8. Call AI provider (Vercel AI SDK)     |
-                                            |     +-----------------------------+      |
-                                            |     | Provider: OpenAI gpt-4o    |      |
-                                            |     | System: "You are Ecqo..."  |      |
-                                            |     | Context: [memories, msgs]  |      |
-                                            |     | Tools: [create_event,      |      |
-                                            |     |  lookup_contact, ...]      |      |
-                                            |     +-----------------------------+      |
-                                            |                                          |
-                                            |  9. AI returns tool call:                |
-                                            |     create_event({                       |
-                                            |       title: "Meeting with Sarah",       |
-                                            |       date: "2026-04-06T15:00:00",       |
-                                            |       duration: 30,                      |
-                                            |       attendees: ["sarah@email.com"]     |
-                                            |     })                                   |
-                                            |                                          |
-                                            | 10. Policy check: calendar_approval=true |
-                                            |     --> Approval required                |
-                                            |                                          |
-                                            +-------------------+----------------------+
-                                                                |
-                                                                | create approval record
-                                                                v
- OPERATOR            META CLOUD API         +-------------------+----------------------+
- +----------+        +---------------+      |                                          |
- |          |  notif |               | send | 11. Create approval request              |
- | WhatsApp |<-------| WhatsApp      |<-----+     +-------------------------+          |
- | App      |        | Business API  |      |     | approvals table         |          |
- | (Operator)|       |               |      |     | type: calendar_create   |          |
- |          |        +---------------+      |     | status: pending         |          |
- |          |                               |     | payload: {event data}   |          |
- |          |  "Approve meeting with        |     | run_id: run_456         |          |
- |          |   Sarah tomorrow 3pm?         |     +-------------------------+          |
- |          |   Reply YES or NO"            |                                          |
- |          |                               | 12. Send approval request to operator    |
- |          |--------- "YES" ------------->|     via Meta Cloud API                    |
- |          |                               |                                          |
- |          |        +---------------+      | 13. Operator replies "YES"               |
- |          |        | WhatsApp      |----->|     - Webhook receives reply             |
- |          |        | Business API  |      |     - Match to pending approval          |
- |          |        +---------------+      |     - Update status: approved            |
- |          |                               |                                          |
- +----------+                               | 14. Resume agent run                     |
-                                            |                                          |
-                                            +-------------------+----------------------+
-                                                                |
-                                                                | approval granted
-                                                                v
-                                            +-------------------+----------------------+
-                                            |  TOOL EXECUTION                          |
-                                            |                                          |
-                                            | 15. Call Google Calendar API             |
-                                            |     +-----------------------------+      |
-                                            |     | POST /calendars/.../events  |      |
-                                            |     | Authorization: Bearer ...   |      |
-                                            |     | {                           |      |
-                                            |     |   summary: "Meeting w/     |      |
-                                            |     |             Sarah",        |      |
-                                            |     |   start: {dateTime: ...},  |      |
-                                            |     |   end: {dateTime: ...},    |      |
-                                            |     |   attendees: [...]         |      |
-                                            |     | }                          |      |
-                                            |     +-----------------------------+      |
-                                            |                                          |
-                                            | 16. Store result in agent run            |
-                                            |     +-----------------------------+      |
-                                            |     | agent_runs table            |      |
-                                            |     | status: completed           |      |
-                                            |     | result: {eventId, link}     |      |
-                                            |     +-----------------------------+      |
-                                            |                                          |
-                                            | 17. Log to audit trail                   |
-                                            |     +-----------------------------+      |
-                                            |     | audit_log table             |      |
-                                            |     | action: calendar_create     |      |
-                                            |     | actor: agent                |      |
-                                            |     | approved_by: operator_789   |      |
-                                            |     | timestamp: 1712345800       |      |
-                                            |     +-----------------------------+      |
-                                            |                                          |
-                                            +-------------------+----------------------+
-                                                                |
-                                                                | compose response
-                                                                v
- USER                META CLOUD API         +-------------------+----------------------+
- +----------+        +---------------+      |                                          |
- |          |  msg   |               | send | 18. Send confirmation via WhatsApp       |
- | WhatsApp |<-------| WhatsApp      |<-----+     "Done! Meeting with Sarah            |
- | App      |        | Business API  |      |      scheduled for tomorrow at 3:00 PM.  |
- |          |        |               |      |      Calendar link: https://..."          |
- |          |        +---------------+      |                                          |
- |          |                               | 19. Extract & store memory               |
- |          |                               |     +-----------------------------+      |
- |          |                               |     | memory table (vector)       |      |
- |          |                               |     | fact: "User has meetings    |      |
- |          |                               |     |  with Sarah (sarah@...)"   |      |
- |          |                               |     | embedding: [0.12, -0.34...]|      |
- |          |                               |     +-----------------------------+      |
- |          |                               |                                          |
- +----------+                               +------------------------------------------+
+```mermaid
+sequenceDiagram
+    participant User as User (WhatsApp)
+    participant Meta as Meta Cloud API
+    participant Convex as Convex (Control Plane)
+    participant AI as AI Provider (OpenAI gpt-4o)
+    participant Operator as Operator (WhatsApp)
+    participant GCal as Google Calendar API
+
+    User->>Meta: "Schedule meeting with Sarah tomorrow at 3pm"
+    Meta->>Convex: Webhook (POST /webhook)
+
+    Note over Convex: 1. Verify Meta signature (HMAC-SHA256)
+    Note over Convex: 2. Extract phone number + message body
+    Note over Convex: 3. Lookup user by phone → users table
+    Note over Convex: 4. Store inbound message → messages table
+    Note over Convex: 5. Schedule agent run (ctx.scheduler.runAfter)
+
+    rect rgb(240, 245, 255)
+        Note over Convex,AI: Intelligence Plane (Convex Action)
+        Note over Convex: 6. Orchestrator starts
+        Note over Convex: 7. Retrieve context:<br/>a) Recent messages (last 20)<br/>b) Vector search: "Sarah" → contact info<br/>c) User policies: calendar_approval=true
+
+        Convex->>AI: 8. Call AI with context + tools
+        AI-->>Convex: 9. Tool call: create_event({title, date, duration, attendees})
+        Note over Convex: 10. Policy check → calendar_approval=true → approval required
+    end
+
+    rect rgb(255, 245, 235)
+        Note over Convex,Operator: Approval Flow
+        Note over Convex: 11. Create approval request → approvals table (status: pending)
+        Convex->>Meta: 12. Send approval notification
+        Meta->>Operator: "Approve meeting with Sarah tomorrow 3pm? Reply YES or NO"
+        Operator->>Meta: "YES"
+        Meta->>Convex: 13. Webhook receives reply → match to pending approval → status: approved
+        Note over Convex: 14. Resume agent run
+    end
+
+    rect rgb(235, 255, 240)
+        Note over Convex,GCal: Tool Execution
+        Convex->>GCal: 15. POST /calendars/.../events (Meeting with Sarah)
+        GCal-->>Convex: Event created (eventId, link)
+        Note over Convex: 16. Store result → agent_runs table (status: completed)
+        Note over Convex: 17. Log to audit trail → audit_log table
+    end
+
+    Convex->>Meta: 18. Send confirmation
+    Meta->>User: "Done! Meeting with Sarah scheduled for tomorrow at 3:00 PM. Calendar link: ..."
+    Note over Convex: 19. Extract & store memory → vector embedding
 ```
 
 ### Timing Breakdown (Typical)
@@ -175,99 +77,37 @@ A user sends "Schedule meeting with Sarah tomorrow at 3pm" to the Ecqo WhatsApp 
 
 The wacli connector worker on Fly.io syncs historical and ongoing messages from WhatsApp Web into Convex. This runs independently of the Cloud API webhook flow and provides richer context.
 
-```
-  WHATSAPP WEB                FLY.IO MACHINE              CONVEX
-  NETWORK                     (wacli worker)              (Control Plane)
-  +----------------+          +-------------------+       +------------------------+
-  |                |          |                   |       |                        |
-  |                |  wacli   | 1. Machine boot   |       | 0. Convex starts       |
-  |                |  session |    (via Fly API)  |<------+    machine via         |
-  |                |          |                   |       |    Fly.io Machines API  |
-  |                |          |                   |       |                        |
-  |                |          | 2. Load service   |       |                        |
-  |                |          |    token + user ID|       |                        |
-  |                |          |    from env vars  |       |                        |
-  |                |          |                   |       |                        |
-  |                |<---------|3. Connect to      |       |                        |
-  |                |  WS conn |   WhatsApp Web    |       |                        |
-  |                |--------->|   (WebSocket)     |       |                        |
-  |                |  session |                   |       |                        |
-  |                |  active  |                   |       |                        |
-  |                |          |                   |       |                        |
-  |                |          | 4. Fetch sync     |       |                        |
-  |                |          |    cursor from    |------>| Return last cursor     |
-  |                |          |    Convex         |<------| for this user          |
-  |                |          |                   |       | +--------------------+ |
-  |                |          |                   |       | | ingestion_state    | |
-  |                |          |                   |       | | user: user_123     | |
-  |                |          |                   |       | | cursor: msg_99872  | |
-  |                |          |                   |       | | last_sync: 17123.. | |
-  |                |          |                   |       | +--------------------+ |
-  |                |          |                   |       |                        |
-  +----------------+          +-------------------+       +------------------------+
-         |                           |                           |
-         |    PERIODIC SYNC LOOP     |                           |
-         |    (every 30-60 seconds)  |                           |
-         v                           v                           v
-  +----------------+          +-------------------+       +------------------------+
-  |                |  fetch   |                   |       |                        |
-  |  Message       |--------->| 5. Fetch messages |       |                        |
-  |  history       |  msgs    |    since cursor   |       |                        |
-  |  (encrypted    |  after   |                   |       |                        |
-  |   in transit)  |  cursor  |                   |       |                        |
-  |                |          | 6. For each new   |       |                        |
-  |                |          |    message:        |       |                        |
-  |  Contact       |--------->|    - Normalize    |       |                        |
-  |  metadata      |  contact |      format       |       |                        |
-  |                |  info    |    - Compute       |       |                        |
-  |                |          |      dedup hash   |       |                        |
-  |  Group         |--------->|    - Attach        |       |                        |
-  |  metadata      |  group   |      metadata     |       |                        |
-  |                |  info    |                   |       |                        |
-  +----------------+          +-------------------+       +------------------------+
-                                     |                           |
-                                     |                           |
-                                     v                           v
-                              +-------------------+       +------------------------+
-                              |                   |       |                        |
-                              | 7. Sign event     | POST  | 8. Validate event      |
-                              |    batch with     |------>|    signature           |
-                              |    CONNECTOR_     |       |    (HMAC-SHA256)       |
-                              |    SIGNING_KEY    |       |                        |
-                              |                   |       | 9. Idempotent upsert   |
-                              |    Payload:       |       |    for each message:   |
-                              |    {              |       |                        |
-                              |      user_id,     |       |    +----------------+  |
-                              |      messages: [  |       |    | IF dedup_hash  |  |
-                              |        {          |       |    | exists:        |  |
-                              |          id,      |       |    |   SKIP         |  |
-                              |          from,    |       |    | ELSE:          |  |
-                              |          body,    |       |    |   INSERT msg   |  |
-                              |          ts,      |       |    +----------------+  |
-                              |          hash,    |       |                        |
-                              |          media?,  |       | 10. Advance cursor     |
-                              |        }, ...     |       |     +----------------+ |
-                              |      ],           |       |     | ingestion_state| |
-                              |      cursor,      |       |     | cursor: NEW    | |
-                              |      signature    |       |     | last_sync: NOW | |
-                              |    }              |       |     +----------------+ |
-                              |                   |       |                        |
-                              +-------------------+       | 11. Trigger memory     |
-                                                          |     extraction for     |
-                                                          |     new messages       |
-                                                          |                        |
-                                                          |     +----------------+ |
-                                                          |     | For each new   | |
-                                                          |     | message:       | |
-                                                          |     |  - Extract     | |
-                                                          |     |    facts       | |
-                                                          |     |  - Generate    | |
-                                                          |     |    embeddings  | |
-                                                          |     |  - Store in    | |
-                                                          |     |    vector idx  | |
-                                                          |     +----------------+ |
-                                                          |                        |
-                                                          +------------------------+
+```mermaid
+sequenceDiagram
+    participant Convex as Convex (Control Plane)
+    participant Fly as Fly.io Machine (wacli)
+    participant WA as WhatsApp Web Network
+
+    Note over Convex: 0. Start machine via Fly.io Machines API
+    Convex->>Fly: Start machine
+    Note over Fly: 1. Machine boots
+    Note over Fly: 2. Load service token + user ID from env vars
+
+    Fly->>WA: 3. Connect to WhatsApp Web (WebSocket)
+    WA-->>Fly: Session active
+
+    Fly->>Convex: 4. Fetch sync cursor
+    Convex-->>Fly: Return last cursor (ingestion_state: user_123, cursor: msg_99872)
+
+    rect rgb(245, 245, 255)
+        Note over WA,Convex: Periodic Sync Loop (every 30-60 seconds)
+
+        WA->>Fly: 5. Fetch messages since cursor (messages, contacts, groups)
+        Note over Fly: 6. For each new message:<br/>- Normalize format<br/>- Compute dedup hash (SHA-256)<br/>- Attach contact/group metadata
+
+        Note over Fly: 7. Sign event batch with CONNECTOR_SIGNING_KEY
+        Fly->>Convex: POST signed event batch {user_id, messages[], cursor, signature}
+
+        Note over Convex: 8. Validate event signature (HMAC-SHA256)
+        Note over Convex: 9. Idempotent upsert per message:<br/>IF dedup_hash exists → SKIP<br/>ELSE → INSERT message
+        Note over Convex: 10. Advance cursor (ingestion_state → NEW cursor, last_sync: NOW)
+        Note over Convex: 11. Trigger memory extraction:<br/>- Extract facts<br/>- Generate embeddings<br/>- Store in vector index
+    end
 ```
 
 ### Sync Guarantees
@@ -299,39 +139,37 @@ The wacli connector worker on Fly.io syncs historical and ongoing messages from 
 
 ### Data Flow Security Summary
 
+```mermaid
+flowchart LR
+    subgraph UserDevice["User Device"]
+        WA_E2EE["WhatsApp<br/>(E2EE between users)"]
+    end
+
+    subgraph Edge["Meta / Vercel (Edge)"]
+        TLS_TERM["TLS terminates here"]
+    end
+
+    subgraph Backend["Convex Cloud (Backend)"]
+        EAR["Encrypted at rest"]
+    end
+
+    subgraph ExtAPIs["External APIs"]
+        GOOG["Google · Stripe<br/>(OAuth 2.0 / API key auth)"]
+    end
+
+    subgraph ConnPath["Connector Path"]
+        WA_WEB["WhatsApp Web<br/>(Noise protocol)"]
+        FLY_M["Fly.io Machine (wacli)<br/>Session keys in memory only"]
+        CVX["Convex<br/>(signed events)"]
+    end
+
+    UserDevice -- "TLS 1.3" --- Edge
+    Edge -- "TLS 1.3" --- Backend
+    Backend -- "TLS 1.3" --- ExtAPIs
+    WA_WEB -- "TLS 1.3" --- FLY_M
+    FLY_M -- "TLS 1.3" --- CVX
 ```
-  +------------------+          +------------------+          +------------------+
-  |  User Device     |   TLS    |  Meta / Vercel   |   TLS    |  Convex Cloud    |
-  |                  |<-------->|  (Edge)          |<-------->|  (Backend)       |
-  |  WhatsApp E2EE   |          |                  |          |  Encrypted at    |
-  |  between users   |          |  TLS terminates  |          |  rest            |
-  |                  |          |  here             |          |                  |
-  +------------------+          +------------------+          +--------+---------+
-                                                                       |
-                                                              TLS      |  TLS
-                                                                       |
-                                                              +--------+---------+
-                                                              |  External APIs   |
-                                                              |  (Google, Stripe)|
-                                                              |                  |
-                                                              |  OAuth 2.0 /     |
-                                                              |  API key auth    |
-                                                              +------------------+
 
-  +------------------+          +------------------+
-  |  WhatsApp Web    |   TLS    |  Fly.io Machine  |   TLS    Convex
-  |  Network         |<-------->|  (wacli)         |<-------->  (signed events)
-  |                  |          |                  |
-  |  Noise protocol  |          |  Session keys    |
-  |  (WA encryption) |          |  in memory only  |
-  +------------------+          +------------------+
-
-  KEY:
-  ---- TLS 1.3 in transit
-  E2EE = end-to-end encrypted (WhatsApp between users; NOT between user and Ecqo)
-
-  NOTE: Messages between a user and the Ecqo WhatsApp Business number are
-  encrypted in transit but readable by the Ecqo system. This is by design --
-  the agent must read messages to process them. Users are informed of this
-  during onboarding.
-```
+::: info Note on encryption
+Messages between a user and the Ecqo WhatsApp Business number are encrypted in transit but readable by the Ecqo system. This is by design -- the agent must read messages to process them. Users are informed of this during onboarding. E2EE applies only between WhatsApp users, not between a user and Ecqo.
+:::

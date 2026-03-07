@@ -1,6 +1,6 @@
 # Dashboard Information Architecture
 
-The Ecqo dashboard is a role-gated, real-time control surface built with TanStack Start + React 19. It gives principals (the high-net-worth operators who use the assistant) and their support staff visibility into every action the agent takes, with approval controls at every exit point.
+The Ecqqo dashboard is a role-gated, real-time control surface built with TanStack Start + React 19. It gives principals (the high-net-worth operators who use the assistant) and their support staff visibility into every action the agent takes, with approval controls at every exit point.
 
 ## Navigation Structure
 
@@ -95,7 +95,7 @@ Three roles govern dashboard access. Every Convex query and mutation checks the 
 
 ```
 +------------------------------------------------------------------+
-|  [logo] Ecqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
+|  [logo] Ecqqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
 +------------------------------------------------------------------+
 |                                                                    |
 |  +-------------------+  +-------------------+                      |
@@ -126,7 +126,7 @@ Three roles govern dashboard access. Every Convex query and mutation checks the 
 
 ```
 +------------------------------------------------------------------+
-|  [logo] Ecqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
+|  [logo] Ecqqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
 +------------------------------------------------------------------+
 |                                                                    |
 |  Approvals                    [Pending v]  [All types v]  [Search] |
@@ -168,7 +168,7 @@ Three roles govern dashboard access. Every Convex query and mutation checks the 
 
 ```
 +------------------------------------------------------------------+
-|  [logo] Ecqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
+|  [logo] Ecqqo          Home  Inbox(3)  Runs  Memory    [AR] [??]  |
 +------------------------------------------------------------------+
 |                                                                    |
 |  Connect WhatsApp                                                  |

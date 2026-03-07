@@ -1,10 +1,10 @@
 # AI Providers (Vercel AI SDK)
 
-This document covers Ecqo's AI provider strategy: why the Vercel AI SDK was chosen, how models are selected for different tasks, failover behavior, cost projections, and configuration.
+This document covers Ecqqo's AI provider strategy: why the Vercel AI SDK was chosen, how models are selected for different tasks, failover behavior, cost projections, and configuration.
 
 ## Why Vercel AI SDK
 
-The Vercel AI SDK provides a unified TypeScript interface for interacting with language models across multiple providers. For Ecqo, this is the foundation of the Intelligence Plane.
+The Vercel AI SDK provides a unified TypeScript interface for interacting with language models across multiple providers. For Ecqqo, this is the foundation of the Intelligence Plane.
 
 ### Key Benefits
 
@@ -95,7 +95,7 @@ export const runOrchestrator = action({
   handler: async (ctx, args) => {
     const result = await generateText({
       model: anthropic("claude-sonnet-4-20250514"),
-      system: "You are Ecqo, a WhatsApp-native executive assistant...",
+      system: "You are Ecqqo, a WhatsApp-native executive assistant...",
       messages: [...assembledContext],
       tools: { calendar_read, calendar_write, memory_query },
     });
@@ -393,7 +393,7 @@ AI provider rate limits affect agent throughput. The system must respect these l
 
 RPM = Requests Per Minute, TPM = Tokens Per Minute
 
-### Ecqo Rate Limiting Strategy
+### Ecqqo Rate Limiting Strategy
 
 | Strategy | Implementation |
 |---|---|

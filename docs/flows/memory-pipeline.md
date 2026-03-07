@@ -2,189 +2,70 @@
 
 ## Overview
 
-Ecqo's memory system gives the agent persistent, contextual awareness across conversations. It is organized into four tiers, each serving a distinct role in how the agent remembers, retrieves, and reasons about user context.
+Ecqqo's memory system gives the agent persistent, contextual awareness across conversations. It is organized into four tiers, each serving a distinct role in how the agent remembers, retrieves, and reasons about user context.
 
-```
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │                       Memory Tier Overview                          │
-  └──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph T1["Tier 1: SHORT-TERM"]
+        T1D["Recent conversation<br/>messages and context<br/><br/>TTL: 24 hours<br/>Storage: Convex docs<br/>Retrieval: recency"]
+    end
 
-  Tier 1: SHORT-TERM                    Tier 2: EPISODIC
-  ┌────────────────────────┐            ┌────────────────────────┐
-  │ Recent conversation    │            │ Summarized outcomes    │
-  │ messages and context   │            │ of past agent runs     │
-  │                        │            │                        │
-  │ TTL: 24 hours          │            │ TTL: 90 days           │
-  │ Storage: Convex docs   │            │ Storage: Convex docs   │
-  │ Retrieval: recency     │            │ Retrieval: relevance   │
-  │                        │            │            + recency   │
-  └────────────────────────┘            └────────────────────────┘
+    subgraph T2["Tier 2: EPISODIC"]
+        T2D["Summarized outcomes<br/>of past agent runs<br/><br/>TTL: 90 days<br/>Storage: Convex docs<br/>Retrieval: relevance + recency"]
+    end
 
-  Tier 3: SEMANTIC                      Tier 4: PINNED
-  ┌────────────────────────┐            ┌────────────────────────┐
-  │ Extracted facts,       │            │ User-pinned durable    │
-  │ preferences, and       │            │ facts and instructions │
-  │ relationships          │            │                        │
-  │                        │            │ TTL: never expires     │
-  │ TTL: 180 days          │            │ Storage: Convex docs   │
-  │ Storage: Convex +      │            │ Retrieval: always      │
-  │          vector index  │            │            included    │
-  │ Retrieval: vector      │            │                        │
-  │            similarity  │            └────────────────────────┘
-  └────────────────────────┘
+    subgraph T3["Tier 3: SEMANTIC"]
+        T3D["Extracted facts,<br/>preferences, relationships<br/><br/>TTL: 180 days<br/>Storage: Convex + vector index<br/>Retrieval: vector similarity"]
+    end
+
+    subgraph T4["Tier 4: PINNED"]
+        T4D["User-pinned durable<br/>facts and instructions<br/><br/>TTL: never expires<br/>Storage: Convex docs<br/>Retrieval: always included"]
+    end
 ```
 
 ## Memory Lifecycle
 
 Memory flows through the system in a pipeline, with each tier fed by specific triggers:
 
-```
-  ┌──────────────────────────────────────────────────────────────────────────────┐
-  │                          Memory Lifecycle Pipeline                           │
-  └──────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Path1["Inbound Message Path"]
+        M["Inbound message<br/>(user or contact)"] --> MI["Message ingested<br/>(store raw with timestamp)"]
+        MI --> ST["Short-term memory<br/>(24h TTL)"]
+    end
 
-  SOURCE                      PROCESSING                         DESTINATION
-  ──────                      ──────────                         ───────────
+    subgraph Path2["Agent Run Path"]
+        RC["Agent run completes<br/>(action taken, result produced)"] --> SUM["Summarizer (LLM call)<br/>What was requested, what happened,<br/>outcome, entities involved"]
+        SUM --> EP["Episodic memory<br/>(90d TTL)"]
+        EP -- "Async extraction" --> FE["Fact extractor<br/>(LLM call)"]
+        FE --> SM["Semantic memory<br/>(new fact + vector embed)"]
+        FE --> UF["Update existing facts<br/>(merge / supersede)"]
+    end
 
-  Inbound message             Store raw message                  Short-term
-  (user or contact)           with timestamp                     buffer
-       │                                                            │
-       v                                                            │
-  ┌──────────┐                                                      │
-  │ Message  │─────────────────────────────────────────────────────>│
-  │ ingested │                                                      │
-  └──────────┘                                                      v
-                                                             ┌─────────────┐
-                                                             │ Short-term  │
-                                                             │ memory      │
-                                                             │ (24h TTL)   │
-                                                             └─────────────┘
-
-
-  Agent run completes         Summarize: what was               Episodic
-  (action taken,              requested, what happened,         memory
-   result produced)           outcome, entities involved
-       │                           │
-       v                           v
-  ┌──────────┐            ┌──────────────┐                 ┌─────────────┐
-  │   Run    │───────────>│ Summarizer   │────────────────>│  Episodic   │
-  │ complete │            │ (LLM call)   │                 │  memory     │
-  └──────────┘            └──────────────┘                 │  (90d TTL)  │
-                                                           └──────┬──────┘
-                                                                  │
-                                                                  │ Async extraction
-                                                                  v
-                                                         ┌──────────────┐
-                                                         │    Fact      │
-                                                         │  extractor  │
-                                                         │  (LLM call) │
-                                                         └──────┬──────┘
-                                                                │
-                                                    ┌───────────┴───────────┐
-                                                    │                       │
-                                                    v                       v
-                                             ┌─────────────┐       ┌──────────────┐
-                                             │  Semantic   │       │   Update     │
-                                             │  memory     │       │   existing   │
-                                             │  (new fact) │       │   facts      │
-                                             │  + vector   │       │   (merge/    │
-                                             │    embed    │       │    supersede)│
-                                             └─────────────┘       └──────────────┘
-
-
-  User action in              Store directly                    Pinned
-  dashboard or via            (no processing)                   memory
-  WhatsApp command
-       │
-       v
-  ┌──────────┐                                             ┌─────────────┐
-  │ "Pin:    │────────────────────────────────────────────>│   Pinned    │
-  │  always  │                                             │   memory    │
-  │  book    │                                             │   (no TTL)  │
-  │  morning │                                             └─────────────┘
-  │  flights"│
-  └──────────┘
+    subgraph Path3["User Pin Path"]
+        PIN["User action in dashboard<br/>or WhatsApp command<br/>(e.g. Pin: always book morning flights)"] --> PM["Pinned memory<br/>(no TTL)"]
+    end
 ```
 
 ## Retrieval Composition
 
 When the agent needs context for a new run, it assembles a memory bundle from all four tiers:
 
-```
-  ┌──────────────────────────────────────────────────────────────────────────────┐
-  │                        Retrieval Composition Pipeline                        │
-  └──────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    INPUT["User message + conversation context"] --> EMBED["Generate query embedding<br/>(derive semantic query for vector search)"]
 
-  Input: User message + conversation context
-       │
-       v
-  ┌─────────────────────┐
-  │  Generate query     │     Derive semantic query from user
-  │  embedding          │     message for vector search
-  └──────────┬──────────┘
-             │
-             │  Query dispatched to all tiers in parallel:
-             │
-             ├──────────────────────────────────────────────────────────────┐
-             │                                                             │
-             v                                                             │
-  ┌──────────────────┐                                                     │
-  │  Tier 4: PINNED  │   Strategy: include ALL                             │
-  │                  │   Always returned, no filtering                     │
-  │  Result: all     │                                                     │
-  │  pinned facts    │                                                     │
-  └────────┬─────────┘                                                     │
-           │                                                               │
-           │     ┌──────────────────┐                                      │
-           │     │ Tier 1: SHORT-   │   Strategy: recency window           │
-           │     │ TERM             │   Return last N messages             │
-           │     │                  │   (configurable, default 20)         │
-           │     │ Result: recent   │                                      │
-           │     │ messages         │                                      │
-           │     └────────┬─────────┘                                      │
-           │              │                                                │
-           │              │     ┌──────────────────┐                       │
-           │              │     │ Tier 3: SEMANTIC  │   Strategy: vector   │
-           │              │     │                   │   similarity top-k   │
-           │              │     │ Vector search     │   (k=10, threshold   │
-           │              │     │ with query        │    > 0.75)           │
-           │              │     │ embedding         │                      │
-           │              │     │                   │                      │
-           │              │     │ Result: relevant  │                      │
-           │              │     │ facts ranked by   │                      │
-           │              │     │ similarity        │                      │
-           │              │     └────────┬──────────┘                      │
-           │              │              │                                  │
-           │              │              │     ┌──────────────────┐        │
-           │              │              │     │ Tier 2: EPISODIC │  Strategy:
-           │              │              │     │                  │  relevance +
-           │              │              │     │ Keyword +        │  recency
-           │              │              │     │ recency search   │  hybrid score
-           │              │              │     │                  │        │
-           │              │              │     │ Result: past run │        │
-           │              │              │     │ summaries        │        │
-           │              │              │     └────────┬─────────┘        │
-           │              │              │              │                  │
-           v              v              v              v                  │
-  ┌─────────────────────────────────────────────────────────┐              │
-  │                    Context Assembler                     │<─────────────┘
-  │                                                         │
-  │  1. Pinned facts       (always first, highest priority) │
-  │  2. Short-term context (recent conversation)            │
-  │  3. Semantic facts     (relevant extracted knowledge)   │
-  │  4. Episodic summaries (relevant past interactions)     │
-  │                                                         │
-  │  Total token budget: ~4000 tokens                       │
-  │  Overflow strategy: truncate episodic first,            │
-  │                     then semantic, never pinned          │
-  └──────────────────────┬──────────────────────────────────┘
-                         │
-                         v
-                  ┌──────────────┐
-                  │ Assembled    │    Ready for agent
-                  │ context      │    prompt injection
-                  │ bundle       │
-                  └──────────────┘
+    EMBED --> T4["**Tier 4: PINNED**<br/>Strategy: include ALL<br/>Always returned, no filtering"]
+    EMBED --> T1["**Tier 1: SHORT-TERM**<br/>Strategy: recency window<br/>Return last N messages (default 20)"]
+    EMBED --> T3["**Tier 3: SEMANTIC**<br/>Strategy: vector similarity top-k<br/>(k=10, threshold > 0.75)"]
+    EMBED --> T2["**Tier 2: EPISODIC**<br/>Strategy: relevance + recency<br/>Keyword + recency hybrid score"]
+
+    T4 --> ASM["**Context Assembler**<br/>1. Pinned facts (highest priority)<br/>2. Short-term context (recent conversation)<br/>3. Semantic facts (relevant knowledge)<br/>4. Episodic summaries (past interactions)<br/><br/>Token budget: ~4000 tokens<br/>Overflow: truncate episodic first,<br/>then semantic, never pinned"]
+    T1 --> ASM
+    T3 --> ASM
+    T2 --> ASM
+
+    ASM --> BUNDLE["Assembled context bundle<br/>(ready for agent prompt injection)"]
 ```
 
 ## Convex Vector Search Setup
@@ -257,85 +138,34 @@ Semantic memory uses Convex's built-in vector search for similarity-based retrie
 
 ## EN/AR Bilingual Handling
 
-Ecqo serves a bilingual user base (English and Arabic). The memory system handles this through language detection, dual storage, and cross-language retrieval.
+Ecqqo serves a bilingual user base (English and Arabic). The memory system handles this through language detection, dual storage, and cross-language retrieval.
 
 ### Language Pipeline
 
-```
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │                   Bilingual Memory Pipeline                         │
-  └──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["Input text"] --> B["Language detect<br/>(character-range heuristics + fasttext fallback)"]
 
-  Input text
-       │
-       v
-  ┌──────────────────┐
-  │ Language detect   │     Uses character-range heuristics
-  │                  │     + fasttext fallback
-  └────────┬─────────┘
-           │
-           ├──── English ──────────────────────────────────────┐
-           │                                                   │
-           ├──── Arabic ───────────────────────────┐           │
-           │                                       │           │
-           └──── Mixed (code-switching) ──┐        │           │
-                                          │        │           │
-                                          v        v           v
-                                   ┌──────────────────────────────┐
-                                   │ Normalize:                    │
-                                   │ - Arabic: remove diacritics  │
-                                   │   (tashkeel), normalize      │
-                                   │   hamza/alef variants        │
-                                   │ - Mixed: segment by language │
-                                   │ - Both: lowercase, trim      │
-                                   └──────────────┬───────────────┘
-                                                  │
-                                                  v
-                                   ┌──────────────────────────────┐
-                                   │ Store:                        │
-                                   │ - content: original language  │
-                                   │ - contentAr: Arabic version   │
-                                   │   (translated if original     │
-                                   │    was English)               │
-                                   │ - embedding: computed from    │
-                                   │   English version (ada-002    │
-                                   │   performs best on English)   │
-                                   │ - language: "en"|"ar"|"mixed" │
-                                   └──────────────────────────────┘
+    B -- English --> N["Normalize:<br/>lowercase, trim"]
+    B -- Arabic --> N
+    B -- "Mixed (code-switching)" --> N
+
+    N --> S["Store:<br/>content: original language<br/>contentAr: Arabic version<br/>(translated if original was English)<br/>embedding: computed from English version<br/>(ada-002 performs best on English)<br/>language: en | ar | mixed"]
 ```
 
 ### Cross-Language Retrieval
 
 When a user queries in Arabic but relevant facts were stored in English (or vice versa):
 
-```
-  Arabic query: "متى اجتماعي القادم مع خالد؟"
-       │
-       v
-  ┌──────────────────┐
-  │ Translate to     │     "When is my next meeting with Khalid?"
-  │ English for      │
-  │ embedding        │
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐
-  │ Embed English    │     Standard vector search on English
-  │ version          │     embedding space
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐
-  │ Retrieve facts   │     Results may be in English or Arabic
-  │ by similarity    │
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐
-  │ Return facts in  │     If user's language is Arabic and
-  │ user's preferred │     fact has contentAr, use that.
-  │ language         │     Otherwise, translate on-the-fly.
-  └──────────────────┘
+```mermaid
+flowchart TD
+    Q["Arabic query:<br/>متى اجتماعي القادم مع خالد؟"]
+    T["Translate to English for embedding<br/>(When is my next meeting with Khalid?)"]
+    E["Embed English version<br/>(standard vector search on English embedding space)"]
+    R["Retrieve facts by similarity<br/>(results may be in English or Arabic)"]
+    L["Return facts in user's preferred language<br/>(use contentAr if available,<br/>otherwise translate on-the-fly)"]
+
+    Q --> T --> E --> R --> L
 ```
 
 ## TTL Policies Per Tier

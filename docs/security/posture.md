@@ -1,6 +1,6 @@
 # Security Posture
 
-This document describes Ecqo's security architecture, threat model, and operational controls. Ecqo handles sensitive personal and business data on behalf of high-net-worth individuals, so security is not an afterthought -- it is a core product requirement.
+This document describes Ecqqo's security architecture, threat model, and operational controls. Ecqqo handles sensitive personal and business data on behalf of high-net-worth individuals, so security is not an afterthought -- it is a core product requirement.
 
 ## Security Architecture
 
@@ -66,7 +66,7 @@ This document describes Ecqo's security architecture, threat model, and operatio
 
 ### Dual Ingress Paths
 
-Ecqo has two distinct paths for WhatsApp data:
+Ecqqo has two distinct paths for WhatsApp data:
 
 ```
 Path 1: Connector (wacli) -- syncs user's personal WhatsApp
@@ -75,7 +75,7 @@ Path 1: Connector (wacli) -- syncs user's personal WhatsApp
 | Network    |   E2E encrypted session  | Worker    |   events + data   | Cloud   |
 +------------+                          +-----------+                    +---------+
 
-Path 2: Meta Cloud API -- Ecqo's official WhatsApp Business number
+Path 2: Meta Cloud API -- Ecqqo's official WhatsApp Business number
 +------------+     Webhook POST         +---------+
 | Meta       | ----------------------> | Convex  |
 | Platform   |   Signature-verified    | Cloud   |
@@ -229,17 +229,17 @@ Worker --> Convex request signing:
 
 3. Worker sends request:
    POST /api/connector/event
-   X-Ecqo-Signature: sha256=<signature>
-   X-Ecqo-Timestamp: 1741334400000
+   X-Ecqqo-Signature: sha256=<signature>
+   X-Ecqqo-Timestamp: 1741334400000
    Content-Type: application/json
 
    <payload>
 
 4. Convex handler verifies:
-   a. Parse X-Ecqo-Timestamp
+   a. Parse X-Ecqqo-Timestamp
    b. Reject if |now - timestamp| > 300000 (5-minute window)
    c. Recompute HMAC-SHA256 with stored secret
-   d. Constant-time compare with X-Ecqo-Signature
+   d. Constant-time compare with X-Ecqqo-Signature
    e. Reject if mismatch
 ```
 
@@ -397,8 +397,8 @@ The connector component uses an unofficial WhatsApp Web client library. Pilot us
 
 1. This approach is not endorsed by Meta/WhatsApp
 2. Their WhatsApp account could be temporarily or permanently restricted
-3. Ecqo will attempt reconnection but cannot guarantee uninterrupted service
-4. The official Meta Cloud API path (for outbound from Ecqo's business number) is unaffected
+3. Ecqqo will attempt reconnection but cannot guarantee uninterrupted service
+4. The official Meta Cloud API path (for outbound from Ecqqo's business number) is unaffected
 
 This disclosure is presented during onboarding and recorded in the audit trail as `disclosure_acknowledged`.
 
@@ -518,7 +518,7 @@ Input/output content sent to LangSmith uses the same redaction pipeline as the a
 | Variable | Where | Purpose |
 |----------|-------|---------|
 | `LANGCHAIN_API_KEY` | Convex dashboard | LangSmith API key |
-| `LANGCHAIN_PROJECT` | Convex dashboard | Project name (e.g., `ecqo-pilot`) |
+| `LANGCHAIN_PROJECT` | Convex dashboard | Project name (e.g., `ecqqo-pilot`) |
 | `LANGCHAIN_TRACING_V2` | Convex dashboard | Set to `true` to enable tracing |
 
 ## Security Checklist for Pilot Launch

@@ -1,6 +1,6 @@
 # Cost Estimation
 
-Monthly infrastructure costs, AI API costs per user, and revenue projections for Ecqo from pilot through scale.
+Monthly infrastructure costs, AI API costs per user, and revenue projections for Ecqqo from pilot through scale.
 
 ## Monthly Infrastructure Costs
 
@@ -82,7 +82,7 @@ All revenue assumes average plan price of $199/user/mo (Founder tier).
 
 ### Google Workspace APIs
 
-| API | Free quota | Ecqo usage estimate |
+| API | Free quota | Ecqqo usage estimate |
 |-----|-----------|-------------------|
 | Google Calendar API | 1M queries/day | ~500/user/day = well within |
 | Gmail API | 1B quota units/day | ~200/user/day = well within |
@@ -90,7 +90,7 @@ All revenue assumes average plan price of $199/user/mo (Founder tier).
 
 ### Meta Cloud API (WhatsApp Business)
 
-| Feature | Pricing | Ecqo usage |
+| Feature | Pricing | Ecqqo usage |
 |---------|---------|-----------|
 | Receiving messages | Free | All inbound via webhook |
 | Business-initiated msgs | $0.005 - $0.08 per conversation | Approval notifications, reminders, digests |

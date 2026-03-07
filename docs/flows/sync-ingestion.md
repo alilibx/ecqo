@@ -2,127 +2,60 @@
 
 ## Overview
 
-Ecqo syncs messages from a user's personal WhatsApp account via the **wacli** worker running on a Fly.io Machine. Sync operates on a **dual-cadence model**:
+Ecqqo syncs messages from a user's personal WhatsApp account via the **wacli** worker running on a Fly.io Machine. Sync operates on a **dual-cadence model**:
 
 - **Periodic sync** -- Every 5 minutes, a Convex scheduled function triggers a full sync cycle for each connected account. This catches any messages that may have been missed.
 - **Continuous follow** -- While the wacli worker is connected, it streams new messages to Convex in near-real-time as they arrive.
 
-By default, Ecqo follows a **metadata-first policy**: only chat-level metadata (contact name, last message timestamp, unread count) is synced. Full message bodies are only fetched for chats the user has explicitly allowlisted. This minimizes data exposure and storage costs.
+By default, Ecqqo follows a **metadata-first policy**: only chat-level metadata (contact name, last message timestamp, unread count) is synced. Full message bodies are only fetched for chats the user has explicitly allowlisted. This minimizes data exposure and storage costs.
 
 ## Sync Sequence Diagram
 
-```
-  Convex (Scheduler)        Convex (Mutation)         Fly.io (wacli Worker)
-  ──────────────────        ─────────────────         ─────────────────────
-         │                        │                            │
-         │  1. Scheduled function │                            │
-         │     fires (5-min cron) │                            │
-         │───────────────────────>│                            │
-         │                        │                            │
-         │                        │  2. Create syncJob         │
-         │                        │     state = "queued"       │
-         │                        │     cursor = lastCursor    │
-         │                        │                            │
-         │                        │  3. Dispatch sync command  │
-         │                        │     to worker via action   │
-         │                        │─────────────────────────────>│
-         │                        │                            │
-         │                        │                            │  4. wacli fetches
-         │                        │                            │     messages since
-         │                        │                            │     cursor
-         │                        │                            │
-         │                        │                            │  5. For each batch:
-         │                        │                            │     - Sign payload
-         │                        │                            │     - Include schema
-         │                        │                            │       version
-         │                        │                            │
-         │                        │  6. Batch posted to Convex │
-         │                        │     (signed, versioned)    │
-         │                        │<─────────────────────────────│
-         │                        │                            │
-         │                        │  7. Validate:              │
-         │                        │     - HMAC signature       │
-         │                        │     - Schema version       │
-         │                        │     - Policy (allowlisted  │
-         │                        │       chat?)               │
-         │                        │                            │
-         │                        │  8. Idempotent upsert      │
-         │                        │     key: (waAccountId,     │
-         │                        │           chatExternalId,  │
-         │                        │           messageExternalId)│
-         │                        │                            │
-         │                        │  9. Advance cursor         │
-         │                        │                            │
-         │                        │  10. Repeat for next batch │
-         │                        │      until caught up       │
-         │                        │                            │
-         │                        │  11. SYNC_COMPLETE event   │
-         │                        │<─────────────────────────────│
-         │                        │                            │
-         │                        │  12. Update syncJob:       │
-         │                        │      state = "completed"   │
-         │                        │      messagesProcessed = N │
-         │                        │      newCursor = X         │
-         │                        │                            │
-         │                        │  13. Publish sync health   │
-         │                        │      to dashboard          │
-         │                        │                            │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Convex (Scheduler)
+    participant C as Convex (Mutation)
+    participant W as Fly.io (wacli Worker)
+
+    S->>C: Scheduled function fires (5-min cron)
+    Note over C: Create syncJob<br/>state = "queued"<br/>cursor = lastCursor
+    C->>W: Dispatch sync command to worker via action
+    Note over W: wacli fetches messages since cursor
+    Note over W: For each batch:<br/>Sign payload + include schema version
+
+    loop Until caught up
+        W->>C: Batch posted (signed, versioned)
+        Note over C: Validate: HMAC signature,<br/>schema version, policy (allowlisted chat?)
+        Note over C: Idempotent upsert<br/>key: (waAccountId, chatExternalId, messageExternalId)
+        Note over C: Advance cursor
+    end
+
+    W->>C: SYNC_COMPLETE event
+    Note over C: Update syncJob:<br/>state = "completed"<br/>messagesProcessed = N, newCursor = X
+    Note over C: Publish sync health to dashboard
 ```
 
 ## Sync Job State Machine
 
-```
-  ┌─────────────────────────────────────────────────────────────┐
-  │                     syncJob States                          │
-  └─────────────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> running : Worker picks up job
 
-               ┌────────┐
-               │ queued │
-               └───┬────┘
-                   │
-                   │ Worker picks up job
-                   │
-                   v
-              ┌─────────┐
-         ┌───>│ running │
-         │    └────┬────┘
-         │         │
-         │         ├──── Success ──────────────────┐
-         │         │                               │
-         │         │                               v
-         │         │                        ┌───────────┐
-         │         │                        │ completed │
-         │         │                        └───────────┘
-         │         │                               │
-         │         │                               │ Terminal
-         │         │                               v
-         │         │                            [*] END
-         │         │
-         │         └──── Transient error ────┐
-         │                                   │
-         │                                   v
-         │                          ┌───────────────┐
-         │                          │ retry_pending │
-         │                          └───────┬───────┘
-         │                                  │
-         │              ┌───────────────────┤
-         │              │                   │
-         │    Retry ok  │                   │ Max retries
-         │    (< 5)     │                   │ exceeded (>= 5)
-         │              │                   │
-         └──────────────┘                   v
-                                       ┌────────┐
-                                       │ failed │
-                                       └────────┘
-                                            │
-                                            │ Terminal
-                                            v
-                                         [*] END
+    running --> completed : Success
+    running --> retry_pending : Transient error
+
+    retry_pending --> running : Retry ok (< 5 retries)
+    retry_pending --> failed : Max retries exceeded (>= 5)
+
+    completed --> [*]
+    failed --> [*]
 ```
 
 ## Metadata-First Policy
 
-By default, Ecqo does **not** sync full message content. This is a deliberate privacy-by-design choice.
+By default, Ecqqo does **not** sync full message content. This is a deliberate privacy-by-design choice.
 
 ```
   ┌─────────────────────────────────────────────────────────────────┐
@@ -159,55 +92,18 @@ Users manage their allowlist from the dashboard. Each chat can be individually t
 
 When a message batch fails to process, it follows this retry path:
 
-```
-  Message Batch
-       │
-       v
-  ┌──────────────┐
-  │   Process    │──── SUCCESS ──> Cursor advanced, batch acknowledged
-  │   batch      │
-  └──────┬───────┘
-         │ FAILURE
-         v
-  ┌──────────────┐
-  │  Classify    │
-  │  error       │
-  └──────┬───────┘
-         │
-         ├──── Transient (network, timeout, rate limit)
-         │         │
-         │         v
-         │    ┌────────────────────────────────────────────┐
-         │    │ Retry with exponential backoff             │
-         │    │ Attempt 1: 5s   delay                     │
-         │    │ Attempt 2: 25s  delay                     │
-         │    │ Attempt 3: 125s delay                     │
-         │    │ Attempt 4: 625s delay  (~10 min)          │
-         │    │ Attempt 5: max retries reached            │
-         │    └────────────────────┬───────────────────────┘
-         │                         │
-         │                         v
-         │                    ┌──────────────┐
-         │                    │  Dead-letter │  Stored for manual
-         │                    │  queue (DLQ) │  review/replay
-         │                    └──────────────┘
-         │
-         ├──── Validation (bad schema, signature mismatch)
-         │         │
-         │         v
-         │    ┌──────────────┐
-         │    │  DLQ         │  Immediate, no retry
-         │    │  (flagged    │  (likely a bug or tampered payload)
-         │    │   for review)│
-         │    └──────────────┘
-         │
-         └──── Policy (chat not allowlisted, user suspended)
-                   │
-                   v
-              ┌──────────┐
-              │ Dropped  │  Silently discarded
-              │ (logged) │  (not an error, just policy)
-              └──────────┘
+```mermaid
+flowchart TD
+    A["Message Batch"] --> B{"Process batch"}
+    B -- SUCCESS --> S["Cursor advanced,<br/>batch acknowledged"]
+    B -- FAILURE --> C{"Classify error"}
+
+    C -- "Transient<br/>(network, timeout, rate limit)" --> D["Retry with exponential backoff<br/>Attempt 1: 5s delay<br/>Attempt 2: 25s delay<br/>Attempt 3: 125s delay<br/>Attempt 4: 625s delay (~10 min)<br/>Attempt 5: max retries reached"]
+    D --> DLQ1["Dead-letter queue (DLQ)<br/>Stored for manual review/replay"]
+
+    C -- "Validation<br/>(bad schema, signature mismatch)" --> DLQ2["DLQ (flagged for review)<br/>Immediate, no retry<br/>(likely bug or tampered payload)"]
+
+    C -- "Policy<br/>(chat not allowlisted, user suspended)" --> DROP["Dropped (logged)<br/>Silently discarded<br/>(not an error, just policy)"]
 ```
 
 Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitter (+/- 20%) is added to prevent thundering herd when multiple accounts retry simultaneously.

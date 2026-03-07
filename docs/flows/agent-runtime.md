@@ -8,167 +8,68 @@ The runtime operates on a **gated execution model**: the agent can freely read a
 
 ## Agent Run Sequence Diagram
 
-```
-  User (WhatsApp)       Convex (Orchestrator)       Policy Engine       Operator (WhatsApp)
-  ───────────────       ─────────────────────       ─────────────       ───────────────────
-        │                       │                        │                       │
-        │  1. User sends        │                        │                       │
-        │     message to Ecqo   │                        │                       │
-        │──────────────────────>│                        │                       │
-        │                       │                        │                       │
-        │                       │  2. Create agentRun    │                       │
-        │                       │     state = "queued"   │                       │
-        │                       │                        │                       │
-        │                       │  3. Load context:      │                       │
-        │                       │     - user profile     │                       │
-        │                       │     - workspace config │                       │
-        │                       │     - memory bundle    │                       │
-        │                       │       (pinned +        │                       │
-        │                       │        short-term +    │                       │
-        │                       │        semantic +      │                       │
-        │                       │        episodic)       │                       │
-        │                       │                        │                       │
-        │                       │  4. Select specialist  │                       │
-        │                       │     agent (calendar,   │                       │
-        │                       │     finance, comms...) │                       │
-        │                       │                        │                       │
-        │                       │  5. Agent plans action │                       │
-        │                       │     state = "planning" │                       │
-        │                       │                        │                       │
-        │                       │  6. Evaluate policy ───────────────>│          │
-        │                       │                        │            │          │
-        │                       │                        │  7. Check: │          │
-        │                       │                        │  - action type        │
-        │                       │                        │  - risk level         │
-        │                       │                        │  - user role          │
-        │                       │                        │  - workspace rules    │
-        │                       │                        │  - spend limits       │
-        │                       │                        │            │          │
-        │                       │                        │<───────────┘          │
-        │                       │                        │                       │
-        │                       │         CASE A: Auto-approved                 │
-        │                       │<───────────────────────│                       │
-        │                       │                        │                       │
-        │                       │  8a. Execute tool      │                       │
-        │                       │      state ="executing"│                       │
-        │                       │                        │                       │
-        │  9a. Confirmation     │                        │                       │
-        │      sent to user     │                        │                       │
-        │<──────────────────────│                        │                       │
-        │                       │                        │                       │
-        │                       │         CASE B: Approval required             │
-        │                       │<───────────────────────│                       │
-        │                       │                        │                       │
-        │                       │  8b. Create            │                       │
-        │                       │      approvalRequest   │                       │
-        │                       │      state =           │                       │
-        │                       │      "awaiting_approval"                      │
-        │                       │                        │                       │
-        │                       │  9b. Send approval ───────────────────────────>│
-        │                       │      request via       │                       │
-        │                       │      WhatsApp          │                       │
-        │                       │                        │           10b. Operator
-        │                       │                        │           reviews:
-        │                       │                        │           - action
-        │                       │                        │           - dry-run
-        │                       │                        │             preview
-        │                       │                        │           - requester
-        │                       │                        │                       │
-        │                       │  11b. Operator replies │                       │
-        │                       │       "approve"        │                       │
-        │                       │<──────────────────────────────────────────────│
-        │                       │                        │                       │
-        │                       │  12b. Execute tool     │                       │
-        │                       │       state="executing"│                       │
-        │                       │                        │                       │
-        │  13b. Confirmation    │                        │                       │
-        │       sent to user    │                        │                       │
-        │<──────────────────────│                        │                       │
-        │                       │                        │                       │
-        │                       │  14. state="completed" │                       │
-        │                       │      Log to episodic   │                       │
-        │                       │      memory            │                       │
-        │                       │                        │                       │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User (WhatsApp)
+    participant C as Convex (Orchestrator)
+    participant P as Policy Engine
+    participant O as Operator (WhatsApp)
+
+    U->>C: User sends message to Ecqqo
+    Note over C: Create agentRun<br/>state = "queued"
+    Note over C: Load context: user profile,<br/>workspace config, memory bundle<br/>(pinned + short-term + semantic + episodic)
+    Note over C: Select specialist agent<br/>(calendar, finance, comms...)
+    Note over C: Agent plans action<br/>state = "planning"
+    C->>P: Evaluate policy
+    Note over P: Check: action type, risk level,<br/>user role, workspace rules, spend limits
+
+    alt Case A: Auto-approved
+        P->>C: Auto-approved
+        Note over C: Execute tool<br/>state = "executing"
+        C->>U: Confirmation sent to user
+    else Case B: Approval required
+        P->>C: Approval required
+        Note over C: Create approvalRequest<br/>state = "awaiting_approval"
+        C->>O: Send approval request via WhatsApp
+        Note over O: Operator reviews:<br/>action, dry-run preview, requester
+        O->>C: Operator replies "approve"
+        Note over C: Execute tool<br/>state = "executing"
+        C->>U: Confirmation sent to user
+    end
+
+    Note over C: state = "completed"<br/>Log to episodic memory
 ```
 
 ## Agent Run State Machine
 
-```
-  ┌───────────────────────────────────────────────────────────────────────┐
-  │                         agentRun States                              │
-  └───────────────────────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> planning : Context loaded,<br>specialist selected
 
-                    ┌────────┐
-                    │ queued │
-                    └───┬────┘
-                        │
-                        │ Context loaded,
-                        │ specialist selected
-                        v
-                   ┌──────────┐
-                   │ planning │
-                   └────┬─────┘
-                        │
-                        │ Action planned,
-                        │ policy evaluated
-                        │
-            ┌───────────┴───────────┐
-            │                       │
-            │ Auto-approved         │ Approval required
-            │                       │
-            v                       v
-       ┌───────────┐      ┌───────────────────┐
-       │ executing │      │ awaiting_approval │
-       └─────┬─────┘      └────────┬──────────┘
-             │                     │
-             │              ┌──────┼──────────┐
-             │              │      │          │
-             │         Approved  Rejected   Timeout
-             │              │      │       (24h TTL)
-             │              v      v          v
-             │        ┌───────────┐  ┌──────────┐  ┌─────────┐
-             │        │ executing │  │ rejected │  │ expired │
-             │        └─────┬─────┘  └──────────┘  └─────────┘
-             │              │             │              │
-             ├──────────────┘             │ Terminal     │ Terminal
-             │                            v              v
-             │                         [*] END       [*] END
-             │
-             ├──── Success ──────────────────────┐
-             │                                   │
-             │                                   v
-             │                            ┌───────────┐
-             │                            │ completed │
-             │                            └───────────┘
-             │                                   │
-             │                                   │ Terminal
-             │                                   v
-             │                                [*] END
-             │
-             └──── Transient error ────┐
-                                       │
-                                       v
-                              ┌─────────────────┐
-                              │ retry_executing │
-                              └────────┬────────┘
-                                       │
-                           ┌───────────┤
-                           │           │
-                  Retry ok │           │ Max retries
-                  (< 3)    │           │ exceeded
-                           v           v
-                     ┌───────────┐  ┌────────┐
-                     │ executing │  │ failed │
-                     └───────────┘  └────────┘
-                                        │
-                                        │ Terminal
-                                        v
-                                     [*] END
+    planning --> executing : Auto-approved
+    planning --> awaiting_approval : Approval required
+
+    awaiting_approval --> executing : Approved
+    awaiting_approval --> rejected : Rejected
+    awaiting_approval --> expired : Timeout (24h TTL)
+
+    executing --> completed : Success
+    executing --> retry_executing : Transient error
+
+    retry_executing --> executing : Retry ok (< 3 retries)
+    retry_executing --> failed : Max retries exceeded
+
+    completed --> [*]
+    rejected --> [*]
+    expired --> [*]
+    failed --> [*]
 ```
 
 ## Approval via WhatsApp
 
-The approval flow is a core differentiator of Ecqo: operators and principals can approve or reject agent actions directly from WhatsApp, without opening a dashboard.
+The approval flow is a core differentiator of Ecqqo: operators and principals can approve or reject agent actions directly from WhatsApp, without opening a dashboard.
 
 ### Approval Request Message
 
@@ -176,7 +77,7 @@ When the agent determines an action requires approval, a structured WhatsApp mes
 
 ```
   ┌─────────────────────────────────────────────────┐
-  │  Ecqo Approval Request                         │
+  │  Ecqqo Approval Request                         │
   │                                                 │
   │  Action:  Create calendar event                 │
   │  For:     Ahmed Al-Rashid (Principal)           │
@@ -198,42 +99,15 @@ When the agent determines an action requires approval, a structured WhatsApp mes
 
 When the approver replies, the response flows back through the same Meta Cloud API webhook. The system must distinguish approval responses from regular messages:
 
-```
-  Inbound WhatsApp Message
-         │
-         v
-  ┌──────────────────┐
-  │ Identify sender  │
-  │ (phone lookup)   │
-  └────────┬─────────┘
-           │
-           v
-  ┌──────────────────┐
-  │ Check for        │
-  │ pending approval │──── NO ──> Route to regular agent
-  │ requests for     │           message processing
-  │ this user        │
-  └────────┬─────────┘
-           │ YES
-           v
-  ┌──────────────────┐
-  │ Parse response:  │
-  │ - "approve" /    │
-  │   button tap     │──── APPROVE ──> Execute action
-  │ - "reject" /     │                 Notify requester
-  │   button tap     │
-  │ - anything else  │──── REJECT ──>  Cancel agentRun
-  │                  │                 Notify requester
-  └────────┬─────────┘
-           │ UNCLEAR
-           v
-  ┌──────────────────┐
-  │ Ask for          │
-  │ clarification:   │
-  │ "Did you mean to │
-  │ approve or       │
-  │ reject?"         │
-  └──────────────────┘
+```mermaid
+flowchart TD
+    A["Inbound WhatsApp Message"] --> B["Identify sender<br/>(phone lookup)"]
+    B --> C{"Pending approval<br/>requests for this user?"}
+    C -- NO --> D["Route to regular agent<br/>message processing"]
+    C -- YES --> E{"Parse response"}
+    E -- "APPROVE<br/>(text or button tap)" --> F["Execute action<br/>Notify requester"]
+    E -- "REJECT<br/>(text or button tap)" --> G["Cancel agentRun<br/>Notify requester"]
+    E -- UNCLEAR --> H["Ask for clarification:<br/>Did you mean to<br/>approve or reject?"]
 ```
 
 ### Context-Aware Routing
@@ -243,51 +117,20 @@ If an approver has multiple pending approval requests, the system uses context t
 1. **Recency** -- If only one pending request, the reply applies to it.
 2. **Quick-reply metadata** -- WhatsApp interactive button replies include a payload ID that maps to a specific `approvalRequest`.
 3. **Explicit reference** -- The approver can reply with "approve the calendar event" to disambiguate.
-4. **Disambiguation prompt** -- If ambiguous, Ecqo lists pending requests and asks the approver to specify.
+4. **Disambiguation prompt** -- If ambiguous, Ecqqo lists pending requests and asks the approver to specify.
 
 ## Policy Engine Rules
 
 The policy engine determines whether an action can auto-execute or needs approval. Rules are evaluated in priority order:
 
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                      Policy Rule Evaluation                     │
-  └─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    P1["**Priority 1: Workspace-level overrides**<br/>Workspace owner can configure:<br/>- All actions require approval (paranoid mode)<br/>- Trust agent for read-only actions (default)<br/>- Per-action-type approval rules"]
+    P2["**Priority 2: Action risk classification**<br/>None: Read calendar, list chats → Auto-execute<br/>Low: Create reminder, set alarm → Auto-execute<br/>Medium: Send message, create event → Approval required<br/>High: Make payment, delete data → Approval required<br/>Critical: Change permissions, share creds → Owner approval only"]
+    P3["**Priority 3: Approver selection**<br/>Medium → Any operator or principal<br/>High → Principal or owner<br/>Critical → Owner only"]
 
-  Priority 1: Workspace-level overrides
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ Workspace owner can configure:                                  │
-  │ - "All actions require approval" (paranoid mode)                │
-  │ - "Trust agent for read-only actions" (default)                 │
-  │ - Per-action-type approval rules                                │
-  └──────────────────────────────┬──────────────────────────────────┘
-                                 │ If no workspace override matches
-                                 v
-  Priority 2: Action risk classification
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                                                                 │
-  │  Risk Level    Examples                    Default Policy       │
-  │  ──────────    ────────                    ──────────────       │
-  │  None          Read calendar, list chats   Auto-execute         │
-  │  Low           Create reminder, set alarm  Auto-execute         │
-  │  Medium        Send message, create event  Approval required    │
-  │  High          Make payment, delete data   Approval required    │
-  │  Critical      Change permissions, share   Owner approval only  │
-  │                access credentials                               │
-  │                                                                 │
-  └──────────────────────────────┬──────────────────────────────────┘
-                                 │ If approval required
-                                 v
-  Priority 3: Approver selection
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                                                                 │
-  │  Risk Level    Approver                                        │
-  │  ──────────    ────────                                        │
-  │  Medium        Any operator or principal in workspace           │
-  │  High          Principal or owner                               │
-  │  Critical      Owner only                                       │
-  │                                                                 │
-  └─────────────────────────────────────────────────────────────────┘
+    P1 -- "If no workspace<br/>override matches" --> P2
+    P2 -- "If approval required" --> P3
 ```
 
 ### Spend Limits

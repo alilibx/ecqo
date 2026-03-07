@@ -1,6 +1,6 @@
 # Billing (Stripe)
 
-Stripe integration architecture, plan definitions, webhook handling, and enforcement logic for Ecqo subscriptions.
+Stripe integration architecture, plan definitions, webhook handling, and enforcement logic for Ecqqo subscriptions.
 
 ## Integration Architecture
 
@@ -77,9 +77,9 @@ Stripe integration architecture, plan definitions, webhook handling, and enforce
 
 ## Stripe Objects Mapping
 
-| Stripe Object | Ecqo Mapping | Notes |
+| Stripe Object | Ecqqo Mapping | Notes |
 |--------------|-------------|-------|
-| Product | Ecqo plan (Founder, Dreamer, Custom) | One product per plan tier |
+| Product | Ecqqo plan (Founder, Dreamer, Custom) | One product per plan tier |
 | Price | Monthly price variant | Two prices per product: USD and AED |
 | Customer | Workspace | 1:1 mapping. stripeId stored in workspaces table |
 | Subscription | Active plan | One active sub per workspace |
@@ -197,7 +197,7 @@ indexes:
 
 ## Multi-Currency Handling
 
-Ecqo supports USD and AED billing. The user's currency preference persists through the subscription lifecycle.
+Ecqqo supports USD and AED billing. The user's currency preference persists through the subscription lifecycle.
 
 ```
   Dashboard currency toggle (landing page)

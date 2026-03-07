@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This log captures the major architectural decisions made for Ecqo. Each record explains the context, the decision, what alternatives were considered, and the consequences. Decisions are numbered sequentially and immutable once accepted -- superseded decisions are marked as such with a pointer to the replacement.
+This log captures the major architectural decisions made for Ecqqo. Each record explains the context, the decision, what alternatives were considered, and the consequences. Decisions are numbered sequentially and immutable once accepted -- superseded decisions are marked as such with a pointer to the replacement.
 
 ---
 
@@ -8,12 +8,12 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Ecqo needs multi-tenant authentication with workspace-scoped role-based access control (owner, principal, operator). The target user base includes UAE-based principals who may prefer phone number login or social login via Google. The dashboard requires session management, JWT issuance for Convex, and the ability to invite members to a workspace by email. Building auth from scratch is out of scope for a solo developer shipping an MVP.
+- **Context**: Ecqqo needs multi-tenant authentication with workspace-scoped role-based access control (owner, principal, operator). The target user base includes UAE-based principals who may prefer phone number login or social login via Google. The dashboard requires session management, JWT issuance for Convex, and the ability to invite members to a workspace by email. Building auth from scratch is out of scope for a solo developer shipping an MVP.
 - **Decision**: Use Clerk as the authentication provider. Clerk handles user registration, login (email, phone, Google OAuth), session management, and JWT issuance. Workspace membership and role assignment are stored in Clerk's organization feature, with claims embedded in the JWT and validated by every Convex function.
 - **Alternatives Considered**:
   - **Convex built-in auth**: Convex offers a simple auth integration but lacks organization/workspace primitives, role management, and social login out of the box. Would require building membership and invitation flows manually.
   - **Auth0**: Mature platform with organizations feature, but significantly more complex configuration. Pricing scales unfavorably for a bootstrapped product. The dashboard and SDK feel enterprise-heavy for a solo-dev workflow.
-  - **Supabase Auth**: Tightly coupled to Supabase's Postgres backend. Since Ecqo uses Convex (not Supabase) for the database, using Supabase Auth alone creates an awkward split where auth lives in one cloud and data in another, with no real benefit.
+  - **Supabase Auth**: Tightly coupled to Supabase's Postgres backend. Since Ecqqo uses Convex (not Supabase) for the database, using Supabase Auth alone creates an awkward split where auth lives in one cloud and data in another, with no real benefit.
 - **Consequences**: Clerk becomes a critical dependency for all authenticated flows. JWT validation is performed on every Convex function call, adding a small latency overhead (typically <5ms). Clerk's pricing applies per monthly active user. If Clerk has an outage, no user can access the dashboard (mitigated by Clerk's 99.99% SLA). The team avoids building auth UI, email verification, password reset, and session management -- saving weeks of development time.
 
 ---
@@ -22,7 +22,7 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Each Ecqo workspace needs a long-running process (the "connector worker") that maintains a WhatsApp Web session, syncs messages, and forwards events to Convex. These workers are stateful (they hold an encrypted session file), must run 24/7, and need per-user isolation so that one user's crash does not affect another. The worker count scales linearly with user count (one worker per workspace). Workers need to be started and stopped programmatically when users connect or disconnect WhatsApp.
+- **Context**: Each Ecqqo workspace needs a long-running process (the "connector worker") that maintains a WhatsApp Web session, syncs messages, and forwards events to Convex. These workers are stateful (they hold an encrypted session file), must run 24/7, and need per-user isolation so that one user's crash does not affect another. The worker count scales linearly with user count (one worker per workspace). Workers need to be started and stopped programmatically when users connect or disconnect WhatsApp.
 - **Decision**: Run connector workers as Fly.io Machines. Each workspace gets a dedicated Machine in the region closest to the user (e.g., `dxb` for UAE users). Machines are created/destroyed via the Fly.io Machines API from a Convex action. Session files are stored on encrypted Fly.io volumes attached to each Machine.
 - **Alternatives Considered**:
   - **AWS ECS/Fargate**: Proven for container orchestration, but the operational overhead is high for a solo developer. ECS task definitions, VPC configuration, IAM roles, and CloudWatch setup add significant complexity. Fargate cold starts (30-60s) are acceptable but not ideal. Pricing is competitive but harder to reason about.
@@ -33,16 +33,16 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 ---
 
-### ADR-003: Single Ecqo WhatsApp Number via Meta Cloud API
+### ADR-003: Single Ecqqo WhatsApp Number via Meta Cloud API
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Ecqo needs to send outbound WhatsApp messages to users (approval notifications, agent responses, daily briefings). There are two approaches: give each user their own WhatsApp Business number, or have all users interact with a single Ecqo-owned business number. The outbound path is separate from the connector (which syncs the user's personal WhatsApp). Outbound messages are sent by the agent on behalf of the user, delivered to the user's personal WhatsApp from Ecqo's number.
-- **Decision**: Use a single Ecqo-owned WhatsApp Business number registered with Meta's Cloud API. All outbound messages (approval requests, agent responses, briefings) come from this one number. Users add Ecqo's number to their contacts. Inbound replies to this number are routed to the correct workspace by matching the sender's verified phone number.
+- **Context**: Ecqqo needs to send outbound WhatsApp messages to users (approval notifications, agent responses, daily briefings). There are two approaches: give each user their own WhatsApp Business number, or have all users interact with a single Ecqqo-owned business number. The outbound path is separate from the connector (which syncs the user's personal WhatsApp). Outbound messages are sent by the agent on behalf of the user, delivered to the user's personal WhatsApp from Ecqqo's number.
+- **Decision**: Use a single Ecqqo-owned WhatsApp Business number registered with Meta's Cloud API. All outbound messages (approval requests, agent responses, briefings) come from this one number. Users add Ecqqo's number to their contacts. Inbound replies to this number are routed to the correct workspace by matching the sender's verified phone number.
 - **Alternatives Considered**:
   - **Per-user WhatsApp Business numbers**: Each workspace gets its own WhatsApp Business number. This provides a more "personal" feel but requires Meta Business verification per number, costs $0.05-0.10 per conversation per day per number, and creates operational complexity around number provisioning, compliance, and support. Not viable for an MVP.
   - **WhatsApp Business Platform multi-number**: Meta's BSP partners (like Twilio, MessageBird) offer multi-number management. This delegates provisioning complexity to the BSP but adds another vendor dependency, higher per-message costs, and a less direct relationship with Meta's API.
-- **Consequences**: Simpler operations -- one number to manage, one Meta Business verification, one set of message templates. Users see "Ecqo" as the sender, which reinforces brand but means the agent cannot impersonate the user via WhatsApp (all outbound is clearly from Ecqo). Routing inbound replies requires a reliable phone-number-to-workspace lookup, which depends on Meta's verified phone number in webhook payloads. If Meta restricts the number (rate limits, policy violations), all users are affected simultaneously -- this is the primary risk, mitigated by strict message template compliance and conservative sending rates.
+- **Consequences**: Simpler operations -- one number to manage, one Meta Business verification, one set of message templates. Users see "Ecqqo" as the sender, which reinforces brand but means the agent cannot impersonate the user via WhatsApp (all outbound is clearly from Ecqqo). Routing inbound replies requires a reliable phone-number-to-workspace lookup, which depends on Meta's verified phone number in webhook payloads. If Meta restricts the number (rate limits, policy violations), all users are affected simultaneously -- this is the primary risk, mitigated by strict message template compliance and conservative sending rates.
 
 ---
 
@@ -50,11 +50,11 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: The agent runtime needs to call LLMs for reasoning, tool planning, and natural language generation. Model quality and pricing are evolving rapidly. Ecqo should be able to switch between providers (OpenAI, Anthropic, Google) without rewriting integration code. The agent uses structured tool calling, streaming responses, and multi-turn conversations.
+- **Context**: The agent runtime needs to call LLMs for reasoning, tool planning, and natural language generation. Model quality and pricing are evolving rapidly. Ecqqo should be able to switch between providers (OpenAI, Anthropic, Google) without rewriting integration code. The agent uses structured tool calling, streaming responses, and multi-turn conversations.
 - **Decision**: Use the Vercel AI SDK (`ai` package) as the abstraction layer for all LLM interactions. The SDK provides a unified interface for chat completions, tool calling, and streaming across providers. Model selection is a configuration value (`model: "anthropic/claude-sonnet-4-20250514"`) that can be changed per workspace or globally without code changes.
 - **Alternatives Considered**:
   - **Direct OpenAI/Anthropic SDKs**: Maximum control and access to provider-specific features. But switching providers means rewriting integration code, handling different streaming formats, and adapting tool calling schemas. Maintenance burden multiplies with each provider.
-  - **LangChain**: Feature-rich framework with chains, agents, memory, and retrieval. However, LangChain is heavily abstracted, has a large dependency tree, and its abstractions often leak or change between versions. The "framework" approach conflicts with Ecqo's need for tight control over agent behavior (approval gates, kill switches). Debugging LangChain agent behavior is notoriously difficult.
+  - **LangChain**: Feature-rich framework with chains, agents, memory, and retrieval. However, LangChain is heavily abstracted, has a large dependency tree, and its abstractions often leak or change between versions. The "framework" approach conflicts with Ecqqo's need for tight control over agent behavior (approval gates, kill switches). Debugging LangChain agent behavior is notoriously difficult.
   - **LiteLLM**: Lightweight proxy that normalizes provider APIs. Good for the specific problem of provider switching, but it is a Python-first tool. Using it from a TypeScript stack requires running a separate proxy service or using the REST API, adding latency and operational complexity.
 - **Consequences**: The Vercel AI SDK is TypeScript-native, well-maintained (backed by Vercel), and has a small API surface. It supports streaming, tool calling, and multi-turn conversations. The trade-off is that provider-specific features (like Anthropic's extended thinking or OpenAI's function calling nuances) may be accessed through the SDK's lower-level escape hatches rather than the unified API. The SDK adds a dependency on Vercel's open-source project, but it is MIT-licensed and has no runtime lock-in to Vercel's hosting platform.
 
@@ -69,9 +69,9 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 - **Alternatives Considered**:
   - **Pinecone**: Purpose-built vector database with excellent query performance, metadata filtering, and namespace isolation. However, it adds another managed service to the stack, requires synchronizing data between Convex (source of truth) and Pinecone (search index), and introduces eventual consistency between the two. Costs $70+/month for the standard tier.
   - **Qdrant**: Open-source vector database with a generous free tier on Qdrant Cloud. Strong filtering capabilities. Same synchronization concern as Pinecone. Self-hosting on Fly.io is possible but adds operational burden.
-  - **Weaviate**: Full-featured vector database with built-in vectorization. Overkill for Ecqo's use case. Heavy operational footprint if self-hosted.
+  - **Weaviate**: Full-featured vector database with built-in vectorization. Overkill for Ecqqo's use case. Heavy operational footprint if self-hosted.
   - **pgvector (via Supabase or Neon)**: Adds PostgreSQL to the stack, which conflicts with the Convex-first architecture. Would require maintaining two databases and keeping them in sync.
-- **Consequences**: Keeping vector search inside Convex eliminates data synchronization issues -- when a memory entry is created or updated, the vector index is updated transactionally in the same mutation. No additional service to manage or pay for. The trade-off is that Convex's vector search is less feature-rich than dedicated vector databases (limited filtering options, no hybrid search, no re-ranking). For Ecqo's scale (thousands of memory entries per workspace, not millions), this is acceptable. If semantic search quality becomes a bottleneck, migrating to Pinecone is a well-understood path.
+- **Consequences**: Keeping vector search inside Convex eliminates data synchronization issues -- when a memory entry is created or updated, the vector index is updated transactionally in the same mutation. No additional service to manage or pay for. The trade-off is that Convex's vector search is less feature-rich than dedicated vector databases (limited filtering options, no hybrid search, no re-ranking). For Ecqqo's scale (thousands of memory entries per workspace, not millions), this is acceptable. If semantic search quality becomes a bottleneck, migrating to Pinecone is a well-understood path.
 
 ---
 
@@ -93,12 +93,12 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 - **Status**: Accepted
 - **Date**: 2026-03-07
 - **Context**: When the agent needs approval for an action (sending an email, scheduling a meeting, replying to a message), the user needs to be notified promptly. The target users are high-net-worth operators who may not check a dashboard frequently but are on WhatsApp continuously throughout the day. Approval latency directly impacts the product's usefulness -- a 30-minute delay in approving a meeting reply defeats the purpose of having an AI assistant.
-- **Decision**: Send approval notifications via WhatsApp (from Ecqo's official business number via Meta Cloud API). The notification includes a summary of the proposed action and a prompt to approve or reject. Users can approve by replying "yes" or "approve" directly in WhatsApp, or tap a link to the dashboard for the full dry-run preview.
+- **Decision**: Send approval notifications via WhatsApp (from Ecqqo's official business number via Meta Cloud API). The notification includes a summary of the proposed action and a prompt to approve or reject. Users can approve by replying "yes" or "approve" directly in WhatsApp, or tap a link to the dashboard for the full dry-run preview.
 - **Alternatives Considered**:
   - **Email notifications**: Reliable delivery but slow engagement. Target users receive hundreds of emails daily. An approval request email will compete with newsletters, marketing, and other notifications. Open rates for transactional email average 40-50%, which means half of approval requests would be missed or delayed.
   - **Push notifications (PWA or native app)**: Requires building a mobile app or PWA with push notification support. Users must install the app and grant notification permissions. Adds significant development scope (iOS/Android or service worker setup). Push notifications are often silenced or ignored.
   - **Dashboard-only**: The dashboard shows pending approvals with a badge count. This works if the user keeps the dashboard open, but target users are unlikely to keep a browser tab open all day. Requires active polling by the user.
-- **Consequences**: WhatsApp notifications meet users where they already are. Response times are expected to be minutes, not hours. The trade-off is dependence on Meta Cloud API delivery (which has >99.5% delivery rates for template messages). Users must have Ecqo's number saved and must not block it. WhatsApp message templates require Meta approval, which constrains notification formatting. Quick approval via WhatsApp reply is convenient but less secure than dashboard approval (no dry-run preview) -- this is acceptable for low-risk actions, with high-risk actions requiring dashboard review enforced by policy rules.
+- **Consequences**: WhatsApp notifications meet users where they already are. Response times are expected to be minutes, not hours. The trade-off is dependence on Meta Cloud API delivery (which has >99.5% delivery rates for template messages). Users must have Ecqqo's number saved and must not block it. WhatsApp message templates require Meta approval, which constrains notification formatting. Quick approval via WhatsApp reply is convenient but less secure than dashboard approval (no dry-run preview) -- this is acceptable for low-risk actions, with high-risk actions requiring dashboard review enforced by policy rules.
 
 ---
 
@@ -106,7 +106,7 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Ecqo needs subscription billing for its SaaS plans. The primary market is UAE (where AED is the local currency), with plans to serve international users (USD). The billing system must support recurring subscriptions, plan changes, payment method management, and invoice generation. UAE has no sales tax (VAT is 5% but may not apply to B2B SaaS depending on the free zone), simplifying tax handling.
+- **Context**: Ecqqo needs subscription billing for its SaaS plans. The primary market is UAE (where AED is the local currency), with plans to serve international users (USD). The billing system must support recurring subscriptions, plan changes, payment method management, and invoice generation. UAE has no sales tax (VAT is 5% but may not apply to B2B SaaS depending on the free zone), simplifying tax handling.
 - **Decision**: Use Stripe for all billing. Plans are defined in both AED and USD. Users select their preferred currency during onboarding (or change it in Settings). Stripe's Customer Portal is embedded in the dashboard for self-service plan changes, payment method updates, and invoice access.
 - **Alternatives Considered**:
   - **Paddle**: Merchant of record model handles VAT/tax globally, which is appealing. However, Paddle's Middle East support is limited -- AED is not a supported settlement currency, and UAE payment methods (local debit cards, bank transfers) are not well-supported. Paddle takes a higher revenue cut (5% + $0.50 per transaction vs. Stripe's 2.9% + $0.30).
@@ -120,10 +120,10 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Ecqo consists of multiple components: the TanStack Start dashboard (frontend), Convex functions (backend), connector worker code (services), and documentation. These components share TypeScript types (e.g., workspace IDs, role enums, event schemas) and need to be deployed in coordination (e.g., a schema change in Convex requires updating the dashboard's queries). The project is built and maintained by a solo developer.
+- **Context**: Ecqqo consists of multiple components: the TanStack Start dashboard (frontend), Convex functions (backend), connector worker code (services), and documentation. These components share TypeScript types (e.g., workspace IDs, role enums, event schemas) and need to be deployed in coordination (e.g., a schema change in Convex requires updating the dashboard's queries). The project is built and maintained by a solo developer.
 - **Decision**: Keep all code in a single repository with a directory-based structure.
   ```
-  ecqo/
+  ecqqo/
   +-- app/            Frontend (TanStack Start + React)
   +-- convex/         Backend (Convex functions + schema)
   +-- services/       Connector worker, background jobs
@@ -132,8 +132,8 @@ This log captures the major architectural decisions made for Ecqo. Each record e
   +-- package.json    Dependencies (single lockfile)
   ```
 - **Alternatives Considered**:
-  - **Separate repos per service**: `ecqo-dashboard`, `ecqo-convex`, `ecqo-connector`, `ecqo-docs`. Clean separation of concerns, independent CI/CD pipelines, independent versioning. But for a solo developer, the overhead of maintaining multiple repos (PRs, dependency sync, cross-repo type sharing, coordinated deployments) is high. Shared types require publishing an internal package or git submodules, both of which add friction.
-  - **Turborepo/Nx monorepo**: Structured monorepo with workspace packages, shared configs, and build caching. Powerful for teams but overkill for a solo developer. Turborepo's caching and task orchestration solve problems that do not yet exist at Ecqo's scale. Adds configuration complexity (workspace protocols, package boundaries, build pipelines) without proportional benefit.
+  - **Separate repos per service**: `ecqqo-dashboard`, `ecqqo-convex`, `ecqqo-connector`, `ecqqo-docs`. Clean separation of concerns, independent CI/CD pipelines, independent versioning. But for a solo developer, the overhead of maintaining multiple repos (PRs, dependency sync, cross-repo type sharing, coordinated deployments) is high. Shared types require publishing an internal package or git submodules, both of which add friction.
+  - **Turborepo/Nx monorepo**: Structured monorepo with workspace packages, shared configs, and build caching. Powerful for teams but overkill for a solo developer. Turborepo's caching and task orchestration solve problems that do not yet exist at Ecqqo's scale. Adds configuration complexity (workspace protocols, package boundaries, build pipelines) without proportional benefit.
 - **Consequences**: A flat monorepo with directory-based separation gives the fastest iteration speed for a solo developer. Shared types are imported directly across directories without package publishing. A single `bun.lockb` file means no dependency version conflicts. The trade-off is that as the team grows, the lack of formal package boundaries may lead to tight coupling. The migration path to Turborepo workspaces is straightforward when needed -- add `workspaces` to `package.json` and split `dependencies` per package.
 
 ---
@@ -156,7 +156,7 @@ This log captures the major architectural decisions made for Ecqo. Each record e
 
 - **Status**: Accepted
 - **Date**: 2026-03-07
-- **Context**: Ecqo's agent runtime involves multi-step LLM chains (orchestrator -> specialist -> tool execution -> approval -> delivery). In production, the team needs visibility into prompt performance, token costs, latency breakdowns, tool call success rates, and the ability to replay/debug failed runs. Generic APM tools (Datadog, New Relic) can measure HTTP latency but cannot trace LLM-specific concerns like token usage, prompt quality, or chain-of-thought reasoning. The system uses Vercel AI SDK for provider-agnostic model access, so the observability tool must work across providers.
+- **Context**: Ecqqo's agent runtime involves multi-step LLM chains (orchestrator -> specialist -> tool execution -> approval -> delivery). In production, the team needs visibility into prompt performance, token costs, latency breakdowns, tool call success rates, and the ability to replay/debug failed runs. Generic APM tools (Datadog, New Relic) can measure HTTP latency but cannot trace LLM-specific concerns like token usage, prompt quality, or chain-of-thought reasoning. The system uses Vercel AI SDK for provider-agnostic model access, so the observability tool must work across providers.
 - **Decision**: Use LangSmith as the observability layer for all agent runs. Every LLM call is wrapped with LangSmith's `traceable()` decorator. Traces capture the full run lifecycle: context assembly, orchestrator call, specialist call, policy evaluation, approval wait, tool execution, and response delivery. PII is redacted before traces are sent. LangSmith's eval framework is used for prompt regression testing.
 - **Alternatives Considered**:
   - **Langfuse (open-source)**: Self-hosted LLM observability. Full control over data, no vendor lock-in. But self-hosting adds ops burden for a solo developer -- Postgres instance, deployment, upgrades, backups. The managed cloud tier exists but is less mature than LangSmith's ecosystem. The eval and dataset features are catching up but not yet as polished.

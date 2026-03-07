@@ -1,6 +1,6 @@
 # Schema & ERD
 
-This document describes every entity in the Ecqo data model, their relationships, field definitions, indexes, and idempotency rules. All data lives in Convex, which serves as the single source of truth.
+This document describes every entity in the Ecqqo data model, their relationships, field definitions, indexes, and idempotency rules. All data lives in Convex, which serves as the single source of truth.
 
 ## Entity-Relationship Diagram
 

@@ -1,6 +1,6 @@
 # API Contracts
 
-This document specifies every internal and external API surface in Ecqo: HTTP endpoints, Convex queries/mutations/actions, webhook handlers, and their request/response schemas. All endpoints follow consistent patterns for authentication, idempotency, and error handling.
+This document specifies every internal and external API surface in Ecqqo: HTTP endpoints, Convex queries/mutations/actions, webhook handlers, and their request/response schemas. All endpoints follow consistent patterns for authentication, idempotency, and error handling.
 
 ## API Surface Overview
 
@@ -278,7 +278,7 @@ The `command` field allows Convex to issue lifecycle instructions to the worker:
 
 Webhook verification endpoint (required by Meta during setup).
 
-**Purpose:** Meta sends a verification request when registering the webhook. Ecqo must echo back the challenge token.
+**Purpose:** Meta sends a verification request when registering the webhook. Ecqqo must echo back the challenge token.
 
 **Auth:** Verified via `hub.verify_token` matching the configured token in Convex environment variables.
 
@@ -304,7 +304,7 @@ Webhook verification endpoint (required by Meta during setup).
 
 Receives inbound messages from users via Meta Cloud API.
 
-**Purpose:** Primary inbound channel. Users send WhatsApp messages to the Ecqo Business Number, and Meta delivers them here.
+**Purpose:** Primary inbound channel. Users send WhatsApp messages to the Ecqqo Business Number, and Meta delivers them here.
 
 **Auth:** HMAC-SHA256 signature verification using `META_APP_SECRET`.
 

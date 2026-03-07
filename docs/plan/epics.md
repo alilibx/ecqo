@@ -1,6 +1,6 @@
 # Epics & Issues
 
-10 epics covering the full Ecqo MVP scope. Each epic lists its objective and a complete issue table with ID, title, priority (1 = must-have, 2 = should-have, 3 = nice-to-have), estimate (story points), dependencies, and acceptance criteria.
+10 epics covering the full Ecqqo MVP scope. Each epic lists its objective and a complete issue table with ID, title, priority (1 = must-have, 2 = should-have, 3 = nice-to-have), estimate (story points), dependencies, and acceptance criteria.
 
 ---
 

@@ -1,6 +1,6 @@
 # Agent Architecture
 
-This document describes Ecqo's AI agent system: the orchestrator, specialist agents, tools, memory system, approval workflows, and prompt architecture. The agent processes WhatsApp messages and executes tasks on behalf of high-net-worth operators through a human-in-the-loop pipeline.
+This document describes Ecqqo's AI agent system: the orchestrator, specialist agents, tools, memory system, approval workflows, and prompt architecture. The agent processes WhatsApp messages and executes tasks on behalf of high-net-worth operators through a human-in-the-loop pipeline.
 
 ## Complete Agent Architecture
 
@@ -503,7 +503,7 @@ Each agent (orchestrator and specialists) receives a structured system prompt co
   +=====================================================+
   |                                                     |
   |  1. ROLE DEFINITION                                 |
-  |     "You are Ecqo, a WhatsApp-native executive     |
+  |     "You are Ecqqo, a WhatsApp-native executive     |
   |      assistant for {principal_name}."               |
   |                                                     |
   |  2. CAPABILITIES                                    |
@@ -550,7 +550,7 @@ Each agent (orchestrator and specialists) receives a structured system prompt co
   |                                                     |
   |  [RECENT CONVERSATION]                              |
   |  User: Can you move my 2pm to tomorrow?            |
-  |  Ecqo: Done. Moved "Call with supplier" to         |
+  |  Ecqqo: Done. Moved "Call with supplier" to         |
   |        tomorrow at 2pm. Anything else?              |
   |  User: Actually make it 3pm                        |
   |                                                     |

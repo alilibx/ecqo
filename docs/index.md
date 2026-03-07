@@ -1,7 +1,7 @@
 ---
 layout: home
 hero:
-  name: "Ecqo"
+  name: "Ecqqo"
   text: "Architecture & Delivery Plan"
   tagline: WhatsApp-native executive assistant for high-net-worth operators
   actions:
@@ -13,7 +13,7 @@ hero:
       link: /plan/milestones
 features:
   - title: WhatsApp-Native
-    details: Single Ecqo number. Users interact via WhatsApp. Agent responds in-chat via Meta Cloud API. Dashboard for monitoring and approvals.
+    details: Single Ecqqo number. Users interact via WhatsApp. Agent responds in-chat via Meta Cloud API. Dashboard for monitoring and approvals.
   - title: Agent Platform
     details: Convex-native orchestrator with specialist agents, 4-tier memory system, approval-gated execution, and bilingual EN/AR support.
   - title: Pilot-Safe
