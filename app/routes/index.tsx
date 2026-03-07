@@ -427,6 +427,23 @@ function Home() {
               <a className="button" href="#calculator">{t.hero.cta}</a>
               <a className="ghost" href="#workflow">{t.hero.secondaryCta}</a>
             </div>
+            <div className="integrations-strip">
+              <span className="integrations-label">{t.integrations.label}</span>
+              <div className="integrations-logos">
+                <div className="integration-logo" title="WhatsApp">
+                  <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <div className="integration-logo" title="Google Calendar">
+                  <svg viewBox="0 0 24 24"><path d="M18.316 5.684H24v12.632h-5.684V5.684z" fill="#1967D2"/><path d="M5.684 24l-5.684-5.684V5.684L5.684 0v24z" fill="#1967D2" opacity=".4"/><path d="M18.316 5.684L24 0H5.684l12.632 5.684z" fill="#1967D2" opacity=".5"/><path d="M12 17.526a5.526 5.526 0 100-11.052 5.526 5.526 0 000 11.052z" fill="#fff"/><path d="M12 8.21v4.105l2.526 2.526" fill="none" stroke="#1967D2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div className="integration-logo" title="Gmail">
+                  <svg viewBox="0 0 24 24"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 010 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
+                </div>
+                <div className="integration-logo" title="Outlook">
+                  <svg viewBox="0 0 24 24"><path d="M24 7.387v10.478c0 .23-.08.424-.238.576a.807.807 0 01-.588.234h-8.543v-7.08l1.63 1.18a.272.272 0 00.322 0l7.17-5.186a.586.586 0 01.247.798z" fill="#0078D4"/><path d="M15.87 8.17a.272.272 0 01-.322 0l-1.63-1.18V4.825h8.543c.226 0 .42.08.581.24.161.159.245.35.252.573L15.87 8.17z" fill="#0078D4" opacity=".7"/><path d="M0 5.125c0-.645.22-1.19.66-1.634A2.195 2.195 0 012.263 2.85h6.37v18.298H2.262a2.182 2.182 0 01-1.602-.642A2.17 2.17 0 010 18.875V5.125z" fill="#0078D4"/><ellipse cx="5.448" cy="12" rx="2.756" ry="3.474" fill="#fff"/></svg>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="hero-visual reveal delay-1">
@@ -519,12 +536,36 @@ function Home() {
               <p className="old-price">{price(8799, 2400, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
               <p className="old-copy">{t.savings.vaCopy}</p>
               <span className="old-save">{t.savings.savingsLabel} {t.savings.savingsVa}</span>
+              <div className="savings-illus">
+                <svg viewBox="0 0 120 60" fill="none">
+                  <rect x="8" y="10" width="28" height="20" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(-6 22 20)" />
+                  <rect x="42" y="14" width="28" height="20" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(4 56 24)" />
+                  <rect x="78" y="8" width="28" height="20" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(-3 92 18)" />
+                  <path d="M20 38c8-12 16 8 24-4s16 10 24-2s16 8 24-6" stroke="var(--signal)" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                  <circle cx="30" cy="46" r="3" fill="var(--muted)" opacity="0.3" />
+                  <circle cx="58" cy="50" r="2" fill="var(--muted)" opacity="0.2" />
+                  <circle cx="86" cy="44" r="2.5" fill="var(--muted)" opacity="0.25" />
+                </svg>
+              </div>
             </article>
             <article className="old-card" onClick={() => setCurrentCost(currency === "AED" ? 21999 : 5945)}>
               <p className="old-label">{t.savings.eaAverage}</p>
               <p className="old-price">{price(21999, 5945, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
               <p className="old-copy">{t.savings.eaCopy}</p>
               <span className="old-save">{t.savings.savingsLabel} {t.savings.savingsEa}</span>
+              <div className="savings-illus">
+                <svg viewBox="0 0 120 60" fill="none">
+                  <rect x="10" y="6" width="22" height="18" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(5 21 15)" />
+                  <rect x="38" y="12" width="22" height="18" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(-8 49 21)" />
+                  <rect x="66" y="4" width="22" height="18" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(3 77 13)" />
+                  <rect x="88" y="16" width="22" height="18" rx="3" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="3 2" transform="rotate(-5 99 25)" />
+                  <path d="M16 40l8-6 10 10 8-14 10 8 12-12 10 6 12-10" stroke="var(--signal)" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                  <circle cx="24" cy="50" r="2" fill="var(--muted)" opacity="0.2" />
+                  <circle cx="52" cy="48" r="3" fill="var(--muted)" opacity="0.3" />
+                  <circle cx="80" cy="52" r="2" fill="var(--muted)" opacity="0.2" />
+                  <circle cx="100" cy="46" r="2.5" fill="var(--muted)" opacity="0.25" />
+                </svg>
+              </div>
             </article>
           </div>
           <div className="savings-arrow reveal delay-1">
@@ -540,6 +581,20 @@ function Home() {
               <div className="new-card-right">
                 <p className="new-copy">{t.savings.ecqqoCopy}</p>
                 <a className="button" href="#calculator">{t.nav.getStarted}</a>
+                <div className="new-card-illus">
+                  <svg viewBox="0 0 120 50" fill="none">
+                    <rect x="10" y="8" width="30" height="16" rx="4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                    <rect x="45" y="8" width="30" height="16" rx="4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                    <rect x="80" y="8" width="30" height="16" rx="4" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                    <polyline points="25,30 60,30 95,30" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="25" cy="30" r="3" fill="rgba(255,255,255,0.5)" />
+                    <circle cx="60" cy="30" r="3" fill="rgba(255,255,255,0.5)" />
+                    <circle cx="95" cy="30" r="3" fill="rgba(255,255,255,0.5)" />
+                    <path d="M22 16l3 3 5-5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M57 16l3 3 5-5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M92 16l3 3 5-5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
               </div>
             </div>
           </article>
@@ -639,6 +694,14 @@ function Home() {
         </div>
 
         <section className="cards three-up workflow-cards">
+          <div className="workflow-connector">
+            <div className="workflow-connector-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </div>
+            <div className="workflow-connector-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </div>
+          </div>
           <article className="info-card reveal">
             <div className="step-number">01</div>
             <div className="card-icon">
@@ -674,7 +737,15 @@ function Home() {
         <section className="cards usecase-grid">
           <article className="usecase-card reveal">
             <div className="usecase-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M3 10h18" /><path d="M9 4v6" /><path d="M15 4v6" /><path d="M8 15h2M14 15h2M8 19h2" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="3" />
+                <path d="M3 10h18" />
+                <path d="M9 4v6M15 4v6" />
+                <circle cx="12" cy="16" r="2" fill="currentColor" opacity="0.3" />
+                <path d="M8 14h2M14 14h2" />
+                <path d="M8 19h2" />
+                <path d="M16 13l2 2-2 2" opacity="0.5" />
+              </svg>
             </div>
             <h3>{t.useCases.scheduling}</h3>
             <p>{t.useCases.schedulingDesc}</p>
@@ -683,7 +754,13 @@ function Home() {
 
           <article className="usecase-card reveal delay-1">
             <div className="usecase-icon calendar-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /><path d="M16.5 16.5l1.5 1.5" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+                <circle cx="12" cy="12" r="1" fill="currentColor" />
+                <path d="M12 3v1M12 20v1M3 12h1M20 12h1" opacity="0.3" />
+                <path d="M5.6 5.6l.7.7M17.7 17.7l.7.7M5.6 18.4l.7-.7M17.7 6.3l.7-.7" opacity="0.2" />
+              </svg>
             </div>
             <h3>{t.useCases.calendar}</h3>
             <p>{t.useCases.calendarDesc}</p>
@@ -692,7 +769,12 @@ function Home() {
 
           <article className="usecase-card reveal delay-2">
             <div className="usecase-icon email-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 7l10 6 10-6" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="3" />
+                <path d="M2 7l10 6 10-6" />
+                <circle cx="18" cy="8" r="3" fill="currentColor" opacity="0.25" />
+                <text x="18" y="9.5" textAnchor="middle" fill="currentColor" fontSize="4" fontWeight="bold" opacity="0.6">3</text>
+              </svg>
             </div>
             <h3>{t.useCases.email}</h3>
             <p>{t.useCases.emailDesc}</p>
@@ -701,7 +783,13 @@ function Home() {
 
           <article className="usecase-card reveal">
             <div className="usecase-icon reminder-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+                <path d="M12 2v1" />
+                <path d="M20 8c.5-1 .5-2 0-3" opacity="0.35" />
+                <path d="M4 8c-.5-1-.5-2 0-3" opacity="0.35" />
+              </svg>
             </div>
             <h3>{t.useCases.reminders}</h3>
             <p>{t.useCases.remindersDesc}</p>
@@ -710,7 +798,10 @@ function Home() {
 
           <article className="usecase-card reveal delay-1">
             <div className="usecase-icon travel-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-1 1 3 2 2 3 1-1v-3l3-2 3.7 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-1 1 3 2 2 3 1-1v-3l3-2 3.7 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z" />
+                <path d="M2 20c3-2 6-1 9-3" opacity="0.25" strokeDasharray="2 2" />
+              </svg>
             </div>
             <h3>{t.useCases.travel}</h3>
             <p>{t.useCases.travelDesc}</p>
@@ -719,7 +810,13 @@ function Home() {
 
           <article className="usecase-card reveal delay-2">
             <div className="usecase-icon brief-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8M8 17h6M8 9h2" /></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M8 13h8M8 17h6M8 9h2" />
+                <rect x="14" y="14" width="4" height="4" rx="1" fill="currentColor" opacity="0.15" />
+                <path d="M15 16l1 1 2-2" opacity="0.5" />
+              </svg>
             </div>
             <h3>{t.useCases.briefs}</h3>
             <p>{t.useCases.briefsDesc}</p>
@@ -778,6 +875,21 @@ function Home() {
           </article>
         </section>
 
+        <div className="trust-badges reveal">
+          <span className="trust-badge">
+            <svg className="trust-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>
+            {t.trust.encrypted}
+          </span>
+          <span className="trust-badge">
+            <svg className="trust-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+            {t.trust.cancel}
+          </span>
+          <span className="trust-badge">
+            <svg className="trust-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+            {t.trust.powered}
+          </span>
+        </div>
+
         {/* ── FAQ ── */}
         <section className="faq-section" id="faq">
           <div className="section-header reveal">
@@ -800,6 +912,10 @@ function Home() {
             <div className="footer-brand">
               <a className="brand" href="#"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />{t.brandName}</a>
               <p>{t.footer.description}</p>
+              <a className="footer-wa-cta" href="https://wa.me/message/ecqqo" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                {t.footer.whatsappCta}
+              </a>
             </div>
             <div className="footer-links">
               <div className="footer-col">

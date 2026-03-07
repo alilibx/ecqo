@@ -160,6 +160,14 @@ export const translations = {
         { q: "Is this still cost-effective vs remote assistant models?", a: "Yes. The calculator above compares against both remote VA midpoint and EA averages. Ecqqo handles the repetitive coordination so your human assistant can focus on high-value work." },
       ],
     },
+    integrations: {
+      label: "Integrates with",
+    },
+    trust: {
+      encrypted: "End-to-end encrypted via WhatsApp",
+      cancel: "Cancel anytime",
+      powered: "Powered by WhatsApp Cloud API",
+    },
     footer: {
       description: "WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.",
       product: "Product",
@@ -167,6 +175,7 @@ export const translations = {
       privacy: "Privacy Policy",
       terms: "Terms of Service",
       copyright: "2026 Ecqqo. All rights reserved.",
+      whatsappCta: "Chat with us on WhatsApp",
     },
   },
   ar: {
@@ -330,6 +339,14 @@ export const translations = {
         { q: "هل هذا فعّال من حيث التكلفة مقارنة بنماذج المساعد عن بُعد؟", a: "نعم. الحاسبة أعلاه تقارن مع متوسط المساعد الافتراضي والتنفيذي. ايكو يتولى التنسيق المتكرر حتى يركز مساعدك البشري على العمل عالي القيمة." },
       ],
     },
+    integrations: {
+      label: "يتكامل مع",
+    },
+    trust: {
+      encrypted: "تشفير من طرف لطرف عبر واتساب",
+      cancel: "إلغاء في أي وقت",
+      powered: "مدعوم بواجهة واتساب السحابية",
+    },
     footer: {
       description: "أتمتة المساعد التنفيذي عبر واتساب لأصحاب الثروات والمؤسسين وفرق المكاتب العائلية.",
       product: "المنتج",
@@ -337,6 +354,7 @@ export const translations = {
       privacy: "سياسة الخصوصية",
       terms: "شروط الخدمة",
       copyright: "2026 ايكو. جميع الحقوق محفوظة.",
+      whatsappCta: "تواصل معنا عبر واتساب",
     },
   },
 } as const;

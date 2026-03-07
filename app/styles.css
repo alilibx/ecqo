@@ -2002,6 +2002,213 @@ details p {
   box-shadow: 0 0 0 2px rgba(26, 173, 150, 0.15);
 }
 
+/* ── Integration logo strip ─────────────────── */
+
+.integrations-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.integrations-label {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.integrations-logos {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.integration-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+}
+
+.integration-logo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--muted);
+}
+
+.integration-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Trust badges ──────────────────────────── */
+
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 0.5rem 0.9rem;
+  border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+}
+
+.trust-badge-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+/* ── Workflow connector ────────────────────── */
+
+.workflow-cards {
+  position: relative;
+}
+
+.workflow-connector {
+  display: none;
+}
+
+@media (min-width: 1025px) {
+  .workflow-connector {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .workflow-connector::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: calc(33.33% - 1rem);
+    width: calc(33.33% + 2rem);
+    height: 100%;
+    background: var(--border);
+  }
+
+  .workflow-connector-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+  }
+
+  .workflow-connector-arrow svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .workflow-connector-arrow:first-child {
+    left: calc(33.33% - 12px);
+  }
+
+  .workflow-connector-arrow:last-child {
+    left: calc(66.66% - 12px);
+  }
+
+  .workflow-cards .info-card {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* ── Savings illustrations ─────────────────── */
+
+.savings-illus {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: center;
+}
+
+.savings-illus svg {
+  width: 100%;
+  max-width: 140px;
+  height: auto;
+  opacity: 0.55;
+  transition: opacity 0.3s;
+}
+
+.old-card:hover .savings-illus svg {
+  opacity: 0.8;
+}
+
+.new-card-illus {
+  margin-top: 0.5rem;
+}
+
+.new-card-illus svg {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+  opacity: 0.7;
+}
+
+/* ── WhatsApp footer CTA ───────────────────── */
+
+.footer-wa-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #25D366;
+  color: #fff;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  margin-top: 1rem;
+}
+
+.footer-wa-cta:hover {
+  background: #20bd5a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+  color: #fff;
+}
+
+.footer-wa-cta svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── Scroll reveal ──────────────────────────── */
 
 .reveal {
@@ -2057,6 +2264,10 @@ details p {
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  .integrations-strip {
+    justify-content: center;
   }
 
   .subtitle {
@@ -2186,6 +2397,26 @@ details p {
     padding: 0.55rem 0.7rem;
     font-size: 0.7rem;
     width: auto !important;
+  }
+
+  .integrations-strip {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .trust-badges {
+    gap: 0.75rem;
+  }
+
+  .trust-badge {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .footer-wa-cta {
+    width: 100%;
+    justify-content: center;
   }
 
   .topbar-inner .settings-wrap {
@@ -2454,6 +2685,10 @@ details p {
 
 [dir="rtl"] .hero-content {
   text-align: right;
+}
+
+[dir="rtl"] .integrations-strip {
+  direction: ltr;
 }
 
 [dir="rtl"] .hero-content .eyebrow {
