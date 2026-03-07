@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #faf7f0;
   --surface: #ffffff;
   --surface-warm: #fef9f2;
@@ -27,6 +28,31 @@
   --radius-xl: 32px;
 
   --font: "DM Sans", sans-serif;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141210;
+  --surface: #1e1b18;
+  --surface-warm: #1a1815;
+  --ink: #e8e2d8;
+  --ink-light: #b5ad9f;
+  --muted: #7d7568;
+  --border: #302b24;
+  --border-light: #262219;
+  --signal: #e04b2c;
+  --signal-hover: #e8603e;
+  --signal-light: #2c1c16;
+  --accent: #1aad96;
+  --accent-hover: #22c4ab;
+  --accent-light: #162e28;
+  --accent-dark: #0d7a6a;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.45);
 }
 
 *,
@@ -232,22 +258,88 @@ nav a:hover {
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* ── Currency toggle ────────────────────────── */
+/* ── Settings popover ────────────────────────── */
 
-.currency-toggle {
+.settings-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.settings-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 9px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.settings-trigger:hover,
+.settings-trigger.open {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.settings-trigger svg {
+  width: 17px;
+  height: 17px;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 120;
+  min-width: 180px;
+}
+
+.settings-popover.open {
+  display: flex;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-label {
+  font-family: var(--font);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.toggle-group {
   display: flex;
   background: var(--border-light);
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
-  flex-shrink: 0;
+  width: 100%;
 }
 
-.currency-btn {
+.toggle-btn {
   font-family: var(--font);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0;
   border: none;
   background: transparent;
   border-radius: 7px;
@@ -255,16 +347,25 @@ nav a:hover {
   color: var(--muted);
   transition: background 0.25s, color 0.25s, box-shadow 0.25s;
   letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
-.currency-btn.active {
+.toggle-btn.active {
   background: var(--surface);
   color: var(--ink);
   box-shadow: var(--shadow-xs);
 }
 
-.currency-btn:hover:not(.active) {
+.toggle-btn:hover:not(.active) {
   color: var(--ink-light);
+}
+
+.toggle-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ── Layout ─────────────────────────────────── */
@@ -1800,6 +1901,107 @@ details p {
   font-size: 0.82rem;
 }
 
+/* ── Dark mode overrides (hardcoded colors) ── */
+
+[data-theme="dark"] .grain {
+  background-image: radial-gradient(#fff 0.4px, transparent 0.4px);
+  opacity: 0.012;
+}
+
+[data-theme="dark"] .orb-1 {
+  background: rgba(224, 75, 44, 0.06);
+}
+
+[data-theme="dark"] .orb-2 {
+  background: rgba(26, 173, 150, 0.05);
+}
+
+[data-theme="dark"] .orb-3 {
+  background: rgba(224, 75, 44, 0.03);
+}
+
+[data-theme="dark"] .topbar {
+  background: rgba(20, 18, 16, 0.8);
+}
+
+[data-theme="dark"] .topbar.scrolled {
+  box-shadow: 0 1px 16px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .new-card .button {
+  background: #fff;
+  color: var(--accent-dark);
+}
+
+[data-theme="dark"] .usecase-icon.calendar-icon {
+  background: #1e2040;
+  color: #7b82d4;
+}
+
+[data-theme="dark"] .usecase-card:hover .calendar-icon {
+  background: #4f56b3;
+}
+
+[data-theme="dark"] .usecase-icon.reminder-icon {
+  background: #2a2010;
+  color: #d4a630;
+}
+
+[data-theme="dark"] .usecase-card:hover .reminder-icon {
+  background: #c08b1a;
+}
+
+[data-theme="dark"] .usecase-icon.brief-icon {
+  background: #221a30;
+  color: #a07ee0;
+}
+
+[data-theme="dark"] .usecase-card:hover .brief-icon {
+  background: #7c5cbf;
+}
+
+[data-theme="dark"] .icon-gcal,
+[data-theme="dark"] .icon-gmail {
+  background: #2a2720;
+}
+
+[data-theme="dark"] .icon-outlook {
+  background: #1e2030;
+}
+
+[data-theme="dark"] .wa-typing {
+  background: #e8e8e8;
+}
+
+[data-theme="dark"] .wa-input-field {
+  background: #f0f0f0;
+}
+
+[data-theme="dark"] details[open] {
+  box-shadow: 0 0 0 3px rgba(26, 173, 150, 0.1);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus {
+  box-shadow: 0 0 0 3px rgba(26, 173, 150, 0.15);
+}
+
+[data-theme="dark"] .button:hover {
+  box-shadow: 0 6px 20px rgba(224, 75, 44, 0.3);
+}
+
+[data-theme="dark"] .info-card.highlight {
+  border-color: rgba(224, 75, 44, 0.3);
+}
+
+[data-theme="dark"] .agent-pulse {
+  box-shadow: 0 0 0 0 rgba(26, 173, 150, 0.4);
+}
+
+[data-theme="dark"] .agent-feed-item.flash {
+  box-shadow: 0 0 0 2px rgba(26, 173, 150, 0.15);
+}
+
 /* ── Scroll reveal ──────────────────────────── */
 
 .reveal {
@@ -1928,7 +2130,7 @@ details p {
   }
 
   .topbar-inner .brand {
-    margin-right: auto;
+    margin-inline-end: auto;
   }
 
   .topbar-inner nav {
@@ -1986,7 +2188,7 @@ details p {
     width: auto !important;
   }
 
-  .topbar-inner .currency-toggle {
+  .topbar-inner .settings-wrap {
     order: unset;
   }
 
@@ -2239,41 +2441,6 @@ details p {
   text-decoration: underline;
 }
 
-/* ── Locale toggle ──────────────────────────── */
-
-.locale-toggle {
-  display: flex;
-  background: var(--border-light);
-  border-radius: 9px;
-  padding: 3px;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.locale-btn {
-  font-family: var(--font);
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.3rem 0.6rem;
-  border: none;
-  background: transparent;
-  border-radius: 7px;
-  cursor: pointer;
-  color: var(--muted);
-  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
-  letter-spacing: 0.04em;
-}
-
-.locale-btn.active {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: var(--shadow-xs);
-}
-
-.locale-btn:hover:not(.active) {
-  color: var(--ink-light);
-}
-
 /* ── RTL / Arabic ──────────────────────────── */
 
 [dir="rtl"] {
@@ -2293,9 +2460,10 @@ details p {
   margin-bottom: 0.75rem;
 }
 
-[dir="rtl"] .currency-toggle,
-[dir="rtl"] .locale-toggle {
+[dir="rtl"] .settings-popover {
   direction: ltr;
+  inset-inline-end: auto;
+  inset-inline-start: 0;
 }
 
 [dir="rtl"] .wa-messages {

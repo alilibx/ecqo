@@ -2,6 +2,7 @@ export const translations = {
   en: {
     pageTitle: "Ecqqo | Empower your Human Assistant",
     brandName: "Ecqqo",
+    agent: "Agent",
     currencyLabels: { AED: "AED", USD: "USD" },
     nav: {
       savings: "Savings",
@@ -11,6 +12,9 @@ export const translations = {
       pricing: "Pricing",
       faq: "FAQ",
       getStarted: "Get Started",
+      language: "Language",
+      theme: "Theme",
+      currency: "Currency",
     },
     hero: {
       eyebrow: "WhatsApp-Native Executive Assistant",
@@ -168,6 +172,7 @@ export const translations = {
   ar: {
     pageTitle: "ايكو | عزّز قدرات مساعدك البشري",
     brandName: "ايكو",
+    agent: "وكيل",
     currencyLabels: { AED: "درهم", USD: "USD" },
     nav: {
       savings: "التوفير",
@@ -177,6 +182,9 @@ export const translations = {
       pricing: "الأسعار",
       faq: "الأسئلة الشائعة",
       getStarted: "ابدأ الآن",
+      language: "اللغة",
+      theme: "المظهر",
+      currency: "العملة",
     },
     hero: {
       eyebrow: "مساعد تنفيذي عبر واتساب",
@@ -187,9 +195,9 @@ export const translations = {
       secondaryCta: "شاهد كيف يعمل",
     },
     agentFeed: [
-      { icon: "whatsapp", label: "تم مسح المحادثة", detail: "اكتشاف نية جدولة" },
-      { icon: "gcal", label: "تم إنشاء الحدث", detail: "الغداء أُضيف للتقويم" },
-      { icon: "gcal", label: "تم سحب الجدول", detail: "3 مواعيد غداً" },
+      { icon: "whatsapp", label: "تم سحب المحادثة", detail: "مراجعة المحادثات" },
+      { icon: "gcal", label: "تم إنشاء موعد", detail: "الغداء أُضيف للتقويم" },
+      { icon: "gcal", label: "تم سحب المواعيد", detail: "3 مواعيد غداً" },
       { icon: "gmail", label: "تم فحص البريد", detail: "12 غير مقروءة — 3 مهمة" },
       { icon: "outlook", label: "تم جدولة التذكير", detail: "تنبيه 4:55 مساءً" },
       { icon: "whatsapp", label: "تم اكتشاف الرحلة", detail: "BA 117 لندن ← نيويورك" },
