@@ -153,14 +153,15 @@ svg {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(250, 247, 240, 0.75);
+  background: transparent;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid transparent;
-  transition: border-color 0.4s, box-shadow 0.4s;
+  transition: border-color 0.4s, box-shadow 0.4s, background 0.4s;
 }
 
 .topbar.scrolled {
+  background: rgba(250, 247, 240, 0.75);
   border-bottom-color: var(--border);
   box-shadow: 0 1px 16px rgba(26, 22, 18, 0.06);
 }
@@ -610,6 +611,16 @@ h3 {
   gap: 3rem;
   align-items: center;
   padding: 2rem 0 1rem;
+}
+
+.hero.aurora-bg {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-top: -6rem;
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
+  padding-top: 8rem;
+  padding-bottom: 3rem;
 }
 
 .hero-content {
@@ -1921,10 +1932,11 @@ details p {
 }
 
 [data-theme="dark"] .topbar {
-  background: rgba(20, 18, 16, 0.8);
+  background: transparent;
 }
 
 [data-theme="dark"] .topbar.scrolled {
+  background: rgba(20, 18, 16, 0.8);
   box-shadow: 0 1px 16px rgba(0, 0, 0, 0.25);
 }
 
@@ -2000,6 +2012,65 @@ details p {
 
 [data-theme="dark"] .agent-feed-item.flash {
   box-shadow: 0 0 0 2px rgba(26, 173, 150, 0.15);
+}
+
+/* ── Aurora background ─────────────────────── */
+
+.aurora-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.aurora-overflow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.aurora-inner {
+  --aurora-white: repeating-linear-gradient(100deg, #fff 0%, #fff 7%, transparent 10%, transparent 12%, #fff 16%);
+  --aurora-dark: repeating-linear-gradient(100deg, #000 0%, #000 7%, transparent 10%, transparent 12%, #000 16%);
+  --aurora-colors: repeating-linear-gradient(100deg, #3b82f6 10%, #a5b4fc 15%, #93c5fd 20%, #ddd6fe 25%, #60a5fa 30%);
+
+  position: absolute;
+  inset: -10px;
+  background-image: var(--aurora-white), var(--aurora-colors);
+  background-size: 300%, 200%;
+  background-position: 50% 50%, 50% 50%;
+  filter: blur(10px) invert(1);
+  pointer-events: none;
+  opacity: 0.50;
+  will-change: transform;
+}
+
+.aurora-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--aurora-white), var(--aurora-colors);
+  background-size: 200%, 100%;
+  background-attachment: fixed;
+  mix-blend-mode: difference;
+  animation: aurora 60s linear infinite;
+}
+
+.aurora-radial-mask {
+  mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
+}
+
+[data-theme="dark"] .aurora-inner {
+  background-image: var(--aurora-dark), var(--aurora-colors);
+  filter: blur(10px);
+}
+
+[data-theme="dark"] .aurora-inner::after {
+  background-image: var(--aurora-dark), var(--aurora-colors);
+}
+
+@keyframes aurora {
+  from { background-position: 50% 50%, 50% 50%; }
+  to { background-position: 350% 50%, 350% 50%; }
 }
 
 /* ── Integration logo strip ─────────────────── */

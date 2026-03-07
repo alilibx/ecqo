@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback, type FormEvent } from "react"
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useLocale } from "../i18n/locale";
+import { AuroraBackground } from "../components/ui/aurora-background";
 
 const getCountry = createServerFn({ method: "GET" }).handler(async () => {
   const country = getRequestHeader("x-vercel-ip-country") || getRequestHeader("cf-ipcountry") || "";
@@ -412,7 +413,7 @@ function Home() {
 
       <main className="layout">
         {/* ── Hero ── */}
-        <section className="hero" id="top">
+        <AuroraBackground className="hero" id="top">
           <div className="hero-content reveal">
             <p className="eyebrow">{t.hero.eyebrow}</p>
             <h1>
@@ -520,7 +521,7 @@ function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </AuroraBackground>
 
         {/* ── Savings ── */}
         <div className="section-header reveal" id="savings">
