@@ -6,56 +6,7 @@ This document traces the complete path of data through the Ecqqo system for two 
 
 A user sends "Schedule meeting with Sarah tomorrow at 3pm" to the Ecqqo WhatsApp number. Here is the complete end-to-end flow from message send to calendar confirmation.
 
-```mermaid
-sequenceDiagram
-    participant User as User (WhatsApp)
-    participant Meta as Meta Cloud API
-    participant Convex as Convex (Control Plane)
-    participant AI as AI Provider (OpenAI gpt-4o)
-    participant Operator as Operator (WhatsApp)
-    participant GCal as Google Calendar API
-
-    User->>Meta: "Schedule meeting with Sarah tomorrow at 3pm"
-    Meta->>Convex: Webhook (POST /webhook)
-
-    Note over Convex: 1. Verify Meta signature (HMAC-SHA256)
-    Note over Convex: 2. Extract phone number + message body
-    Note over Convex: 3. Lookup user by phone → users table
-    Note over Convex: 4. Store inbound message → messages table
-    Note over Convex: 5. Schedule agent run (ctx.scheduler.runAfter)
-
-    rect rgb(240, 245, 255)
-        Note over Convex,AI: Intelligence Plane (Convex Action)
-        Note over Convex: 6. Orchestrator starts
-        Note over Convex: 7. Retrieve context:<br/>a) Recent messages (last 20)<br/>b) Vector search: "Sarah" → contact info<br/>c) User policies: calendar_approval=true
-
-        Convex->>AI: 8. Call AI with context + tools
-        AI-->>Convex: 9. Tool call: create_event({title, date, duration, attendees})
-        Note over Convex: 10. Policy check → calendar_approval=true → approval required
-    end
-
-    rect rgb(255, 245, 235)
-        Note over Convex,Operator: Approval Flow
-        Note over Convex: 11. Create approval request → approvals table (status: pending)
-        Convex->>Meta: 12. Send approval notification
-        Meta->>Operator: "Approve meeting with Sarah tomorrow 3pm? Reply YES or NO"
-        Operator->>Meta: "YES"
-        Meta->>Convex: 13. Webhook receives reply → match to pending approval → status: approved
-        Note over Convex: 14. Resume agent run
-    end
-
-    rect rgb(235, 255, 240)
-        Note over Convex,GCal: Tool Execution
-        Convex->>GCal: 15. POST /calendars/.../events (Meeting with Sarah)
-        GCal-->>Convex: Event created (eventId, link)
-        Note over Convex: 16. Store result → agent_runs table (status: completed)
-        Note over Convex: 17. Log to audit trail → audit_log table
-    end
-
-    Convex->>Meta: 18. Send confirmation
-    Meta->>User: "Done! Meeting with Sarah scheduled for tomorrow at 3:00 PM. Calendar link: ..."
-    Note over Convex: 19. Extract & store memory → vector embedding
-```
+<ArchDiagram :config="schedulingSeqConfig" />
 
 ### Timing Breakdown (Typical)
 
@@ -77,38 +28,7 @@ sequenceDiagram
 
 The wacli connector worker on Fly.io syncs historical and ongoing messages from WhatsApp Web into Convex. This runs independently of the Cloud API webhook flow and provides richer context.
 
-```mermaid
-sequenceDiagram
-    participant Convex as Convex (Control Plane)
-    participant Fly as Fly.io Machine (wacli)
-    participant WA as WhatsApp Web Network
-
-    Note over Convex: 0. Start machine via Fly.io Machines API
-    Convex->>Fly: Start machine
-    Note over Fly: 1. Machine boots
-    Note over Fly: 2. Load service token + user ID from env vars
-
-    Fly->>WA: 3. Connect to WhatsApp Web (WebSocket)
-    WA-->>Fly: Session active
-
-    Fly->>Convex: 4. Fetch sync cursor
-    Convex-->>Fly: Return last cursor (ingestion_state: user_123, cursor: msg_99872)
-
-    rect rgb(245, 245, 255)
-        Note over WA,Convex: Periodic Sync Loop (every 30-60 seconds)
-
-        WA->>Fly: 5. Fetch messages since cursor (messages, contacts, groups)
-        Note over Fly: 6. For each new message:<br/>- Normalize format<br/>- Compute dedup hash (SHA-256)<br/>- Attach contact/group metadata
-
-        Note over Fly: 7. Sign event batch with CONNECTOR_SIGNING_KEY
-        Fly->>Convex: POST signed event batch {user_id, messages[], cursor, signature}
-
-        Note over Convex: 8. Validate event signature (HMAC-SHA256)
-        Note over Convex: 9. Idempotent upsert per message:<br/>IF dedup_hash exists → SKIP<br/>ELSE → INSERT message
-        Note over Convex: 10. Advance cursor (ingestion_state → NEW cursor, last_sync: NOW)
-        Note over Convex: 11. Trigger memory extraction:<br/>- Extract facts<br/>- Generate embeddings<br/>- Store in vector index
-    end
-```
+<ArchDiagram :config="syncSeqConfig" />
 
 ### Sync Guarantees
 
@@ -139,37 +59,135 @@ sequenceDiagram
 
 ### Data Flow Security Summary
 
-```mermaid
-flowchart LR
-    subgraph UserDevice["User Device"]
-        WA_E2EE["WhatsApp<br/>(E2EE between users)"]
-    end
+<script setup>
+const schedulingSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "df-user", icon: "si:whatsapp", title: "User", subtitle: "WhatsApp", color: "teal" },
+    { id: "df-meta", icon: "si:meta", title: "Meta Cloud API", color: "warm" },
+    { id: "df-convex", icon: "si:convex", title: "Convex", subtitle: "Control Plane", color: "teal" },
+    { id: "df-ai", icon: "si:openai", title: "AI Provider", subtitle: "gpt-4o", color: "dark" },
+    { id: "df-op", icon: "fa-user", title: "Operator", subtitle: "WhatsApp", color: "warm" },
+    { id: "df-gcal", icon: "si:googlecalendar", title: "Google Calendar", color: "blue" },
+  ],
+  steps: [
+    { from: "df-user", to: "df-meta", label: "Schedule meeting..." },
+    { from: "df-meta", to: "df-convex", label: "Webhook POST" },
+    { over: "df-convex", note: "1. Verify Meta signature (HMAC)\n2. Extract phone + body\n3. Lookup user\n4. Store message\n5. Schedule agent run" },
+    { from: "df-convex", to: "df-ai", label: "Call AI w/ context + tools" },
+    { from: "df-ai", to: "df-convex", label: "Tool: create_event", dashed: true },
+    { over: "df-convex", note: "Policy check → approval required" },
+    { from: "df-convex", to: "df-meta", label: "Send approval request", dashed: true },
+    { from: "df-meta", to: "df-op", label: "Approve meeting?" },
+    { from: "df-op", to: "df-meta", label: "YES" },
+    { from: "df-meta", to: "df-convex", label: "Approval matched" },
+    { from: "df-convex", to: "df-gcal", label: "POST create event" },
+    { from: "df-gcal", to: "df-convex", label: "Event created", dashed: true },
+    { from: "df-convex", to: "df-meta", label: "Send confirmation", dashed: true },
+    { from: "df-meta", to: "df-user", label: "Meeting confirmed" },
+    { over: "df-convex", note: "Extract memory → embedding" },
+  ],
+  groups: [
+    { label: "Intelligence Plane", color: "dark", from: 3, to: 5 },
+    { label: "Approval Flow", color: "warm", from: 6, to: 9 },
+    { label: "Tool Execution", color: "teal", from: 10, to: 11 },
+  ],
+}
 
-    subgraph Edge["Meta / Vercel (Edge)"]
-        TLS_TERM["TLS terminates here"]
-    end
+const syncSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "sy-convex", icon: "si:convex", title: "Convex", subtitle: "Control Plane", color: "teal" },
+    { id: "sy-fly", icon: "si:flydotio", title: "Fly.io Machine", subtitle: "wacli", color: "red" },
+    { id: "sy-wa", icon: "si:whatsapp", title: "WhatsApp Web", color: "warm" },
+  ],
+  steps: [
+    { from: "sy-convex", to: "sy-fly", label: "Start machine" },
+    { over: "sy-fly", note: "1. Machine boots\n2. Load token + user ID" },
+    { from: "sy-fly", to: "sy-wa", label: "Connect WebSocket" },
+    { from: "sy-wa", to: "sy-fly", label: "Session active", dashed: true },
+    { from: "sy-fly", to: "sy-convex", label: "Fetch sync cursor" },
+    { from: "sy-convex", to: "sy-fly", label: "Last cursor", dashed: true },
+    { from: "sy-wa", to: "sy-fly", label: "Fetch msgs since cursor" },
+    { over: "sy-fly", note: "Normalize format\nDedup hash (SHA-256)\nSign batch w/ signing key" },
+    { from: "sy-fly", to: "sy-convex", label: "POST signed batch" },
+    { over: "sy-convex", note: "1. Validate signature (HMAC)\n2. Upsert messages (dedup)\n3. Advance cursor\n4. Memory extraction" },
+  ],
+  groups: [
+    { label: "Sync Loop (every 30-60s)", color: "teal", from: 6, to: 9 },
+  ],
+}
 
-    subgraph Backend["Convex Cloud (Backend)"]
-        EAR["Encrypted at rest"]
-    end
+const securityConfig = {
+  layers: [
+    {
+      id: "user-device",
+      title: "User Device",
+      subtitle: "End-to-End Encrypted",
+      icon: "fa-lock",
+      color: "red",
+      nodes: [
+        { id: "sec-wa", icon: "si:whatsapp", title: "WhatsApp", subtitle: "E2EE · User Device" },
+      ],
+    },
+    {
+      id: "edge-gw",
+      title: "Edge / Gateway",
+      subtitle: "TLS 1.3 Termination",
+      icon: "fa-shield-halved",
+      color: "warm",
+      nodes: [
+        { id: "sec-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "TLS Termination" },
+        { id: "sec-vercel", icon: "si:vercel", title: "Vercel Edge", subtitle: "TLS Termination" },
+      ],
+    },
+    {
+      id: "backend-enc",
+      title: "Backend",
+      subtitle: "Encrypted at Rest · Convex Cloud",
+      icon: "fa-database",
+      color: "teal",
+      nodes: [
+        { id: "sec-convex", icon: "si:convex", title: "Convex Cloud", subtitle: "Encrypted at Rest" },
+      ],
+    },
+    {
+      id: "connector-sec",
+      title: "Connector Path",
+      subtitle: "Signed Events · Memory-only Keys",
+      icon: "fa-network-wired",
+      color: "dark",
+      nodes: [
+        { id: "sec-waweb", icon: "fa-globe", title: "WA Web", subtitle: "Noise Protocol" },
+        { id: "sec-fly", icon: "si:flydotio", title: "Fly.io wacli", subtitle: "Keys in Memory Only" },
+      ],
+    },
+    {
+      id: "ext-sec",
+      title: "External APIs",
+      subtitle: "OAuth 2.0 · API Keys",
+      icon: "fa-plug",
+      color: "blue",
+      nodes: [
+        { id: "sec-google", icon: "si:google", title: "Google APIs", subtitle: "OAuth 2.0 Tokens" },
+        { id: "sec-stripe", icon: "si:stripe", title: "Stripe", subtitle: "API Keys · Webhooks" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "sec-wa", to: "sec-meta", label: "TLS 1.3" },
+    { from: "sec-meta", to: "sec-convex", label: "TLS 1.3" },
+    { from: "sec-vercel", to: "sec-convex", label: "TLS 1.3" },
+    { from: "sec-convex", to: "sec-google", label: "TLS 1.3" },
+    { from: "sec-convex", to: "sec-stripe", label: "TLS 1.3" },
+    { from: "sec-waweb", to: "sec-fly", label: "TLS 1.3" },
+    { from: "sec-fly", to: "sec-convex", label: "signed events" },
+  ],
+}
+</script>
 
-    subgraph ExtAPIs["External APIs"]
-        GOOG["Google · Stripe<br/>(OAuth 2.0 / API key auth)"]
-    end
-
-    subgraph ConnPath["Connector Path"]
-        WA_WEB["WhatsApp Web<br/>(Noise protocol)"]
-        FLY_M["Fly.io Machine (wacli)<br/>Session keys in memory only"]
-        CVX["Convex<br/>(signed events)"]
-    end
-
-    UserDevice -- "TLS 1.3" --- Edge
-    Edge -- "TLS 1.3" --- Backend
-    Backend -- "TLS 1.3" --- ExtAPIs
-    WA_WEB -- "TLS 1.3" --- FLY_M
-    FLY_M -- "TLS 1.3" --- CVX
-```
+<ArchDiagram :config="securityConfig" />
 
 ::: info Note on encryption
-Messages between a user and the Ecqo WhatsApp Business number are encrypted in transit but readable by the Ecqo system. This is by design -- the agent must read messages to process them. Users are informed of this during onboarding. E2EE applies only between WhatsApp users, not between a user and Ecqo.
+Messages between a user and the Ecqqo WhatsApp Business number are encrypted in transit but readable by the Ecqqo system. This is by design -- the agent must read messages to process them. Users are informed of this during onboarding. E2EE applies only between WhatsApp users, not between a user and Ecqqo.
 :::

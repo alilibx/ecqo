@@ -49,15 +49,143 @@ Locked architectural decisions:
 - Session artifacts are encrypted at rest and scoped to account identity.
 - Worker-to-backend communication uses signed service requests and replay protection.
 
+<script setup>
+const componentConfig = {
+  layers: [
+    {
+      id: "mwa-entry",
+      title: "Entry Points",
+      subtitle: "User Interfaces · Connectors",
+      icon: "fa-globe",
+      color: "teal",
+      nodes: [
+        { id: "mwa-dash", icon: "si:clerk", title: "Dashboard", subtitle: "Clerk Auth · SSR" },
+        { id: "mwa-conn", icon: "fa-network-wired", title: "Connector Worker", subtitle: "Managed wacli" },
+      ],
+    },
+    {
+      id: "mwa-core",
+      title: "Control Plane",
+      subtitle: "Convex Cloud · Source of Truth",
+      icon: "si:convex",
+      color: "warm",
+      nodes: [
+        { id: "mwa-convex", icon: "si:convex", title: "Convex", subtitle: "State · Policies · Audit" },
+      ],
+    },
+    {
+      id: "mwa-intelligence",
+      title: "Intelligence",
+      subtitle: "AI Processing · Memory",
+      icon: "fa-brain",
+      color: "dark",
+      nodes: [
+        { id: "mwa-runtime", icon: "fa-robot", title: "Agent Runtime", subtitle: "Convex Actions" },
+        { id: "mwa-memory", icon: "fa-microchip", title: "Memory Pipeline", subtitle: "Extract · Retrieve" },
+      ],
+    },
+    {
+      id: "mwa-integrations",
+      title: "Integrations",
+      subtitle: "External Services",
+      icon: "fa-plug",
+      color: "blue",
+      nodes: [
+        { id: "mwa-cal", icon: "si:googlecalendar", title: "Calendar", subtitle: "Events · Reminders" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "mwa-dash", to: "mwa-convex" },
+    { from: "mwa-conn", to: "mwa-convex", label: "signed events" },
+    { from: "mwa-convex", to: "mwa-runtime" },
+    { from: "mwa-convex", to: "mwa-memory" },
+    { from: "mwa-convex", to: "mwa-cal" },
+  ],
+}
+
+const mwaConnectSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "mc-user", icon: "fa-user", title: "User", color: "teal" },
+    { id: "mc-dash", icon: "fa-gauge", title: "Dashboard", color: "teal" },
+    { id: "mc-convex", icon: "si:convex", title: "Convex", color: "warm" },
+    { id: "mc-worker", icon: "fa-server", title: "Connector Worker", color: "red" },
+    { id: "mc-wa", icon: "si:whatsapp", title: "WhatsApp Network", color: "dark" },
+  ],
+  steps: [
+    { from: "mc-user", to: "mc-dash", label: "Click 'Connect WhatsApp'" },
+    { from: "mc-dash", to: "mc-convex", label: "Create waConnectSession" },
+    { from: "mc-convex", to: "mc-worker", label: "Allocate worker + start auth" },
+    { from: "mc-worker", to: "mc-wa", label: "Initiate QR auth handshake" },
+    { from: "mc-worker", to: "mc-convex", label: "Stream QR/auth events (signed)" },
+    { from: "mc-convex", to: "mc-dash", label: "Push session status + QR" },
+    { from: "mc-dash", to: "mc-user", label: "Render QR + status" },
+    { from: "mc-user", to: "mc-wa", label: "Scan QR from Linked Devices" },
+    { from: "mc-wa", to: "mc-worker", label: "Auth confirmed", dashed: true },
+    { from: "mc-worker", to: "mc-convex", label: "Emit CONNECTED event" },
+    { from: "mc-convex", to: "mc-dash", label: "Session connected" },
+    { from: "mc-dash", to: "mc-user", label: "Show 'Connected'" },
+  ],
+}
+
+const mwaSyncSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "ms-worker", icon: "fa-server", title: "Connector Worker", color: "red" },
+    { id: "ms-wacli", icon: "si:whatsapp", title: "wacli", color: "dark" },
+    { id: "ms-convex", icon: "si:convex", title: "Convex", color: "teal" },
+    { id: "ms-db", icon: "fa-database", title: "Convex DB", color: "warm" },
+    { id: "ms-dash", icon: "fa-gauge", title: "Dashboard", color: "teal" },
+  ],
+  steps: [
+    { from: "ms-worker", to: "ms-wacli", label: "Run sync/follow fetch" },
+    { from: "ms-wacli", to: "ms-worker", label: "Messages/chats payload", dashed: true },
+    { from: "ms-worker", to: "ms-convex", label: "POST sync events (signed)" },
+    { over: "ms-convex", note: "Validate signature + schema + policy" },
+    { from: "ms-convex", to: "ms-db", label: "Upsert waChats/waMessages" },
+    { from: "ms-convex", to: "ms-db", label: "Advance waSyncCursor" },
+    { from: "ms-convex", to: "ms-dash", label: "Publish sync health" },
+    { over: "ms-dash", note: "Render freshness and lag" },
+  ],
+}
+
+const mwaAgentSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "ma-orch", icon: "si:convex", title: "Orchestrator", subtitle: "Convex", color: "teal" },
+    { id: "ma-mem", icon: "fa-microchip", title: "Memory Service", color: "dark" },
+    { id: "ma-agent", icon: "fa-robot", title: "Specialist Agent", color: "warm" },
+    { id: "ma-policy", icon: "fa-scale-balanced", title: "Policy Engine", color: "dark" },
+    { id: "ma-dash", icon: "fa-gauge", title: "Dashboard", color: "teal" },
+    { id: "ma-tool", icon: "fa-wrench", title: "External Tool", color: "blue" },
+  ],
+  steps: [
+    { from: "ma-orch", to: "ma-mem", label: "Retrieve memory context" },
+    { from: "ma-mem", to: "ma-orch", label: "Memory bundle", dashed: true },
+    { from: "ma-orch", to: "ma-agent", label: "Plan next action" },
+    { from: "ma-agent", to: "ma-orch", label: "Proposed tool action", dashed: true },
+    { from: "ma-orch", to: "ma-policy", label: "Evaluate approval policy" },
+    { from: "ma-policy", to: "ma-orch", label: "Approval required", dashed: true },
+    { from: "ma-orch", to: "ma-dash", label: "Create approval request" },
+    { over: "ma-dash", note: "Operator approves or rejects" },
+    { from: "ma-dash", to: "ma-orch", label: "Approval decision" },
+    { from: "ma-orch", to: "ma-tool", label: "Execute tool action" },
+    { from: "ma-tool", to: "ma-orch", label: "Execution result", dashed: true },
+    { from: "ma-orch", to: "ma-dash", label: "Publish completed run" },
+  ],
+  groups: [
+    { label: "Context Assembly", color: "dark", from: 0, to: 1 },
+    { label: "Planning", color: "warm", from: 2, to: 3 },
+    { label: "Approval", color: "teal", from: 4, to: 8 },
+    { label: "Execution", color: "blue", from: 9, to: 11 },
+  ],
+}
+</script>
+
 ### Component diagram
-```mermaid
-flowchart LR
-A["Dashboard (Clerk)"] --> B["Convex Control Plane"]
-B --> C["Agent Runtime (Convex Actions)"]
-B --> D["Memory Pipeline"]
-E["Managed Connector Worker (wacli)"] --> B
-B --> F["Calendar/Reminder Integrations"]
-```
+
+<ArchDiagram :config="componentConfig" />
 
 ## 4. End-to-End Flows
 ### Flow 1: Connect WhatsApp with QR
@@ -65,28 +193,7 @@ Trigger:
 - User selects `Connect WhatsApp` in dashboard.
 
 Sequence:
-```mermaid
-sequenceDiagram
-autonumber
-participant U as User
-participant D as Dashboard
-participant C as Convex
-participant W as Connector Worker
-participant WA as WhatsApp Network
-
-U->>D: Click "Connect WhatsApp"
-D->>C: Create waConnectSession
-C->>W: Allocate worker lease + start auth
-W->>WA: Initiate QR auth handshake
-W->>C: Stream QR/auth events (signed)
-C->>D: Push session status + QR payload
-D->>U: Render QR + status
-U->>WA: Scan QR from Linked Devices
-WA-->>W: Auth confirmed
-W->>C: Emit CONNECTED event
-C->>D: Session connected
-D->>U: Show "Connected"
-```
+<ArchDiagram :config="mwaConnectSeqConfig" />
 
 State changes:
 - `waConnectSessions.status`: `created -> qr_ready -> scanned -> connected` or `failed`.
@@ -105,24 +212,7 @@ Trigger:
 - Scheduled cadence (every 5 minutes) and continuous follow stream when worker online.
 
 Sequence:
-```mermaid
-sequenceDiagram
-autonumber
-participant W as Connector Worker
-participant WC as wacli
-participant C as Convex
-participant DB as Convex DB
-participant D as Dashboard
-
-W->>WC: Run sync/follow fetch
-WC-->>W: Messages/chats payload
-W->>C: POST sync events (signed, schemaVersion)
-C->>C: Validate signature + schema + policy
-C->>DB: Upsert waChats/waMessages by idempotency key
-C->>DB: Advance waSyncCursor
-C->>D: Publish sync health updates
-D->>D: Render freshness and lag
-```
+<ArchDiagram :config="mwaSyncSeqConfig" />
 
 State changes:
 - `waSyncJobs.status`: `queued -> running -> completed` or `failed`.
@@ -141,34 +231,7 @@ Trigger:
 - New inbound synced message or user dashboard action requiring agent reasoning.
 
 Sequence:
-```mermaid
-sequenceDiagram
-autonumber
-participant C as Convex Orchestrator
-participant M as Memory Service
-participant A as Specialist Agent
-participant P as Policy Engine
-participant D as Dashboard
-participant O as Operator/Principal
-participant T as External Tool
-
-C->>M: Retrieve relevant memory context
-M-->>C: Memory bundle (short-term, episodic, semantic, pinned)
-C->>A: Plan next action
-A-->>C: Proposed tool action
-C->>P: Evaluate approval policy
-P-->>C: Approval required
-C->>D: Create approval request
-O->>D: Approve or reject
-D->>C: Approval decision
-alt Approved
-  C->>T: Execute tool action
-  T-->>C: Execution result
-  C->>D: Publish completed run
-else Rejected
-  C->>D: Publish rejected run
-end
-```
+<ArchDiagram :config="mwaAgentSeqConfig" />
 
 State changes:
 - `agentRuns.status`: `queued -> planning -> awaiting_approval -> executing -> completed|failed|rejected`.

@@ -8,38 +8,38 @@ The runtime operates on a **gated execution model**: the agent can freely read a
 
 ## Agent Run Sequence Diagram
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User (WhatsApp)
-    participant C as Convex (Orchestrator)
-    participant P as Policy Engine
-    participant O as Operator (WhatsApp)
+<script setup>
+const agentRunSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "ar-user", icon: "si:whatsapp", title: "User", subtitle: "WhatsApp", color: "teal" },
+    { id: "ar-orch", icon: "fa-sitemap", title: "Orchestrator", subtitle: "Convex", color: "warm" },
+    { id: "ar-policy", icon: "fa-scale-balanced", title: "Policy Engine", color: "dark" },
+    { id: "ar-op", icon: "si:whatsapp", title: "Operator", subtitle: "WhatsApp", color: "teal" },
+  ],
+  steps: [
+    { from: "ar-user", to: "ar-orch", label: "Sends message" },
+    { over: "ar-orch", note: "1. Create agentRun (queued)\n2. Load context: profile, workspace, memory\n3. Select specialist agent\n4. Plan action (planning)" },
+    { from: "ar-orch", to: "ar-policy", label: "Evaluate policy" },
+    { over: "ar-policy", note: "Check: action, risk,\nrole, rules, spend" },
+    { from: "ar-policy", to: "ar-orch", label: "Approval required", dashed: true },
+    { over: "ar-orch", note: "Create approvalRequest\nstate = awaiting_approval" },
+    { from: "ar-orch", to: "ar-op", label: "Approval request via WA" },
+    { over: "ar-op", note: "Reviews: action,\npreview, requester" },
+    { from: "ar-op", to: "ar-orch", label: "Replies 'approve'" },
+    { over: "ar-orch", note: "Execute tool (executing)" },
+    { from: "ar-orch", to: "ar-user", label: "Confirmation sent" },
+    { over: "ar-orch", note: "state = completed\nLog to episodic memory" },
+  ],
+  groups: [
+    { label: "Planning", color: "warm", from: 1, to: 3 },
+    { label: "Approval Flow", color: "dark", from: 4, to: 8 },
+    { label: "Execution", color: "teal", from: 9, to: 11 },
+  ],
+}
+</script>
 
-    U->>C: User sends message to Ecqqo
-    Note over C: Create agentRun<br/>state = "queued"
-    Note over C: Load context: user profile,<br/>workspace config, memory bundle<br/>(pinned + short-term + semantic + episodic)
-    Note over C: Select specialist agent<br/>(calendar, finance, comms...)
-    Note over C: Agent plans action<br/>state = "planning"
-    C->>P: Evaluate policy
-    Note over P: Check: action type, risk level,<br/>user role, workspace rules, spend limits
-
-    alt Case A: Auto-approved
-        P->>C: Auto-approved
-        Note over C: Execute tool<br/>state = "executing"
-        C->>U: Confirmation sent to user
-    else Case B: Approval required
-        P->>C: Approval required
-        Note over C: Create approvalRequest<br/>state = "awaiting_approval"
-        C->>O: Send approval request via WhatsApp
-        Note over O: Operator reviews:<br/>action, dry-run preview, requester
-        O->>C: Operator replies "approve"
-        Note over C: Execute tool<br/>state = "executing"
-        C->>U: Confirmation sent to user
-    end
-
-    Note over C: state = "completed"<br/>Log to episodic memory
-```
+<ArchDiagram :config="agentRunSeqConfig" />
 
 ## Agent Run State Machine
 
@@ -75,25 +75,20 @@ The approval flow is a core differentiator of Ecqqo: operators and principals ca
 
 When the agent determines an action requires approval, a structured WhatsApp message is sent to the designated approver:
 
-```
-  ┌─────────────────────────────────────────────────┐
-  │  Ecqqo Approval Request                         │
-  │                                                 │
-  │  Action:  Create calendar event                 │
-  │  For:     Ahmed Al-Rashid (Principal)           │
-  │  Details:                                       │
-  │    Title: Board meeting with Investor Group     │
-  │    Date:  Sunday, March 15 at 2:00 PM GST      │
-  │    Location: DIFC Office, Meeting Room 3        │
-  │    Duration: 90 minutes                         │
-  │    Attendees: 4 (invites will be sent)          │
-  │                                                 │
-  │  Reply "approve" or "reject"                    │
-  │                                                 │
-  │  [Approve]  [Reject]                            │
-  │  (Quick reply buttons)                          │
-  └─────────────────────────────────────────────────┘
-```
+> **Ecqqo Approval Request**
+>
+> **Action:** Create calendar event
+> **For:** Ahmed Al-Rashid (Principal)
+> **Details:**
+> - Title: Board meeting with Investor Group
+> - Date: Sunday, March 15 at 2:00 PM GST
+> - Location: DIFC Office, Meeting Room 3
+> - Duration: 90 minutes
+> - Attendees: 4 (invites will be sent)
+>
+> Reply "approve" or "reject"
+>
+> `[Approve]` `[Reject]` *(Quick reply buttons)*
 
 ### Approval Response Routing
 
@@ -101,13 +96,13 @@ When the approver replies, the response flows back through the same Meta Cloud A
 
 ```mermaid
 flowchart TD
-    A["Inbound WhatsApp Message"] --> B["Identify sender<br/>(phone lookup)"]
-    B --> C{"Pending approval<br/>requests for this user?"}
-    C -- NO --> D["Route to regular agent<br/>message processing"]
+    A["fa:fa-comments Inbound WA Message"] --> B["fa:fa-user Identify sender<br/>(phone lookup)"]
+    B --> C{"Pending approval<br/>requests?"}
+    C -- NO --> D["fa:fa-robot Regular agent flow"]
     C -- YES --> E{"Parse response"}
-    E -- "APPROVE<br/>(text or button tap)" --> F["Execute action<br/>Notify requester"]
-    E -- "REJECT<br/>(text or button tap)" --> G["Cancel agentRun<br/>Notify requester"]
-    E -- UNCLEAR --> H["Ask for clarification:<br/>Did you mean to<br/>approve or reject?"]
+    E -- APPROVE --> F["fa:fa-circle-check Execute action<br/>Notify requester"]
+    E -- REJECT --> G["fa:fa-circle-xmark Cancel agentRun<br/>Notify requester"]
+    E -- UNCLEAR --> H["fa:fa-circle-question Ask to clarify:<br/>approve or reject?"]
 ```
 
 ### Context-Aware Routing
@@ -125,12 +120,12 @@ The policy engine determines whether an action can auto-execute or needs approva
 
 ```mermaid
 flowchart TD
-    P1["**Priority 1: Workspace-level overrides**<br/>Workspace owner can configure:<br/>- All actions require approval (paranoid mode)<br/>- Trust agent for read-only actions (default)<br/>- Per-action-type approval rules"]
-    P2["**Priority 2: Action risk classification**<br/>None: Read calendar, list chats → Auto-execute<br/>Low: Create reminder, set alarm → Auto-execute<br/>Medium: Send message, create event → Approval required<br/>High: Make payment, delete data → Approval required<br/>Critical: Change permissions, share creds → Owner approval only"]
-    P3["**Priority 3: Approver selection**<br/>Medium → Any operator or principal<br/>High → Principal or owner<br/>Critical → Owner only"]
+    P1["fa:fa-gear **P1: Workspace Overrides**<br/>Owner-configured rules<br/>(paranoid, read-only trust, etc.)"]
+    P2["fa:fa-scale-balanced **P2: Risk Classification**<br/>None/Low: auto-execute<br/>Med/High/Critical: approval"]
+    P3["fa:fa-user **P3: Approver Selection**<br/>Med: operator/principal<br/>High: principal/owner<br/>Critical: owner only"]
 
-    P1 -- "If no workspace<br/>override matches" --> P2
-    P2 -- "If approval required" --> P3
+    P1 -- "No override" --> P2
+    P2 -- "Needs approval" --> P3
 ```
 
 ### Spend Limits

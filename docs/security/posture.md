@@ -4,85 +4,195 @@ This document describes Ecqqo's security architecture, threat model, and operati
 
 ## Security Architecture
 
-```
-                          +------------------+
-                          |   User Browser   |
-                          |  (Dashboard UI)  |
-                          +--------+---------+
-                                   |
-                                   | HTTPS (TLS 1.3)
-                                   | Clerk JWT in Authorization header
-                                   |
-                          +--------v---------+
-                          |   Vercel Edge    |
-                          |   (SSR + CDN)    |
-                          +--------+---------+
-                                   |
-                                   | Authenticated requests
-                                   | JWT forwarded to Convex
-                                   |
-                    +--------------v--------------+
-                    |        Convex Cloud          |
-                    |                              |
-                    |  +------------------------+  |
-                    |  | RBAC Enforcement Layer  |  |
-                    |  | - JWT validation        |  |
-                    |  | - Workspace membership  |  |
-                    |  | - Role-based filtering  |  |
-                    |  +------------------------+  |
-                    |                              |
-                    |  +----------+  +-----------+ |
-                    |  | Database |  | Functions  | |
-                    |  | (tables) |  | (mutations | |
-                    |  |          |  |  queries   | |
-                    |  |          |  |  actions)  | |
-                    |  +----------+  +-----------+ |
-                    +-----+------------------+-----+
-                          |                  |
-            Signed reqs   |                  |  Signed reqs
-            (HMAC-SHA256) |                  |  (HMAC-SHA256)
-                          |                  |
-                 +--------v------+    +------v-----------+
-                 |  Fly.io       |    |  Meta Cloud API  |
-                 |  Workers      |    |  (Outbound WA)   |
-                 |               |    +------+-----------+
-                 | +-----------+ |           |
-                 | | Encrypted | |           | Webhook callbacks
-                 | | Session   | |           | (signature-verified)
-                 | | Store     | |           |
-                 | +-----------+ |    +------v-----------+
-                 |               |    |  Convex Cloud    |
-                 +-------+------+    |  (inbound handler)|
-                         |           +------------------+
-                         |
-                         | WhatsApp Web protocol
-                         | (E2E encrypted by WhatsApp)
-                         |
-                +--------v---------+
-                |  WhatsApp Network |
-                |  (User's chats)   |
-                +------------------+
-```
+<script setup>
+const secArchConfig = {
+  layers: [
+    {
+      id: "sec-client",
+      title: "Client",
+      subtitle: "Browser · Dashboard",
+      icon: "fa-globe",
+      color: "teal",
+      nodes: [
+        { id: "sa-browser", icon: "fa-globe", title: "Browser", subtitle: "Dashboard (TLS 1.3 + JWT)" },
+      ],
+    },
+    {
+      id: "sec-edge",
+      title: "Edge",
+      subtitle: "Vercel · SSR + CDN",
+      icon: "si:vercel",
+      color: "warm",
+      nodes: [
+        { id: "sa-vercel", icon: "si:vercel", title: "Vercel Edge", subtitle: "SSR + CDN" },
+      ],
+    },
+    {
+      id: "sec-backend",
+      title: "Backend",
+      subtitle: "Convex Cloud",
+      icon: "si:convex",
+      color: "teal",
+      nodes: [
+        { id: "sa-rbac", icon: "fa-users", title: "RBAC", subtitle: "JWT + Roles + WS" },
+        { id: "sa-db", icon: "fa-database", title: "Database", subtitle: "Encrypted at Rest" },
+        { id: "sa-fns", icon: "fa-code", title: "Functions", subtitle: "Mutations · Queries · Actions" },
+      ],
+    },
+    {
+      id: "sec-workers",
+      title: "Workers",
+      subtitle: "Fly.io · Isolated Sessions",
+      icon: "si:flydotio",
+      color: "red",
+      nodes: [
+        { id: "sa-fly", icon: "si:flydotio", title: "Fly.io Workers", subtitle: "Encrypted Sessions" },
+      ],
+    },
+    {
+      id: "sec-wa",
+      title: "WhatsApp",
+      subtitle: "Meta Cloud API · User Chats",
+      icon: "si:whatsapp",
+      color: "dark",
+      nodes: [
+        { id: "sa-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "Outbound WA" },
+        { id: "sa-wa", icon: "si:whatsapp", title: "WhatsApp", subtitle: "User Chats (E2E)" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "sa-browser", to: "sa-vercel", label: "TLS 1.3 + JWT" },
+    { from: "sa-vercel", to: "sa-rbac", label: "authed reqs" },
+    { from: "sa-fns", to: "sa-fly", label: "HMAC-SHA256" },
+    { from: "sa-fns", to: "sa-meta", label: "HMAC-SHA256" },
+    { from: "sa-meta", to: "sa-rbac", label: "webhook" },
+    { from: "sa-fly", to: "sa-wa", label: "WA Web (E2E)" },
+  ],
+}
+
+const rolesConfig = {
+  layers: [
+    {
+      id: "role-owner",
+      title: "Owner",
+      subtitle: "Full Control",
+      icon: "fa-user",
+      color: "red",
+      nodes: [
+        { id: "rl-owner", icon: "fa-user", title: "Owner", subtitle: "Settings · Members · Billing" },
+        { id: "rl-owner-perms", icon: "fa-gear", title: "Permissions", subtitle: "Kill switches · Batch approve" },
+      ],
+    },
+    {
+      id: "role-principal",
+      title: "Principal",
+      subtitle: "Approve + View Own",
+      icon: "fa-user",
+      color: "warm",
+      nodes: [
+        { id: "rl-principal", icon: "fa-user", title: "Principal", subtitle: "Inherits from Owner" },
+        { id: "rl-principal-perms", icon: "fa-circle-check", title: "Permissions", subtitle: "Approve/reject · View own" },
+      ],
+    },
+    {
+      id: "role-operator",
+      title: "Operator",
+      subtitle: "Triage + Monitor",
+      icon: "fa-user",
+      color: "teal",
+      nodes: [
+        { id: "rl-operator", icon: "fa-user", title: "Operator", subtitle: "Inherits from Principal" },
+        { id: "rl-operator-perms", icon: "fa-magnifying-glass", title: "Permissions", subtitle: "View all · Triage · Read-only" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "rl-owner", to: "rl-principal", label: "inherits +" },
+    { from: "rl-principal", to: "rl-operator", label: "inherits +" },
+  ],
+}
+
+const langsmithConfig = {
+  layers: [
+    {
+      id: "ls-source",
+      title: "Agent Runtime",
+      subtitle: "Convex Actions",
+      icon: "fa-code",
+      color: "teal",
+      nodes: [
+        { id: "ls-action", icon: "fa-code", title: "Convex Action", subtitle: "Agent Run" },
+      ],
+    },
+    {
+      id: "ls-sdk",
+      title: "AI SDK",
+      subtitle: "Provider Interface + Tracing",
+      icon: "fa-plug",
+      color: "warm",
+      nodes: [
+        { id: "ls-sdk-node", icon: "fa-plug", title: "Vercel AI SDK", subtitle: "traceable()" },
+        { id: "ls-llm", icon: "fa-brain", title: "LLM Provider", subtitle: "OpenAI · Anthropic" },
+      ],
+    },
+    {
+      id: "ls-observability",
+      title: "Observability",
+      subtitle: "LangSmith · Traces · Alerts",
+      icon: "fa-chart-line",
+      color: "dark",
+      nodes: [
+        { id: "ls-explorer", icon: "fa-magnifying-glass", title: "Trace Explorer", subtitle: "p50 / p95 / p99" },
+        { id: "ls-evals", icon: "fa-list-check", title: "Prompt Regression", subtitle: "Eval Suites" },
+        { id: "ls-alerts", icon: "fa-triangle-exclamation", title: "Alerts", subtitle: "Cost · Latency" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "ls-action", to: "ls-sdk-node", label: "traceable()" },
+    { from: "ls-sdk-node", to: "ls-llm" },
+    { from: "ls-sdk-node", to: "ls-explorer", label: "async trace" },
+    { from: "ls-llm", to: "ls-explorer" },
+  ],
+}
+
+const hmacReqSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "hr-worker", icon: "si:flydotio", title: "Fly.io Worker", color: "red" },
+    { id: "hr-convex", icon: "si:convex", title: "Convex Cloud", color: "teal" },
+  ],
+  steps: [
+    { over: "hr-worker", note: "1. Build payload\n(wsId, event, data, ts)" },
+    { over: "hr-worker", note: "2. HMAC-SHA256\n(secret, payload)" },
+    { from: "hr-worker", to: "hr-convex", label: "POST /api/connector/event" },
+    { over: "hr-convex", note: "3a. Check timestamp (5min)\n3b. Recompute HMAC\n3c. Constant-time compare\n3d. Reject if mismatch" },
+    { from: "hr-convex", to: "hr-worker", label: "Accept or Reject", dashed: true },
+  ],
+}
+</script>
+
+<ArchDiagram :config="secArchConfig" />
 
 ### Dual Ingress Paths
 
 Ecqqo has two distinct paths for WhatsApp data:
 
-```
-Path 1: Connector (wacli) -- syncs user's personal WhatsApp
-+------------+     WA Web Protocol      +-----------+    HMAC-signed     +---------+
-| WhatsApp   | <---------------------> | Fly.io    | ----------------> | Convex  |
-| Network    |   E2E encrypted session  | Worker    |   events + data   | Cloud   |
-+------------+                          +-----------+                    +---------+
+**Path 1: Connector (wacli) -- syncs user's personal WhatsApp**
 
-Path 2: Meta Cloud API -- Ecqqo's official WhatsApp Business number
-+------------+     Webhook POST         +---------+
-| Meta       | ----------------------> | Convex  |
-| Platform   |   Signature-verified    | Cloud   |
-+------------+                          +---------+
-       ^                                     |
-       |         API call (Bearer token)     |
-       +-------------------------------------+
+```mermaid
+flowchart LR
+    WA["fa:fa-comments WhatsApp"] <-->|"WA Web (E2E)"| Worker["fa:fa-server Fly.io Worker"]
+    Worker -->|"HMAC-signed"| Convex1["fa:fa-cloud Convex"]
+```
+
+**Path 2: Meta Cloud API -- Ecqqo's official WhatsApp Business number**
+
+```mermaid
+flowchart LR
+    Meta["fa:fa-globe Meta Platform"] -->|"Webhook (verified)"| Convex2["fa:fa-cloud Convex"]
+    Convex2 -->|"Bearer token"| Meta
 ```
 
 ## Authentication and Authorization
@@ -91,64 +201,22 @@ Path 2: Meta Cloud API -- Ecqqo's official WhatsApp Business number
 
 Every request to the Convex backend carries a Clerk-issued JWT. Validation happens at the Convex function level before any data access.
 
-```
-Request Flow:
-Browser --> Clerk SDK (client-side) --> JWT issued
-    |
-    v
-Convex function called with JWT
-    |
-    v
-ctx.auth.getUserIdentity()
-    |
-    +-- null? --> Reject (401 Unauthorized)
-    |
-    +-- Valid? --> Extract: userId, workspaceId, role
-                      |
-                      v
-                  Check workspace membership table
-                      |
-                      +-- Not member? --> Reject (403 Forbidden)
-                      |
-                      +-- Member? --> Check role permissions
-                                         |
-                                         v
-                                     Execute function with scoped data
+```mermaid
+flowchart TD
+    Browser["fa:fa-globe Browser"] --> ClerkSDK["fa:fa-key Clerk SDK"] --> JWTIssued["fa:fa-key JWT issued"]
+    JWTIssued --> ConvexFn["fa:fa-code Convex fn called"]
+    ConvexFn --> GetIdentity["fa:fa-user getUserIdentity()"]
+    GetIdentity -->|"null"| Reject401["fa:fa-circle-xmark Reject 401"]
+    GetIdentity -->|"Valid"| Extract["fa:fa-user Extract userId,<br/>wsId, role"]
+    Extract --> CheckMembership["fa:fa-users Check WS membership"]
+    CheckMembership -->|"Not member"| Reject403["fa:fa-circle-xmark Reject 403"]
+    CheckMembership -->|"Member"| CheckRole["fa:fa-shield-halved Check role perms"]
+    CheckRole --> Execute["fa:fa-circle-check Execute (scoped data)"]
 ```
 
 ### Role Hierarchy
 
-```
-owner (full control)
-  |
-  +-- Can do everything principal can do, plus:
-  |     - Manage workspace settings
-  |     - Invite/remove members
-  |     - Manage billing (Stripe)
-  |     - Activate/deactivate kill switches
-  |     - Connect/disconnect WhatsApp
-  |     - Modify all policies
-  |     - Batch approve actions
-  |     - Access audit logs
-  |
-  v
-principal (approve + view own context)
-  |
-  +-- Can do everything operator can do, plus:
-  |     - Approve/reject actions in queue
-  |     - View own conversation context
-  |     - View own run history
-  |     - Edit own default preferences
-  |
-  v
-operator (triage + monitor)
-      - View all conversations (monitor)
-      - View all runs (monitor)
-      - Triage approval queue (escalate, not approve)
-      - View memory (read-only)
-      - View integration statuses
-      - Cannot modify policies, billing, or settings
-```
+<ArchDiagram :config="rolesConfig" />
 
 ### Workspace Isolation
 
@@ -170,31 +238,28 @@ All data is scoped to a workspace. Cross-workspace data access is structurally i
 
 By default, the connector syncs only metadata from WhatsApp conversations:
 
-```
-Default sync (all chats):
-+-------------------------------------------+
-|  Chat: Ahmed Al-Mansour                    |
-|  Last message: 2026-03-07T10:42:00Z        |
-|  Message count: 147                         |
-|  Chat type: individual                      |
-|  Status: active                             |
-+-------------------------------------------+
-   * No message content stored *
+**Default sync (all chats) — metadata only:**
 
-Allowlisted chat (explicit user opt-in):
-+-------------------------------------------+
-|  Chat: Ahmed Al-Mansour       [ALLOWLISTED] |
-|  Last message: 2026-03-07T10:42:00Z        |
-|  Message count: 147                         |
-|  Chat type: individual                      |
-|  Status: active                             |
-|                                              |
-|  Messages:                                   |
-|  [10:42] Ahmed: "Confirm the dinner for 8"  |
-|  [10:38] Ahmed: "Did you check the venue?"  |
-|  [10:21] You: "Yes, La Petite Maison works" |
-+-------------------------------------------+
-```
+> **Chat:** Ahmed Al-Mansour
+> **Last message:** 2026-03-07T10:42:00Z
+> **Message count:** 147
+> **Chat type:** individual
+> **Status:** active
+>
+> *No message content stored*
+
+**Allowlisted chat (explicit user opt-in) — metadata + content:**
+
+> **Chat:** Ahmed Al-Mansour `[ALLOWLISTED]`
+> **Last message:** 2026-03-07T10:42:00Z
+> **Message count:** 147
+> **Chat type:** individual
+> **Status:** active
+>
+> **Messages:**
+> - [10:42] Ahmed: "Confirm the dinner for 8"
+> - [10:38] Ahmed: "Did you check the venue?"
+> - [10:21] You: "Yes, La Petite Maison works"
 
 This minimizes data exposure. The agent can only read and act on conversations the user has explicitly allowlisted.
 
@@ -210,103 +275,54 @@ The Fly.io connector worker communicates with Convex using signed requests to pr
 
 ### HMAC-SHA256 Request Signing
 
-```
-Worker --> Convex request signing:
-
-1. Worker constructs payload:
-   {
-     "workspaceId": "ws_abc123",
-     "event": "message.received",
-     "data": { ... },
-     "timestamp": 1741334400000
-   }
-
-2. Worker computes signature:
-   signature = HMAC-SHA256(
-     key = WORKER_SIGNING_SECRET,
-     message = JSON.stringify(payload)
-   )
-
-3. Worker sends request:
-   POST /api/connector/event
-   X-Ecqqo-Signature: sha256=<signature>
-   X-Ecqqo-Timestamp: 1741334400000
-   Content-Type: application/json
-
-   <payload>
-
-4. Convex handler verifies:
-   a. Parse X-Ecqqo-Timestamp
-   b. Reject if |now - timestamp| > 300000 (5-minute window)
-   c. Recompute HMAC-SHA256 with stored secret
-   d. Constant-time compare with X-Ecqqo-Signature
-   e. Reject if mismatch
-```
+<ArchDiagram :config="hmacReqSeqConfig" />
 
 ### Worker Lease System
 
 Each workspace has at most one active connector worker. The lease system prevents duplicate workers from running simultaneously.
 
-```
-Lease lifecycle:
+```mermaid
+stateDiagram-v2
+    [*] --> AcquireLease: Start worker
 
-[Start worker]
-      |
-      v
-  Acquire lease (Convex mutation)
-      |
-      +-- Lease exists and is active? --> Reject (409 Conflict)
-      |
-      +-- No active lease? --> Issue lease
-            |                    leaseId: uuid
-            |                    workspaceId: ws_abc123
-            |                    workerId: fly_machine_id
-            |                    issuedAt: timestamp
-            |                    expiresAt: timestamp + 5min
-            |                    status: active
-            |
-            v
-      Worker starts heartbeat loop (every 60s)
-            |
-            v
-      Heartbeat renews lease (extends expiresAt by 5min)
-            |
-            v
-      [Worker crash or disconnect]
-            |
-            v
-      Lease expires naturally after 5min
-            |
-            v
-      New worker can acquire lease
+    AcquireLease: Acquire lease (mutation)
+    AcquireLease --> Reject409: Lease active?
+    AcquireLease --> IssueLease: No active lease?
+
+    Reject409: Reject 409
+    Reject409 --> [*]
+
+    IssueLease: Issue lease (TTL 5min)
+
+    IssueLease --> Heartbeat
+
+    Heartbeat: Heartbeat 60s, renew TTL
+
+    Heartbeat --> CrashOrDisconnect: Crash / disconnect
+
+    CrashOrDisconnect: Lease expires (5min)
+
+    CrashOrDisconnect --> NewWorker: New worker acquires
+
+    NewWorker --> AcquireLease
 ```
 
 ## WhatsApp Webhook Security (Meta Cloud API)
 
 Inbound webhooks from Meta's WhatsApp Business Platform are verified before processing.
 
-```
-Meta Platform --> Convex webhook endpoint:
-
-1. Meta sends POST with headers:
-   X-Hub-Signature-256: sha256=<signature>
-
-2. Convex handler verifies:
-   a. Read raw request body
-   b. Compute HMAC-SHA256 with app secret
-   c. Constant-time compare with X-Hub-Signature-256
-   d. Reject if mismatch (return 401)
-
-3. Parse verified payload:
-   a. Extract phone number from message.from
-   b. Look up workspace by verified phone number
-   c. Apply rate limiting (per-phone, per-workspace)
-   d. Route to appropriate handler
-
-4. Rate limits:
-   - 30 inbound messages per phone per minute
-   - 200 inbound messages per workspace per hour
-   - Exceeded? --> Queue overflow, notify owner
+```mermaid
+flowchart TD
+    Meta["fa:fa-globe Meta POST<br/>X-Hub-Signature-256"] --> ReadBody["fa:fa-code Read raw body"]
+    ReadBody --> ComputeHMAC["fa:fa-lock HMAC-SHA256 (app secret)"]
+    ComputeHMAC --> Compare["fa:fa-scale-balanced Constant-time compare"]
+    Compare -->|"Mismatch"| Reject401["fa:fa-circle-xmark Reject 401"]
+    Compare -->|"Match"| Parse["fa:fa-code Parse payload"]
+    Parse --> ExtractPhone["fa:fa-user Extract phone"]
+    ExtractPhone --> LookupWS["fa:fa-magnifying-glass Lookup workspace"]
+    LookupWS --> RateLimit["fa:fa-clock Rate limit"]
+    RateLimit -->|"Within limits"| Route["fa:fa-arrow-right Route to handler"]
+    RateLimit -->|"Exceeded"| Overflow["fa:fa-triangle-exclamation Overflow, notify owner"]
 ```
 
 ### Phone Number Verification
@@ -369,22 +385,17 @@ The owner can instantly disable critical subsystems when something goes wrong. K
 
 ### Kill-Switch Check Flow
 
-```
-Any sensitive operation (send message, start run, sync message):
-      |
-      v
-  Read workspaceSettings.killSwitches
-      |
-      +-- killSwitch.connectorIngestion === true?
-      |     --> Reject with KILL_SWITCH_ACTIVE error
-      |
-      +-- killSwitch.agentExecution === true?
-      |     --> Reject with KILL_SWITCH_ACTIVE error
-      |
-      +-- killSwitch.outboundMessaging === true?
-      |     --> Reject with KILL_SWITCH_ACTIVE error
-      |
-      +-- All clear? --> Proceed with operation
+```mermaid
+flowchart TD
+    Op["fa:fa-bolt Sensitive op<br/>(send/run/sync)"]
+    Op --> ReadKS["fa:fa-power-off Read killSwitches"]
+    ReadKS --> CheckConnector{"connector<br/>killed?"}
+    CheckConnector -->|"Yes"| RejectConn["fa:fa-circle-xmark Reject"]
+    CheckConnector -->|"No"| CheckAgent{"agent<br/>killed?"}
+    CheckAgent -->|"Yes"| RejectAgent["fa:fa-circle-xmark Reject"]
+    CheckAgent -->|"No"| CheckOutbound{"outbound<br/>killed?"}
+    CheckOutbound -->|"Yes"| RejectOutbound["fa:fa-circle-xmark Reject"]
+    CheckOutbound -->|"No"| Proceed["fa:fa-circle-check Proceed"]
 ```
 
 Kill-switch activation and deactivation are both recorded in the audit trail. The owner receives a WhatsApp notification (via the Meta Cloud API outbound path, which is independent of the connector) when a kill switch is auto-triggered.
@@ -433,62 +444,23 @@ All agent runs are traced via [LangSmith](https://smith.langchain.com) for end-t
 
 ### What Gets Traced
 
-```
-Agent Run Trace (one per agentRun)
-+-----------------------------------------------------------------------+
-|  run_id: agentRun._id                                                 |
-|  workspace_id: (workspace hash, no PII)                               |
-|  specialist: "scheduler" | "calendar" | "email" | ...                 |
-|                                                                       |
-|  +-- Step 1: Context Assembly                                         |
-|  |     Memory tiers queried, token count, retrieval latency           |
-|  |                                                                    |
-|  +-- Step 2: Orchestrator LLM Call                                    |
-|  |     Model, input/output tokens, latency, intent detected           |
-|  |                                                                    |
-|  +-- Step 3: Specialist LLM Call                                      |
-|  |     Model, input/output tokens, latency, tool call proposed        |
-|  |                                                                    |
-|  +-- Step 4: Policy Evaluation                                        |
-|  |     Approval required? Rule matched, risk level                    |
-|  |                                                                    |
-|  +-- Step 5: Approval Wait                                            |
-|  |     Time to approval, approved/rejected/expired                    |
-|  |                                                                    |
-|  +-- Step 6: Tool Execution                                           |
-|  |     Tool name, latency, success/failure, retry count               |
-|  |                                                                    |
-|  +-- Step 7: Response Delivery                                        |
-|        Channel (WhatsApp/dashboard), delivery latency                 |
-+-----------------------------------------------------------------------+
-|  Total: latency, cost, token usage, outcome                           |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    Trace["fa:fa-robot <strong>Agent Run Trace</strong><br/>run_id, ws_hash, specialist"]
+
+    Trace --> S1["fa:fa-microchip 1. Context Assembly<br/>memory, tokens"]
+    S1 --> S2["fa:fa-brain 2. Orchestrator LLM<br/>model, intent"]
+    S2 --> S3["fa:fa-brain 3. Specialist LLM<br/>tool proposed"]
+    S3 --> S4["fa:fa-scale-balanced 4. Policy Eval<br/>approval? risk"]
+    S4 --> S5["fa:fa-clock 5. Approval Wait<br/>time, decision"]
+    S5 --> S6["fa:fa-gear 6. Tool Exec<br/>latency, retries"]
+    S6 --> S7["fa:fa-message 7. Response Delivery<br/>channel, latency"]
+    S7 --> Total["fa:fa-chart-line Total: latency, cost,<br/>tokens, outcome"]
 ```
 
 ### Integration Architecture
 
-```
-Convex Action (agent run)
-      |
-      |  1. Wrap LLM calls with LangSmith traceable()
-      |
-      v
-  Vercel AI SDK  ------>  LLM Provider (Anthropic, OpenAI, etc.)
-      |
-      |  2. LangSmith callback auto-captures:
-      |     - input/output
-      |     - token counts
-      |     - latency
-      |     - model name
-      |
-      v
-  LangSmith Cloud  <----  Trace data (async, non-blocking)
-      |
-      +-- Dashboard: trace explorer, latency p50/p95/p99
-      +-- Evals: prompt regression tests, quality scoring
-      +-- Alerts: cost spike, latency degradation, error rate
-      +-- Datasets: collect production examples for testing
-```
+<ArchDiagram :config="langsmithConfig" />
 
 ### Key Metrics Tracked
 

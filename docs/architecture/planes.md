@@ -4,60 +4,139 @@ Ecqqo's architecture is organized into four distinct planes, each with a clear r
 
 ## Plane Interaction Diagram
 
-```mermaid
-flowchart TB
-    subgraph EP["Experience Plane"]
-        DASH["TanStack Start Dashboard<br/>(Vercel)"]
-        CLERK["Clerk Auth<br/>(JWT / RBAC)"]
-        WACHAT["WhatsApp Chat UI<br/>(Meta API)"]
-    end
+<script setup>
+const planesConfig = {
+  layers: [
+    {
+      id: "experience",
+      title: "Experience Plane",
+      subtitle: "Users & Interfaces",
+      icon: "fa-desktop",
+      color: "teal",
+      nodes: [
+        { id: "pl-dash", icon: "fa-gauge", title: "Dashboard", subtitle: "TanStack Start · SSR" },
+        { id: "pl-clerk", icon: "si:clerk", title: "Clerk Auth", subtitle: "JWT · RBAC" },
+        { id: "pl-wa", icon: "si:whatsapp", title: "WhatsApp Chat", subtitle: "Primary Interface" },
+      ],
+    },
+    {
+      id: "control",
+      title: "Control Plane",
+      subtitle: "Convex · Source of Truth",
+      icon: "si:convex",
+      color: "warm",
+      nodes: [
+        { id: "pl-identity", icon: "fa-user", title: "Identity & Roles", subtitle: "Phone-based Lookup" },
+        { id: "pl-state", icon: "fa-database", title: "State", subtitle: "Messages · Runs · Policies" },
+        { id: "pl-memory", icon: "fa-microchip", title: "Memory", subtitle: "Vectors · Ingestion" },
+      ],
+    },
+    {
+      id: "connector",
+      title: "Connector Plane",
+      subtitle: "wacli Worker Fleet",
+      icon: "fa-network-wired",
+      color: "red",
+      nodes: [
+        { id: "pl-fly", icon: "si:flydotio", title: "Fly.io Worker", subtitle: "Per-user Isolation" },
+        { id: "pl-waweb", icon: "fa-globe", title: "WA Web", subtitle: "Session Bridge" },
+      ],
+    },
+    {
+      id: "intelligence",
+      title: "Intelligence Plane",
+      subtitle: "AI Agents · Orchestration",
+      icon: "fa-brain",
+      color: "dark",
+      nodes: [
+        { id: "pl-orch", icon: "fa-sitemap", title: "Orchestrator", subtitle: "Intent Routing" },
+        { id: "pl-agents", icon: "fa-robot", title: "Agents", subtitle: "Specialist Dispatch" },
+        { id: "pl-aisdk", icon: "fa-microchip", title: "AI SDK", subtitle: "Provider Agnostic" },
+        { id: "pl-tools", icon: "fa-wrench", title: "Tools", subtitle: "External Services" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "pl-dash", to: "pl-identity", label: "queries" },
+    { from: "pl-clerk", to: "pl-identity", label: "JWT" },
+    { from: "pl-wa", to: "pl-state", label: "webhooks" },
+    { from: "pl-state", to: "pl-fly", label: "lifecycle" },
+    { from: "pl-fly", to: "pl-state", label: "events" },
+    { from: "pl-state", to: "pl-orch", label: "orchestrate" },
+    { from: "pl-orch", to: "pl-agents" },
+    { from: "pl-orch", to: "pl-tools" },
+  ],
+}
 
-    subgraph CP["Control Plane"]
-        subgraph CONVEX["Convex (Source of Truth)"]
-            ID["Identity & Roles"]
-            MSG["Message Store & History"]
-            POL["Policies & Approvals"]
-            RUNS["Agent Runs & Audit Log"]
-            MEM["Memory & Vectors"]
-            ING["Ingestion State / Cursors"]
-        end
-    end
+const providerConfig = {
+  layers: [
+    {
+      id: "caller",
+      title: "Caller",
+      subtitle: "Convex Action",
+      icon: "fa-code",
+      color: "teal",
+      nodes: [
+        { id: "pv-orch", icon: "fa-sitemap", title: "Orchestrator", subtitle: "Convex Action" },
+      ],
+    },
+    {
+      id: "sdk",
+      title: "Abstraction Layer",
+      subtitle: "Vercel AI SDK",
+      icon: "fa-microchip",
+      color: "warm",
+      nodes: [
+        { id: "pv-sdk", icon: "fa-microchip", title: "Vercel AI SDK", subtitle: "generateText · streamText" },
+      ],
+    },
+    {
+      id: "providers",
+      title: "AI Providers",
+      subtitle: "Swappable via Configuration",
+      icon: "fa-brain",
+      color: "dark",
+      nodes: [
+        { id: "pv-oai", icon: "si:openai", title: "OpenAI", subtitle: "GPT-4o" },
+        { id: "pv-ant", icon: "si:anthropic", title: "Anthropic", subtitle: "Claude" },
+        { id: "pv-groq", icon: "fa-bolt", title: "Groq", subtitle: "Fast Inference" },
+        { id: "pv-more", icon: "fa-plug", title: "More", subtitle: "OpenRouter · Azure" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "pv-orch", to: "pv-sdk" },
+    { from: "pv-sdk", to: "pv-oai" },
+    { from: "pv-sdk", to: "pv-ant" },
+    { from: "pv-sdk", to: "pv-groq" },
+    { from: "pv-sdk", to: "pv-more" },
+  ],
+}
 
-    subgraph CONN["Connector Plane"]
-        WAWEB["WhatsApp Web Network"]
-        FLY["Fly.io Machine<br/>wacli · 1 per user · isolated"]
-    end
+const lifecycleSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "lc-convex", icon: "si:convex", title: "Convex", subtitle: "Control Plane", color: "teal" },
+    { id: "lc-fly", icon: "si:flydotio", title: "Fly.io Machine", color: "red" },
+  ],
+  steps: [
+    { from: "lc-convex", to: "lc-fly", label: "POST /start" },
+    { over: "lc-fly", note: "Machine boots\nwacli starts\nQR generated" },
+    { from: "lc-convex", to: "lc-fly", label: "POST /status" },
+    { from: "lc-fly", to: "lc-convex", label: "Returns QR code", dashed: true },
+    { over: ["lc-convex", "lc-fly"], note: "User scans QR — session active" },
+    { from: "lc-fly", to: "lc-convex", label: "Signed events (messages, contacts)" },
+    { over: "lc-convex", note: "Validate signatures\nStore data" },
+    { from: "lc-convex", to: "lc-fly", label: "POST /stop" },
+    { over: "lc-fly", note: "Machine stops ($0 when off)" },
+  ],
+  groups: [
+    { label: "Ongoing Sync", color: "teal", from: 5, to: 6 },
+  ],
+}
+</script>
 
-    subgraph IP["Intelligence Plane"]
-        AGENTS["Specialist Agents<br/>Scheduler · Communicator<br/>Researcher · Operator"]
-        MEMRET["Memory Retrieval<br/>Vector search · Context assembly"]
-        AISDK["Vercel AI SDK<br/>OpenAI · Anthropic · Groq<br/>OpenRouter · Azure"]
-        ORCH["Orchestrator<br/>(Convex Action)"]
-        TOOLS["Tool Execution<br/>& Approval Flow"]
-        EXTSVC["External Services<br/>(Google, Stripe, etc.)"]
-    end
-
-    DASH -- "queries / mutations<br/>subscriptions" --> CONVEX
-    CLERK -- "identity tokens" --> CONVEX
-    WACHAT -- "webhooks / messages" --> CONVEX
-
-    CONVEX -- "lifecycle commands" --> FLY
-    FLY -- "signed events" --> CONVEX
-    FLY -- "wacli session" --> WAWEB
-
-    CONVEX -- "orchestration calls" --> ORCH
-    ORCH --> AGENTS
-    ORCH --> MEMRET
-    MEMRET -- "AI provider requests" --> AISDK
-    AGENTS --> ORCH
-    ORCH --> TOOLS
-    TOOLS --> EXTSVC
-
-    style EP fill:#e3f2fd,stroke:#1565c0,color:#000
-    style CP fill:#fff3e0,stroke:#e65100,color:#000
-    style CONN fill:#e8f5e9,stroke:#2e7d32,color:#000
-    style IP fill:#f3e5f5,stroke:#6a1b9a,color:#000
-```
+<ArchDiagram :config="planesConfig" />
 
 ## 1. Experience Plane
 
@@ -124,27 +203,8 @@ The official Meta Cloud API only provides messages sent after the business numbe
 - Media download and processing
 
 ### Lifecycle Management
-```mermaid
-sequenceDiagram
-    participant Convex as Convex (Control Plane)
-    participant Fly as Fly.io Machine
 
-    Convex->>Fly: POST /start
-    Note right of Fly: Machine boots<br/>wacli starts<br/>QR generated
-
-    Convex->>Fly: POST /status
-    Fly-->>Convex: Returns QR code
-
-    Note over Convex,Fly: User scans QR — session active
-
-    loop Ongoing sync
-        Fly->>Convex: Signed events (messages, contacts, groups)
-        Note left of Convex: Validate signatures<br/>Store data
-    end
-
-    Convex->>Fly: POST /stop
-    Note right of Fly: Machine stops ($0 when off)
-```
+<ArchDiagram :config="lifecycleSeqConfig" />
 
 ### Isolation Guarantees
 - Each machine runs in its own VM -- no shared memory or filesystem
@@ -172,21 +232,7 @@ The Intelligence Plane contains all AI reasoning, tool execution, and approval w
 
 ### Provider Agnosticism
 The Vercel AI SDK provides a unified interface across providers:
-```mermaid
-flowchart TB
-    ORCH["Orchestrator<br/>(Convex Action)"]
-    SDK["Vercel AI SDK<br/>generateText() · streamText()<br/>generateObject()"]
-    OAI["OpenAI"]
-    ANT["Anthropic"]
-    GROQ["Groq"]
-    MORE["OpenRouter<br/>Azure · ..."]
-
-    ORCH --> SDK
-    SDK --> OAI
-    SDK --> ANT
-    SDK --> GROQ
-    SDK --> MORE
-```
+<ArchDiagram :config="providerConfig" />
 
 Switching providers is a configuration change, not a code change. Different specialists can use different providers optimized for their task (e.g., fast models for classification, powerful models for planning).
 

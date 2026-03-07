@@ -4,62 +4,166 @@ Ecqqo is a WhatsApp-native executive assistant that lets high-net-worth operator
 
 ## Component Diagram
 
-```mermaid
-flowchart TB
-    subgraph User
-        WA["User's WhatsApp App"]
-    end
+<script setup>
+const trustConfig = {
+  layers: [
+    {
+      id: "tb-edge",
+      title: "Untrusted Edge",
+      subtitle: "Trust Boundary 1 · User Perimeter",
+      icon: "fa-shield-halved",
+      color: "red",
+      nodes: [
+        { id: "tb-waapp", icon: "si:whatsapp", title: "WhatsApp App", subtitle: "User Device · Untrusted" },
+      ],
+    },
+    {
+      id: "tb-gateway",
+      title: "API Gateway",
+      subtitle: "Trust Boundary 2 · Platform Perimeter",
+      icon: "fa-lock",
+      color: "warm",
+      nodes: [
+        { id: "tb-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "Webhook Signature" },
+        { id: "tb-clerk", icon: "si:clerk", title: "Clerk", subtitle: "JWT Verification" },
+        { id: "tb-vercel", icon: "si:vercel", title: "Vercel", subtitle: "Client Auth" },
+      ],
+    },
+    {
+      id: "tb-core",
+      title: "Platform Core",
+      subtitle: "Trust Boundary 2 · Trusted Source of Truth",
+      icon: "si:convex",
+      color: "teal",
+      nodes: [
+        { id: "tb-convex", icon: "si:convex", title: "Convex", subtitle: "Authenticated Mutations" },
+      ],
+    },
+    {
+      id: "tb-connector",
+      title: "Connector Isolation",
+      subtitle: "Trust Boundary 3 · Connector Perimeter",
+      icon: "fa-network-wired",
+      color: "dark",
+      nodes: [
+        { id: "tb-fly", icon: "si:flydotio", title: "Fly.io Machine", subtitle: "Signed Events · Lifecycle" },
+      ],
+    },
+    {
+      id: "tb-external",
+      title: "External APIs",
+      subtitle: "Trust Boundary 4 · External Services Perimeter",
+      icon: "fa-key",
+      color: "blue",
+      nodes: [
+        { id: "tb-google", icon: "si:google", title: "Google APIs", subtitle: "OAuth 2.0 Tokens" },
+        { id: "tb-stripe", icon: "si:stripe", title: "Stripe", subtitle: "API Keys · Webhooks" },
+        { id: "tb-aiprov", icon: "si:openai", title: "AI Providers", subtitle: "API Keys · Per-request" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "tb-waapp", to: "tb-meta", label: "untrusted input" },
+    { from: "tb-meta", to: "tb-convex", label: "webhook signature" },
+    { from: "tb-clerk", to: "tb-convex", label: "JWT" },
+    { from: "tb-vercel", to: "tb-convex", label: "client auth" },
+    { from: "tb-convex", to: "tb-fly", label: "signed events" },
+    { from: "tb-convex", to: "tb-google", label: "OAuth" },
+    { from: "tb-convex", to: "tb-stripe", label: "API keys" },
+    { from: "tb-convex", to: "tb-aiprov", label: "API keys" },
+  ],
+}
 
-    subgraph "Meta Platform"
-        META["Meta Cloud API<br/>(WhatsApp Business)"]
-    end
+const overviewConfig = {
+  layers: [
+    {
+      id: "client",
+      title: "Client Layer",
+      subtitle: "Users & Interfaces",
+      icon: "fa-users",
+      color: "teal",
+      nodes: [
+        { id: "wa", icon: "si:whatsapp", title: "WhatsApp", subtitle: "Primary Interface" },
+        { id: "dash", icon: "si:vercel", title: "Dashboard", subtitle: "TanStack Start · SSR" },
+      ],
+    },
+    {
+      id: "gateway",
+      title: "Gateway & Auth",
+      subtitle: "Routing · Identity · Verification",
+      icon: "fa-cloud",
+      color: "warm",
+      nodes: [
+        { id: "meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "Webhooks · Send" },
+        { id: "clerk", icon: "si:clerk", title: "Clerk", subtitle: "JWT · RBAC · SSO" },
+      ],
+    },
+    {
+      id: "control",
+      title: "Control Plane",
+      subtitle: "Convex Cloud — Source of Truth",
+      icon: "si:convex",
+      color: "teal",
+      nodes: [
+        { id: "fn", icon: "fa-code", title: "Functions", subtitle: "Mutations · Queries · Crons" },
+        { id: "db", icon: "fa-database", title: "Database", subtitle: "Real-time Subscriptions" },
+        { id: "vec", icon: "fa-magnifying-glass", title: "Vector Search", subtitle: "Semantic Memory" },
+      ],
+    },
+    {
+      id: "intelligence",
+      title: "Intelligence Layer",
+      subtitle: "AI Agents · Memory · Orchestration",
+      icon: "fa-brain",
+      color: "dark",
+      nodes: [
+        { id: "orch", icon: "fa-sitemap", title: "Orchestrator", subtitle: "Intent Routing" },
+        { id: "agents", icon: "fa-robot", title: "Agents", subtitle: "Scheduler · Email · Research" },
+        { id: "ai", icon: "si:openai", title: "AI Providers", subtitle: "GPT-4o · Claude · Groq" },
+      ],
+    },
+    {
+      id: "services",
+      title: "External Services",
+      subtitle: "Third-party Integrations",
+      icon: "fa-plug",
+      color: "warm",
+      nodes: [
+        { id: "gcal", icon: "si:googlecalendar", title: "Google Calendar", subtitle: "Events · Availability" },
+        { id: "gmail", icon: "si:gmail", title: "Gmail", subtitle: "Read · Draft · Send" },
+        { id: "stripe", icon: "si:stripe", title: "Stripe", subtitle: "Billing · Subscriptions" },
+      ],
+    },
+    {
+      id: "connector",
+      title: "Connector Plane",
+      subtitle: "WhatsApp Web Bridge · History Sync",
+      icon: "fa-network-wired",
+      color: "red",
+      nodes: [
+        { id: "fly", icon: "si:flydotio", title: "Fly.io Worker", subtitle: "1 per user · Isolated" },
+        { id: "waweb", icon: "fa-globe", title: "WA Web", subtitle: "Session Bridge" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "wa", to: "meta", label: "messages" },
+    { from: "dash", to: "clerk", label: "auth" },
+    { from: "meta", to: "fn", label: "webhooks" },
+    { from: "clerk", to: "fn", label: "JWT" },
+    { from: "fn", to: "orch", label: "orchestrate" },
+    { from: "orch", to: "agents" },
+    { from: "agents", to: "ai", label: "LLM" },
+    { from: "fn", to: "gcal" },
+    { from: "fn", to: "gmail" },
+    { from: "fn", to: "stripe" },
+    { from: "fn", to: "fly", label: "lifecycle" },
+    { from: "fly", to: "waweb", label: "wacli" },
+  ],
+}
+</script>
 
-    subgraph "Convex Cloud (Control Plane)"
-        DB[("Database<br/>Users/Identity · Messages<br/>Agent Runs · Memory Store<br/>Audit Log · Policies")]
-        FN["Functions<br/>Mutations · Queries · Actions<br/>Scheduled Fns · Vector Search"]
-    end
-
-    subgraph "Fly.io (Connector Plane)"
-        FLY["Fly.io Machine<br/>(Connector Worker)<br/>1 per user · wacli process<br/>isolated session"]
-    end
-
-    subgraph "WhatsApp Web"
-        WAWEB["WhatsApp Web Network"]
-    end
-
-    subgraph "Vercel (Dashboard)"
-        DASH["TanStack Start<br/>React 19 SSR<br/>Edge + Serverless"]
-    end
-
-    subgraph "Auth"
-        CLERK["Clerk<br/>JWT tokens · User management<br/>Role-based access"]
-    end
-
-    subgraph "AI Providers (Vercel AI SDK)"
-        AI["OpenAI · Anthropic<br/>Groq · OpenRouter · Azure OpenAI"]
-    end
-
-    subgraph "External Services"
-        EXT["Google Calendar · Gmail<br/>Stripe (billing)"]
-    end
-
-    WA -- "message" --> META
-    META -- "reply" --> WA
-    META -- "webhook" --> FN
-    FN -- "send" --> META
-
-    FN -- "lifecycle commands" --> FLY
-    FLY -- "signed events" --> FN
-    FLY -- "wacli session" --> WAWEB
-
-    DASH -- "auth" --> CLERK
-    DASH -- "queries / mutations<br/>subscriptions" --> FN
-
-    FN -- "AI calls" --> AI
-    FN -- "Convex Actions" --> EXT
-
-    DB --- FN
-```
+<ArchDiagram :config="overviewConfig" />
 
 ## Tech Stack
 
@@ -93,48 +197,6 @@ flowchart TB
 
 The system has four distinct trust boundaries that govern how components authenticate and authorize communication:
 
-```mermaid
-flowchart TB
-    subgraph TB1["Trust Boundary 1: User Perimeter"]
-        direction LR
-        U_WA["User's WhatsApp App"]
-        U_META["Meta Cloud API"]
-        U_WA -- "untrusted input" --- U_META
-    end
-
-    subgraph TB2["Trust Boundary 2: Platform Perimeter"]
-        direction LR
-        P_META["Meta Cloud API"]
-        P_CLERK["Clerk"]
-        P_VERCEL["Vercel"]
-        P_CONVEX["Convex"]
-        P_META -- "webhook signature verification" --- P_CONVEX
-        P_CLERK -- "JWT verification" --- P_CONVEX
-        P_VERCEL -- "Convex client auth" --- P_CONVEX
-    end
-
-    subgraph TB3["Trust Boundary 3: Connector Perimeter"]
-        direction LR
-        C_CONVEX["Convex"]
-        C_FLY["Fly.io Machine"]
-        C_CONVEX -- "signed events +<br/>lifecycle API" --- C_FLY
-    end
-
-    subgraph TB4["Trust Boundary 4: External Services Perimeter"]
-        direction LR
-        E_CONVEX["Convex Actions"]
-        E_EXT["Google · Stripe · AI Providers"]
-        E_CONVEX -- "OAuth / API keys" --- E_EXT
-    end
-
-    TB1 --> TB2
-    TB2 --> TB3
-    TB3 --> TB4
-
-    style TB1 fill:#fff3e0,stroke:#e65100,color:#000
-    style TB2 fill:#e3f2fd,stroke:#1565c0,color:#000
-    style TB3 fill:#e8f5e9,stroke:#2e7d32,color:#000
-    style TB4 fill:#fce4ec,stroke:#c62828,color:#000
-```
+<ArchDiagram :config="trustConfig" />
 
 Each boundary enforces the principle of least privilege: components only receive the credentials and data they need to perform their specific function. Cross-boundary communication always flows through authenticated, validated channels.

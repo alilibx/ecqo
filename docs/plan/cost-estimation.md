@@ -39,21 +39,19 @@ Each wacli connector machine runs as a `shared-cpu-1x` with 256MB RAM.
 
 ### Per-User AI Cost Estimate
 
-```
-  Estimated runs per user per month:  50 - 100
-  Cost per run:                       ~$0.0265
-  AI cost per user per month:         $1.33 - $2.65
+- Estimated runs per user per month: **50 - 100**
+- Cost per run: **~$0.0265**
+- AI cost per user per month: **$1.33 - $2.65**
 
-  Breakdown of a typical run:
-  +------------------------------------------------------+
-  |  1. Orchestrator call (planning)         ~$0.009      |
-  |  2. Specialist call (action proposal)   ~$0.016      |
-  |  3. Extraction call (memory update)     ~$0.0015     |
-  |  4. Embedding call (vector indexing)    ~$0.00001    |
-  |                                         ----------   |
-  |  Total per run                          ~$0.0265     |
-  +------------------------------------------------------+
-```
+**Breakdown of a typical run:**
+
+| Step | Cost |
+|---|---|
+| 1. Orchestrator call (planning) | ~$0.009 |
+| 2. Specialist call (action proposal) | ~$0.016 |
+| 3. Extraction call (memory update) | ~$0.0015 |
+| 4. Embedding call (vector indexing) | ~$0.00001 |
+| **Total per run** | **~$0.0265** |
 
 ## Revenue Projections
 

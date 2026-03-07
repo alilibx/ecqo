@@ -4,50 +4,93 @@ This document specifies every internal and external API surface in Ecqqo: HTTP e
 
 ## API Surface Overview
 
-```
-+============================================================================+
-|                           ECQO API SURFACES                                |
-+============================================================================+
+<script setup>
+const apiSurfaceConfig = {
+  layers: [
+    {
+      id: "api-external",
+      title: "External Callers",
+      subtitle: "Inbound Traffic",
+      icon: "fa-globe",
+      color: "red",
+      nodes: [
+        { id: "api-fly", icon: "si:flydotio", title: "Fly.io Workers", subtitle: "Sync Events" },
+        { id: "api-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "WA Webhooks" },
+        { id: "api-stripe", icon: "si:stripe", title: "Stripe", subtitle: "Billing Webhooks" },
+        { id: "api-dash", icon: "fa-gauge", title: "Dashboard", subtitle: "User Queries" },
+      ],
+    },
+    {
+      id: "api-convex",
+      title: "Convex Cloud",
+      subtitle: "API Layer",
+      icon: "si:convex",
+      color: "teal",
+      nodes: [
+        { id: "api-http", icon: "fa-bolt", title: "HTTP Actions", subtitle: "/internal/wa · /webhooks" },
+        { id: "api-qm", icon: "fa-code", title: "Queries & Mutations", subtitle: "Convex SDK" },
+        { id: "api-actions", icon: "fa-code", title: "Actions", subtitle: "External Calls" },
+      ],
+    },
+    {
+      id: "api-downstream",
+      title: "Downstream Services",
+      subtitle: "External APIs",
+      icon: "fa-plug",
+      color: "dark",
+      nodes: [
+        { id: "api-ai", icon: "fa-brain", title: "AI Providers", subtitle: "LLM Calls" },
+        { id: "api-google", icon: "si:google", title: "Google APIs", subtitle: "Calendar · Gmail" },
+        { id: "api-meta-out", icon: "si:meta", title: "Meta API", subtitle: "Outbound WA" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "api-fly", to: "api-http", label: "HTTP POST" },
+    { from: "api-meta", to: "api-http", label: "HTTP POST" },
+    { from: "api-stripe", to: "api-http", label: "HTTP POST" },
+    { from: "api-dash", to: "api-qm", label: "Convex SDK" },
+    { from: "api-http", to: "api-actions" },
+    { from: "api-qm", to: "api-actions" },
+    { from: "api-actions", to: "api-ai" },
+    { from: "api-actions", to: "api-google" },
+    { from: "api-actions", to: "api-meta-out" },
+  ],
+}
 
-  External Callers                   Convex Cloud                  Downstream
-  ─────────────────                  ────────────                  ──────────
+const dashAuthSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "da-browser", icon: "fa-gauge", title: "Dashboard", color: "teal" },
+    { id: "da-clerk", icon: "si:clerk", title: "Clerk", color: "warm" },
+    { id: "da-convex", icon: "si:convex", title: "Convex", color: "teal" },
+  ],
+  steps: [
+    { from: "da-browser", to: "da-clerk", label: "1. Login" },
+    { from: "da-clerk", to: "da-browser", label: "2. JWT issued", dashed: true },
+    { from: "da-browser", to: "da-convex", label: "3. Query/mutation + JWT" },
+    { from: "da-convex", to: "da-clerk", label: "4. Verify JWT" },
+    { from: "da-clerk", to: "da-convex", label: "5. Valid", dashed: true },
+    { over: "da-convex", note: "6. Resolve user, check role" },
+    { from: "da-convex", to: "da-browser", label: "7. Result (real-time)", dashed: true },
+  ],
+}
 
-  +-------------------+
-  | Fly.io Workers    |──── HTTP POST ────>+---------------------------+
-  | (wacli connector) |                    |                           |
-  +-------------------+                    |  HTTP Actions             |
-                                           |  /internal/wa/*           |
-  +-------------------+                    |                           |
-  | Meta Cloud API    |──── HTTP POST ────>|  /webhooks/whatsapp       |
-  | (WhatsApp)        |                    |                           |
-  +-------------------+                    |  /webhooks/stripe         |
-                                           |                           |
-  +-------------------+                    +---------------------------+
-  | Stripe            |──── HTTP POST ────>|                           |
-  +-------------------+                    |                           |
-                                           +-------------+-------------+
-                                                         |
-  +-------------------+                                  v
-  | Dashboard         |                    +---------------------------+
-  | (TanStack Start)  |──── Convex SDK ──> |  Queries & Mutations      |
-  |                   |                    |  (real-time, authed)      |
-  +-------------------+                    +-------------+-------------+
-                                                         |
-                                                         v
-                                           +---------------------------+
-                                           |  Convex Actions           |
-                                           |  (external network calls) |
-                                           +-------------+-------------+
-                                                         |
-                                     +-------------------+-------------------+
-                                     |                   |                   |
-                                     v                   v                   v
-                              +-----------+     +--------------+    +-----------+
-                              | AI Provs  |     | Google APIs  |    | Meta API  |
-                              | (Vercel   |     | (Calendar,   |    | (send     |
-                              |  AI SDK)  |     |  Gmail)      |    |  message) |
-                              +-----------+     +--------------+    +-----------+
-```
+const hmacSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "hm-worker", icon: "si:flydotio", title: "Fly.io Worker", color: "red" },
+    { id: "hm-convex", icon: "si:convex", title: "Convex", subtitle: "HTTP Action", color: "teal" },
+  ],
+  steps: [
+    { over: "hm-worker", note: "1. Serialize to JSON\n2. HMAC-SHA256(body, secret)\n3. Attach signature" },
+    { from: "hm-worker", to: "hm-convex", label: "4. POST event" },
+    { over: "hm-convex", note: "5. Lookup secret\n6. Recompute HMAC\n7. Constant-time compare\n8. Reject if mismatch" },
+  ],
+}
+</script>
+
+<ArchDiagram :config="apiSurfaceConfig" />
 
 ---
 
@@ -358,47 +401,17 @@ The handler:
 
 **Processing Flow:**
 
-```
-  Meta Cloud API
-       |
-       v
-  +----+----+
-  | Verify  |
-  | HMAC    |----> 401 if invalid
-  | sig     |
-  +----+----+
-       |
-       v
-  +----+-------+
-  | Parse      |
-  | messages[] |
-  +----+-------+
-       |
-       v
-  +----+---------+
-  | Dedup by     |
-  | messageId    |----> skip if exists
-  +----+---------+
-       |
-       v
-  +----+---------+
-  | Match phone  |
-  | to waAccount |----> store unmatched with waAccountId=null
-  +----+---------+
-       |
-       v
-  +----+---------+
-  | Insert       |
-  | inbound      |
-  | Message      |
-  +----+---------+
-       |
-       v
-  +----+---------+
-  | Schedule     |
-  | agent run    |
-  | (if matched) |
-  +--------------+
+```mermaid
+flowchart TD
+    A["fa:fa-comments Meta Cloud API"] --> B["fa:fa-lock Verify HMAC"]
+    B -->|invalid| B1["fa:fa-circle-xmark 401 Reject"]
+    B -->|valid| C["fa:fa-code Parse messages"]
+    C --> D["fa:fa-magnifying-glass Dedup by msgId"]
+    D -->|exists| D1["fa:fa-arrow-right Skip"]
+    D -->|new| E["fa:fa-user Match phone"]
+    E -->|unmatched| E1["fa:fa-database Store (no waAcct)"]
+    E -->|matched| F["fa:fa-database Insert message"]
+    F --> G["fa:fa-robot Schedule agent run"]
 ```
 
 **Response:** Always returns 200 OK immediately (Meta requires fast acknowledgment). Processing happens asynchronously via scheduled Convex functions.
@@ -471,33 +484,7 @@ All dashboard APIs use the Convex client SDK with Clerk JWT authentication. The 
 
 ### Auth Flow
 
-```
-  Dashboard (Browser)              Clerk                Convex
-  ────────────────────             ─────                ──────
-       |                              |                    |
-       |  1. User logs in             |                    |
-       |----------------------------->|                    |
-       |                              |                    |
-       |  2. JWT issued               |                    |
-       |<-----------------------------|                    |
-       |                              |                    |
-       |  3. Convex query/mutation    |                    |
-       |     with JWT in header       |                    |
-       |--------------------------------------------->     |
-       |                              |                    |
-       |                              |   4. Verify JWT    |
-       |                              |<-------------------|
-       |                              |   5. JWT valid     |
-       |                              |------------------->|
-       |                              |                    |
-       |                              |   6. Resolve user  |
-       |                              |      Check role    |
-       |                              |      Execute fn    |
-       |                              |                    |
-       |  7. Result (real-time sub)   |                    |
-       |<---------------------------------------------|    |
-       |                              |                    |
-```
+<ArchDiagram :config="dashAuthSeqConfig" />
 
 ### Role-Based Access Control
 
@@ -927,19 +914,10 @@ All event payloads (connector events, webhook payloads) include a schema version
 
 ### Versioning Policy
 
-```
-  +------------------+     +------------------+     +------------------+
-  | Event v1         |     | Event v2         |     | Event v3         |
-  |                  |     |                  |     |                  |
-  | { version: 1,   |     | { version: 2,   |     | { version: 3,   |
-  |   type: "...",   |     |   type: "...",   |     |   type: "...",   |
-  |   payload: {     |     |   payload: {     |     |   payload: {     |
-  |     field_a: ... |     |     field_a: ... |     |     field_a: ... |
-  |   }              |     |     field_b: ... |     |     field_b: ... |
-  | }                |     |   }              |     |     field_c: ... |
-  +------------------+     | }                |     |   }              |
-                            +------------------+     | }                |
-                                                     +------------------+
+```mermaid
+flowchart LR
+    V1["fa:fa-code Event v1<br/>field_a"] --> V2["fa:fa-code Event v2<br/>field_a, field_b"]
+    V2 --> V3["fa:fa-code Event v3<br/>field_a, field_b, field_c"]
 ```
 
 **Rules:**
@@ -972,28 +950,7 @@ All events from Fly.io connector workers are signed using HMAC-SHA256.
 
 **Signing Process:**
 
-```
-  Fly.io Worker                                     Convex HTTP Action
-  ─────────────                                     ──────────────────
-       |                                                   |
-       |  1. Serialize event body to JSON                  |
-       |     (deterministic key ordering)                  |
-       |                                                   |
-       |  2. Compute: HMAC-SHA256(json_body, secret)       |
-       |                                                   |
-       |  3. Include signature in request:                 |
-       |     { ..., "signature": "<hex digest>" }          |
-       |                                                   |
-       |  4. POST to Convex                                |
-       |-------------------------------------------------->|
-       |                                                   |
-       |                            5. Lookup worker secret|
-       |                            6. Recompute HMAC      |
-       |                            7. Constant-time       |
-       |                               compare             |
-       |                            8. Reject if mismatch  |
-       |                                                   |
-```
+<ArchDiagram :config="hmacSeqConfig" />
 
 ### Meta Cloud API Webhooks
 

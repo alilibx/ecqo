@@ -4,68 +4,101 @@ Stripe integration architecture, plan definitions, webhook handling, and enforce
 
 ## Integration Architecture
 
-```
-+-------------------+                    +-------------------+
-|                   |  1. Select plan    |                   |
-|   Dashboard       +------- ---------->|  Stripe Checkout  |
-|   (TanStack       |                    |  Session          |
-|    Start)         |<-------------------+                   |
-|                   |  5. Redirect       |                   |
-+--------+----------+  (success/cancel)  +--------+----------+
-         |                                        |
-         | Convex queries                         | 2. Customer
-         | (plan status,                          |    completes
-         |  feature gates)                        |    payment
-         |                                        |
-+--------v----------+                    +--------v----------+
-|                   |  4. Process event  |                   |
-|   Convex          |<-------------------+   Stripe          |
-|   (Control Plane) |    (webhook POST)  |   (Billing)       |
-|                   |                    |                   |
-|  +-------------+  |  3. Emit event     |  - Products       |
-|  | subscrip-   |  |<-------------------+  - Prices         |
-|  | tions table |  |                    |  - Customers      |
-|  +------+------+  |                    |  - Subscriptions  |
-|         |         |                    |  - Invoices       |
-|  +------v------+  |                    +-------------------+
-|  | plan        |  |
-|  | enforcement |  |                    +-------------------+
-|  +------+------+  |  6. Self-service   |                   |
-|         |         +------- ---------->|  Stripe Billing   |
-|  +------v------+  |                    |  Portal           |
-|  | feature     |  |                    |                   |
-|  | gates       |  |                    |  - Update card    |
-|  +-------------+  |                    |  - Cancel plan    |
-+-------------------+                    |  - View invoices  |
-                                         +-------------------+
-```
+<script setup>
+const billingConfig = {
+  layers: [
+    {
+      id: "bill-ui",
+      title: "User Interface",
+      subtitle: "Dashboard · Plan Selection",
+      icon: "fa-gauge",
+      color: "teal",
+      nodes: [
+        { id: "bill-dash", icon: "fa-gauge", title: "Dashboard", subtitle: "Select Plan" },
+        { id: "bill-portal", icon: "fa-credit-card", title: "Billing Portal", subtitle: "Card · Cancel · Invoices" },
+      ],
+    },
+    {
+      id: "bill-stripe",
+      title: "Payment Processing",
+      subtitle: "Stripe · Checkout · Events",
+      icon: "si:stripe",
+      color: "warm",
+      nodes: [
+        { id: "bill-checkout", icon: "fa-credit-card", title: "Stripe Checkout", subtitle: "Payment Flow" },
+        { id: "bill-stripe-core", icon: "si:stripe", title: "Stripe", subtitle: "Products · Prices · Subs" },
+      ],
+    },
+    {
+      id: "bill-backend",
+      title: "Backend",
+      subtitle: "Convex · Subscription State",
+      icon: "si:convex",
+      color: "teal",
+      nodes: [
+        { id: "bill-convex", icon: "si:convex", title: "Convex", subtitle: "Webhook Handler" },
+        { id: "bill-subs", icon: "fa-database", title: "Subscriptions", subtitle: "Plan · Status · Limits" },
+      ],
+    },
+    {
+      id: "bill-enforce",
+      title: "Enforcement",
+      subtitle: "Plan Limits · Feature Gates",
+      icon: "fa-shield-halved",
+      color: "dark",
+      nodes: [
+        { id: "bill-enforcement", icon: "fa-scale-balanced", title: "Plan Enforcement", subtitle: "Usage · Limits" },
+        { id: "bill-gates", icon: "fa-shield-halved", title: "Feature Gates", subtitle: "Per-plan Access" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "bill-dash", to: "bill-checkout", label: "select plan" },
+    { from: "bill-checkout", to: "bill-stripe-core", label: "payment" },
+    { from: "bill-stripe-core", to: "bill-convex", label: "webhook" },
+    { from: "bill-dash", to: "bill-convex", label: "queries" },
+    { from: "bill-convex", to: "bill-portal" },
+    { from: "bill-convex", to: "bill-subs" },
+    { from: "bill-subs", to: "bill-enforcement" },
+    { from: "bill-enforcement", to: "bill-gates" },
+  ],
+}
+
+const billingFlowConfig = {
+  type: "sequence",
+  actors: [
+    { id: "bf-user", icon: "fa-user", title: "User", color: "teal" },
+    { id: "bf-clerk", icon: "si:clerk", title: "Clerk", color: "warm" },
+    { id: "bf-dash", icon: "fa-gauge", title: "Dashboard", color: "teal" },
+    { id: "bf-convex", icon: "si:convex", title: "Convex", color: "teal" },
+    { id: "bf-stripe", icon: "si:stripe", title: "Stripe", color: "warm" },
+  ],
+  steps: [
+    { from: "bf-user", to: "bf-clerk", label: "Signs up" },
+    { from: "bf-clerk", to: "bf-convex", label: "Create identity" },
+    { from: "bf-convex", to: "bf-stripe", label: "Create workspace" },
+    { from: "bf-stripe", to: "bf-convex", label: "Create customer", dashed: true },
+    { over: "bf-convex", note: "Store stripeId" },
+    { from: "bf-user", to: "bf-dash", label: "Pick plan" },
+    { from: "bf-dash", to: "bf-convex", label: "Call mutation" },
+    { from: "bf-convex", to: "bf-stripe", label: "Create checkout" },
+    { from: "bf-stripe", to: "bf-user", label: "Checkout page" },
+    { from: "bf-user", to: "bf-stripe", label: "Pay" },
+    { from: "bf-stripe", to: "bf-convex", label: "Send event" },
+    { over: "bf-convex", note: "Update subscriptions table" },
+  ],
+  groups: [
+    { label: "Signup Flow", color: "warm", from: 0, to: 4 },
+    { label: "Checkout Flow", color: "teal", from: 5, to: 11 },
+  ],
+}
+</script>
+
+<ArchDiagram :config="billingConfig" />
 
 ### Data Flow Detail
 
-```
-  Signup Flow:
-  +---------+     +----------+     +-----------+     +--------+     +----------+
-  | User    |---->| Clerk    |---->| Convex    |---->| Stripe |---->| Convex   |
-  | signs   |     | creates  |     | creates   |     | creates|     | stores   |
-  | up      |     | identity |     | workspace |     | cust.  |     | stripeId |
-  +---------+     +----------+     +-----------+     +--------+     +----------+
-
-  Checkout Flow:
-  +---------+     +----------+     +-----------+     +--------+     +----------+
-  | User    |---->| Dashboard|---->| Convex    |---->| Stripe |---->| Stripe   |
-  | picks   |     | calls    |     | action    |     | creates|     | hosts    |
-  | plan    |     | mutation |     | creates   |     | session|     | checkout |
-  +---------+     +----------+     | checkout  |     +--------+     | page     |
-                                   +-----------+                    +----------+
-                                                                         |
-                                                                         v
-  +----------+     +----------+     +-----------+                   +--------+
-  | Convex   |<----| Convex   |<----| Stripe    |<-----------------| User   |
-  | updates  |     | webhook  |     | sends     |                   | pays   |
-  | sub      |     | handler  |     | event     |                   |        |
-  | table    |     |          |     |           |                   +--------+
-  +----------+     +----------+     +-----------+
-```
+<ArchDiagram :config="billingFlowConfig" />
 
 ## Plan Definitions
 
@@ -123,24 +156,12 @@ indexes:
 
 ### Webhook Verification
 
-```
-  Stripe POST --> Convex HTTP endpoint (/stripe/webhook)
-                       |
-                       v
-               +-------+--------+
-               | Verify webhook |
-               | signature with |
-               | STRIPE_WEBHOOK |
-               | _SECRET        |
-               +-------+--------+
-                       |
-              +--------+--------+
-              |                 |
-         Valid sig         Invalid sig
-              |                 |
-              v                 v
-       Process event      Return 401
-       (mutation)         Log attempt
+```mermaid
+flowchart TD
+    A["fa:fa-credit-card Stripe POST"] --> B["fa:fa-cloud Convex HTTP<br/>/stripe/webhook"]
+    B --> C{"Verify sig"}
+    C -- "Valid" --> D["fa:fa-circle-check Process event"]
+    C -- "Invalid" --> E["fa:fa-circle-xmark 401 + log"]
 ```
 
 ## Plan Enforcement Logic
@@ -156,31 +177,17 @@ indexes:
 
 ### Enforcement Flow
 
-```
-  Any gated action
-       |
-       v
-  +----+-----+       +----------+
-  | Load sub |------>| Status   |
-  | record   |       | check    |
-  +----------+       +----+-----+
-                          |
-            +-------------+-------------+
-            |             |             |
-         active       trialing      past_due
-            |             |             |
-            v             v             v
-       +----+----+  +----+----+  +-----+------+
-       | Check   |  | Check   |  | Within     |
-       | plan    |  | trial   |  | grace      |
-       | limits  |  | expiry  |  | period?    |
-       +----+----+  +----+----+  +-----+------+
-            |             |          |       |
-         Within        Not yet    Yes       No
-         limits        expired      |       |
-            |             |         v       v
-            v             v      Allow    Block
-         Allow         Allow              + notify
+```mermaid
+flowchart TD
+    A["fa:fa-shield-halved Gated action"] --> B["fa:fa-database Load sub"]
+    B --> C{"Status?"}
+    C -- "active" --> D{"Plan limits?"}
+    C -- "trialing" --> E{"Trial expired?"}
+    C -- "past_due" --> F{"In grace period?"}
+    D -- "Within" --> G["fa:fa-circle-check Allow"]
+    E -- "No" --> H["fa:fa-circle-check Allow"]
+    F -- "Yes" --> I["fa:fa-circle-check Allow"]
+    F -- "No" --> J["fa:fa-circle-xmark Block + notify"]
 ```
 
 ### Grace Period and Trial Handling
@@ -199,26 +206,13 @@ indexes:
 
 Ecqqo supports USD and AED billing. The user's currency preference persists through the subscription lifecycle.
 
-```
-  Dashboard currency toggle (landing page)
-       |
-       v
-  User selects plan
-       |
-       v
-  +----+----------+
-  | Currency      |
-  | preference    |
-  | stored in     |
-  | localStorage  |
-  +----+----------+
-       |
-       v
-  Checkout session created with correct Stripe Price ID
-       |
-       +---> USD price: price_founder_usd, price_dreamer_usd
-       |
-       +---> AED price: price_founder_aed, price_dreamer_aed
+```mermaid
+flowchart TD
+    A["fa:fa-gear Currency toggle"] --> B["fa:fa-credit-card Select plan"]
+    B --> C["fa:fa-database Pref in localStorage"]
+    C --> D["fa:fa-credit-card Checkout with Price ID"]
+    D --> E["fa:fa-credit-card USD prices"]
+    D --> F["fa:fa-credit-card AED prices"]
 ```
 
 | Plan | USD Price ID | AED Price ID |

@@ -8,25 +8,7 @@ This is fundamentally different from the wacli-based connection (where Ecqqo rea
 
 ## Inbound Message Identification Flow
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User's WhatsApp
-    participant M as Meta Cloud API
-    participant C as Convex
-
-    U->>M: User sends message to Ecqqo's number
-    M->>C: Webhook fires POST /webhook<br/>(sender phone, message body, timestamp)
-    Note over C: Validate webhook signature (HMAC)
-    Note over C: Normalize phone to E.164 format
-    Note over C: Lookup phone in waAccounts table
-
-    alt Phone found
-        Note over C: Route to user's agent context
-    else Phone not found
-        Note over C: Send onboarding message
-    end
-```
+<ArchDiagram :config="identFlowConfig" />
 
 ## Registration and Phone Binding Flow
 
@@ -34,9 +16,9 @@ Before a user can interact with Ecqqo via WhatsApp, their phone number must be b
 
 ```mermaid
 flowchart LR
-    A["**Step 1: Sign Up**<br/>User signs up via Dashboard (Clerk)<br/>Provides: email, phone, workspace name"]
-    B["**Step 2: Verify**<br/>Ecqqo sends OTP via WhatsApp<br/>User enters OTP in dashboard<br/>Convex validates OTP + marks phone verified"]
-    C["**Step 3: Bind**<br/>waAccount record created<br/>with verified phone number<br/>Phone bound to user and workspace<br/>Inbound msgs will route here"]
+    A["fa:fa-user **Sign Up**<br/>Clerk: email, phone,<br/>workspace name"]
+    B["fa:fa-shield-halved **Verify**<br/>OTP sent via WhatsApp<br/>Convex validates + marks verified"]
+    C["fa:fa-link **Bind**<br/>waAccount created<br/>Phone bound to user/workspace"]
 
     A --> B --> C
 ```
@@ -52,18 +34,18 @@ The OTP is sent via Ecqqo's WhatsApp Business number to the user's phone. This s
 
 ```mermaid
 flowchart TD
-    A["Meta Cloud API Webhook"] --> B{"Validate webhook<br/>HMAC signature"}
-    B -- FAIL --> R["Reject (401)"]
-    B -- PASS --> C["Extract sender phone<br/>number from payload"]
-    C --> D["Normalize to E.164 format"]
-    D --> E["Query waAccounts<br/>by phone number"]
+    A["fa:fa-bolt Meta Webhook"] --> B{"Validate<br/>HMAC signature"}
+    B -- FAIL --> R["fa:fa-circle-xmark Reject (401)"]
+    B -- PASS --> C["fa:fa-phone Extract sender phone"]
+    C --> D["fa:fa-filter Normalize to E.164"]
+    D --> E["fa:fa-database Query waAccounts"]
 
-    E -- FOUND --> F["Load user context<br/>(workspace, role, agent state,<br/>memory context)"]
-    F --> G{"Is message an<br/>approval response?"}
-    G -- YES --> H["Route to approval handler"]
-    G -- NO --> I["Dispatch to agent<br/>orchestrator for this user"]
+    E -- FOUND --> F["fa:fa-user Load user context<br/>(workspace, role, memory)"]
+    F --> G{"Approval<br/>response?"}
+    G -- YES --> H["fa:fa-check Approval handler"]
+    G -- NO --> I["fa:fa-sitemap Agent orchestrator"]
 
-    E -- NOT FOUND --> J["Send onboarding message:<br/>Welcome to Ecqqo!<br/>Sign up at ecqqo.com"]
+    E -- NOT FOUND --> J["fa:fa-comments Send onboarding msg<br/>(sign up at ecqqo.com)"]
 ```
 
 ## Edge Cases
@@ -97,15 +79,13 @@ When someone who hasn't signed up sends a message to Ecqqo's WhatsApp number:
 
 All phone numbers are stored and compared in **E.164 format** (`+` prefix, country code, no separators):
 
-```
-  Input                    Normalized (E.164)
-  ─────                    ──────────────────
-  +971501234567            +971501234567       (already E.164)
-  00971501234567           +971501234567       (international prefix)
-  0501234567               +971501234567       (local, needs country code from context)
-  971-50-123-4567          +971501234567       (strip separators, add +)
-  +1 (415) 555-0123       +14155550123        (US number)
-```
+| Input | Normalized (E.164) | Notes |
+|---|---|---|
+| `+971501234567` | `+971501234567` | Already E.164 |
+| `00971501234567` | `+971501234567` | International prefix |
+| `0501234567` | `+971501234567` | Local, needs country code from context |
+| `971-50-123-4567` | `+971501234567` | Strip separators, add `+` |
+| `+1 (415) 555-0123` | `+14155550123` | US number |
 
 The normalization function runs at two points:
 1. **Registration** -- when the user provides their phone number during signup.
@@ -125,12 +105,71 @@ The Meta Cloud API provides strong guarantees against phone number spoofing:
 
 4. **Binding verification** -- The OTP flow during registration proves the user controls the phone number at binding time. Combined with Meta's ongoing device verification, this provides continuous assurance.
 
-```mermaid
-flowchart TD
-    L1["**Layer 1: Meta Cloud API**<br/>Meta verifies sender identity via<br/>SIM/device binding. Cannot be spoofed<br/>at the WhatsApp protocol level."]
-    L2["**Layer 2: Webhook HMAC**<br/>HMAC-SHA256 signature on every webhook.<br/>Prevents forged HTTP calls to our endpoint."]
-    L3["**Layer 3: OTP Binding**<br/>Phone ownership verified during signup.<br/>Only verified phones are bound to accounts."]
-    L4["**Layer 4: Role-based**<br/>Sensitive operations require Clerk auth<br/>via dashboard. WhatsApp used for routing<br/>and approvals only."]
+<script setup>
+const securityLayersConfig = {
+  layers: [
+    {
+      id: "l1",
+      title: "L1: Meta Cloud API",
+      subtitle: "SIM/Device-verified Sender Identity",
+      icon: "si:meta",
+      color: "red",
+      nodes: [
+        { id: "sl-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "SIM-verified sender" },
+      ],
+    },
+    {
+      id: "l2",
+      title: "L2: Webhook HMAC",
+      subtitle: "SHA-256 Signature on Every Webhook",
+      icon: "fa-lock",
+      color: "warm",
+      nodes: [
+        { id: "sl-hmac", icon: "fa-lock", title: "HMAC-SHA256", subtitle: "Webhook signature" },
+      ],
+    },
+    {
+      id: "l3",
+      title: "L3: OTP Binding",
+      subtitle: "Phone Ownership Verified at Signup",
+      icon: "fa-key",
+      color: "teal",
+      nodes: [
+        { id: "sl-otp", icon: "fa-key", title: "OTP Verification", subtitle: "Phone ownership proof" },
+      ],
+    },
+    {
+      id: "l4",
+      title: "L4: Role-based Auth",
+      subtitle: "Sensitive Ops Require Clerk Auth",
+      icon: "fa-shield-halved",
+      color: "dark",
+      nodes: [
+        { id: "sl-clerk", icon: "si:clerk", title: "Clerk Auth", subtitle: "Dashboard RBAC" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "sl-meta", to: "sl-hmac" },
+    { from: "sl-hmac", to: "sl-otp" },
+    { from: "sl-otp", to: "sl-clerk" },
+  ],
+}
 
-    L1 --> L2 --> L3 --> L4
-```
+const identFlowConfig = {
+  type: "sequence",
+  actors: [
+    { id: "uid-user", icon: "si:whatsapp", title: "User's WhatsApp", color: "teal" },
+    { id: "uid-meta", icon: "si:meta", title: "Meta Cloud API", color: "warm" },
+    { id: "uid-convex", icon: "si:convex", title: "Convex", color: "teal" },
+  ],
+  steps: [
+    { from: "uid-user", to: "uid-meta", label: "Sends msg to Ecqqo" },
+    { from: "uid-meta", to: "uid-convex", label: "Webhook POST (phone, body, ts)" },
+    { over: "uid-convex", note: "1. Validate HMAC signature\n2. Normalize phone to E.164\n3. Lookup in waAccounts" },
+    { over: "uid-convex", note: "Phone found → Route to agent context\nNot found → Send onboarding message" },
+  ],
+}
+</script>
+
+<ArchDiagram :config="securityLayersConfig" />

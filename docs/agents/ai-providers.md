@@ -9,40 +9,33 @@ The Vercel AI SDK provides a unified TypeScript interface for interacting with l
 ### Key Benefits
 
 ```
-  WITHOUT Vercel AI SDK                    WITH Vercel AI SDK
-  ──────────────────────                   ─────────────────────
+WITHOUT Vercel AI SDK                    WITH Vercel AI SDK
+========================                 ========================
 
-  +------------------+                     +------------------+
-  | Orchestrator     |                     | Orchestrator     |
-  +--------+---------+                     +--------+---------+
-           |                                        |
-  +--------+---------+                     +--------+---------+
-  | OpenAI SDK       |                     | Vercel AI SDK    |
-  | - chat.completions|                    | - generateText() |
-  | - specific params |                    | - streamText()   |
-  | - custom tool fmt |                    | - generateObject()|
-  +------------------+                     | - unified tools  |
-                                           +---+---------+----+
-  +------------------+                         |         |
-  | Anthropic SDK    |                   +-----+--+ +----+-----+
-  | - messages.create|                   |OpenAI  | |Anthropic |
-  | - different params|                  |provider| |provider  |  ...
-  | - different tool fmt|                +--------+ +----------+
-  +------------------+
-                                           Switch provider = change
-  +------------------+                     ONE line. No code rewrite.
-  | Groq SDK         |
-  | - yet another API |
-  | - yet another fmt  |
-  +------------------+
+  Orchestrator                             Orchestrator
+      |                                        |
+      v                                        v
+  OpenAI SDK                             Vercel AI SDK
+   - chat.completions                     - generateText()
+   - specific params                      - streamText()
+   - custom tool fmt                      - generateObject()
+                                          - unified tools
+  Anthropic SDK                               |
+   - messages.create                     +----+----+
+   - different params                    |         |
+   - different tool fmt                OpenAI  Anthropic  ...
 
-  Each provider has different:
-  - API shapes
-  - Tool calling formats
-  - Streaming protocols
-  - Error handling patterns
+  Groq SDK                             Switch provider = change
+   - yet another API                   ONE line. No code rewrite.
+   - yet another fmt
 
-  Result: 3x code, 3x bugs, 3x maintenance
+Each provider has different:             Unified interface for:
+ - API shapes                            - All API shapes
+ - Tool calling formats                  - Tool calling
+ - Streaming protocols                   - Streaming
+ - Error handling patterns               - Error handling
+
+Result: 3x code, 3x bugs              Result: 1x code, easy swap
 ```
 
 ### Capabilities Used
@@ -58,28 +51,56 @@ The Vercel AI SDK provides a unified TypeScript interface for interacting with l
 
 ### Supported Providers
 
-```
-  +----------------------------------------------------------------------+
-  |                    VERCEL AI SDK PROVIDER MAP                         |
-  +----------------------------------------------------------------------+
-  |                                                                      |
-  |  @ai-sdk/openai          @ai-sdk/anthropic       @ai-sdk/google     |
-  |  +-----------------+     +-----------------+     +---------------+   |
-  |  | GPT-4o          |     | Claude Opus 4   |     | Gemini 2.5    |   |
-  |  | GPT-4o-mini     |     | Claude Sonnet   |     | Gemini 2.0    |   |
-  |  | o1              |     | Claude Haiku    |     | Flash         |   |
-  |  | text-embed-3-sm |     |                 |     |               |   |
-  |  +-----------------+     +-----------------+     +---------------+   |
-  |                                                                      |
-  |  @ai-sdk/groq            @ai-sdk/azure           openrouter         |
-  |  +-----------------+     +-----------------+     +---------------+   |
-  |  | Llama 3.3 70B   |     | GPT-4o (Azure)  |     | Any model via |   |
-  |  | Llama 3.1 8B    |     | GPT-4o-mini     |     | single API    |   |
-  |  | Mixtral 8x7B    |     | (Azure-hosted)  |     | key           |   |
-  |  +-----------------+     +-----------------+     +---------------+   |
-  |                                                                      |
-  +----------------------------------------------------------------------+
-```
+<script setup>
+const providersConfig = {
+  layers: [
+    {
+      id: "prov-sdk",
+      title: "Vercel AI SDK",
+      subtitle: "Unified Interface",
+      icon: "fa-code",
+      color: "teal",
+      nodes: [
+        { id: "pr-sdk", icon: "fa-code", title: "Vercel AI SDK", subtitle: "generateText · streamText" },
+      ],
+    },
+    {
+      id: "prov-primary",
+      title: "Primary Providers",
+      subtitle: "@ai-sdk/* Packages",
+      icon: "fa-brain",
+      color: "warm",
+      nodes: [
+        { id: "pr-oai", icon: "si:openai", title: "OpenAI", subtitle: "GPT-4o · 4o-mini · o1" },
+        { id: "pr-ant", icon: "si:anthropic", title: "Anthropic", subtitle: "Opus 4 · Sonnet · Haiku" },
+        { id: "pr-goo", icon: "si:google", title: "Google", subtitle: "Gemini 2.5 · Flash" },
+      ],
+    },
+    {
+      id: "prov-extended",
+      title: "Extended Providers",
+      subtitle: "Fast Inference · Multi-model",
+      icon: "fa-bolt",
+      color: "dark",
+      nodes: [
+        { id: "pr-groq", icon: "fa-bolt", title: "Groq", subtitle: "Llama 3.3 · Mixtral" },
+        { id: "pr-azure", icon: "fa-cloud", title: "Azure OpenAI", subtitle: "GPT-4o (Azure-hosted)" },
+        { id: "pr-or", icon: "fa-plug", title: "OpenRouter", subtitle: "Any Model · Single Key" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "pr-sdk", to: "pr-oai" },
+    { from: "pr-sdk", to: "pr-ant" },
+    { from: "pr-sdk", to: "pr-goo" },
+    { from: "pr-sdk", to: "pr-groq" },
+    { from: "pr-sdk", to: "pr-azure" },
+    { from: "pr-sdk", to: "pr-or" },
+  ],
+}
+</script>
+
+<ArchDiagram :config="providersConfig" />
 
 ### Works in Convex Actions
 
@@ -112,47 +133,12 @@ Different components of the agent runtime have different requirements for qualit
 
 ### Model Assignment
 
-```
-  +======================================================================+
-  |                     MODEL ASSIGNMENT MAP                              |
-  +======================================================================+
-  |                                                                      |
-  |  TASK                    MODEL                    PRIORITY           |
-  |  ────                    ─────                    ────────           |
-  |                                                                      |
-  |  Orchestrator            Claude Sonnet 4          Quality + Tools    |
-  |  (intent detection,      or GPT-4o                                   |
-  |   routing, planning)                                                 |
-  |                          Best reasoning for                          |
-  |                          complex multi-step                          |
-  |                          routing decisions                           |
-  |                                                                      |
-  |  ──────────────────────────────────────────────────────────────────  |
-  |                                                                      |
-  |  Specialist Agents       Claude Sonnet 4          Balance            |
-  |  (scheduler, calendar,                            quality/cost/speed |
-  |   email, reminder,                                                   |
-  |   travel, brief)         Strong tool calling,                        |
-  |                          good at structured                          |
-  |                          output, bilingual                           |
-  |                                                                      |
-  |  ──────────────────────────────────────────────────────────────────  |
-  |                                                                      |
-  |  Extraction /            Claude Haiku             Speed + Cost       |
-  |  Summarization           or GPT-4o-mini                              |
-  |  (language detection,                                                |
-  |   entity extraction,     Fast, cheap, good                           |
-  |   email summaries,       enough for structured                       |
-  |   memory extraction)     extraction tasks                            |
-  |                                                                      |
-  |  ──────────────────────────────────────────────────────────────────  |
-  |                                                                      |
-  |  Embeddings              text-embedding-3-small   Cost               |
-  |  (memory vectors)        (OpenAI)                                    |
-  |                          or Cohere embed-v3       1536 dimensions    |
-  |                                                                      |
-  +======================================================================+
-```
+| Task | Model | Priority | Notes |
+|---|---|---|---|
+| **Orchestrator** (intent detection, routing, planning) | Claude Sonnet 4 or GPT-4o | Quality + Tools | Best reasoning for complex multi-step routing decisions |
+| **Specialist Agents** (scheduler, calendar, email, reminder, travel, brief) | Claude Sonnet 4 | Balance quality/cost/speed | Strong tool calling, good at structured output, bilingual |
+| **Extraction / Summarization** (language detection, entity extraction, email summaries, memory extraction) | Claude Haiku or GPT-4o-mini | Speed + Cost | Fast, cheap, good enough for structured extraction tasks |
+| **Embeddings** (memory vectors) | text-embedding-3-small (OpenAI) or Cohere embed-v3 | Cost | 1536 dimensions |
 
 ### Why These Models
 
@@ -180,43 +166,15 @@ Different components of the agent runtime have different requirements for qualit
 
 The system implements a tiered failover strategy to maintain availability when a provider is down or degraded.
 
-```
-  Incoming request
-       |
-       v
-  +----+-----------+
-  | PRIMARY        |
-  | Anthropic      |
-  | Claude Sonnet  |----success----> Return result
-  +----+-----------+
-       |
-       failure (timeout, 500, 529)
-       |
-       v
-  +----+-----------+
-  | FALLBACK       |
-  | OpenAI         |
-  | GPT-4o         |----success----> Return result
-  +----+-----------+
-       |
-       failure
-       |
-       v
-  +----+-----------+
-  | BUDGET         |
-  | Groq           |
-  | Llama 3.3 70B  |----success----> Return result (degraded quality)
-  +----+-----------+
-       |
-       failure
-       |
-       v
-  +----+-----------+
-  | CIRCUIT OPEN   |
-  | Queue message  |
-  | Retry in 5min  |
-  | Notify operator|
-  +-----------------+
+```mermaid
+flowchart TD
+    REQ["fa:fa-message Incoming request"] --> P["fa:fa-cloud PRIMARY<br/>Anthropic Sonnet"]
+    P -->|Success| R1["fa:fa-circle-check Return result"]
+    P -->|"Fail (timeout/5xx)"| F["fa:fa-rotate FALLBACK<br/>OpenAI GPT-4o"]
+    F -->|Success| R2["fa:fa-circle-check Return result"]
+    F -->|Failure| B["fa:fa-rotate BUDGET<br/>Groq Llama 3.3"]
+    B -->|Success| R3["fa:fa-triangle-exclamation Return (degraded)"]
+    B -->|Failure| CO["fa:fa-circle-xmark CIRCUIT OPEN<br/>Queue, retry 5m<br/>notify operator"]
 ```
 
 ### Failover Rules
@@ -294,35 +252,18 @@ async function generateWithFailover(params: GenerateParams) {
 
 ### Monthly Cost Projection (Pilot Phase)
 
-```
-  Assumptions:
-  - 5 pilot users
-  - ~20 agent runs per user per day
-  - 30 days per month
-  - 3,000 total runs per month
+**Assumptions:** 5 pilot users, ~20 agent runs per user per day, 30 days per month = 3,000 total runs/month.
 
-  +--------------------------------------------+
-  |  MONTHLY AI COST ESTIMATE (PILOT)          |
-  +--------------------------------------------+
-  |                                            |
-  |  Primary (Sonnet):  3K runs x $31.65/1K    |
-  |                     = $94.95               |
-  |                                            |
-  |  Extraction (Haiku): 3K runs x $0.25/1K    |
-  |                     = $0.75                |
-  |                                            |
-  |  Embeddings:        3K runs x $0.02/1K     |
-  |                     = $0.06                |
-  |                                            |
-  |  ──────────────────────────────────────    |
-  |  TOTAL:             ~$96/month             |
-  |                                            |
-  |  With 10% failover to GPT-4o:             |
-  |  Adjusted:          ~$94/month             |
-  |  (GPT-4o is cheaper per run)               |
-  |                                            |
-  +--------------------------------------------+
-```
+> [!tip] Monthly AI Cost Estimate (Pilot)
+>
+> | Component | Calculation | Cost |
+> |---|---|---|
+> | Primary (Sonnet) | 3K runs x $31.65/1K | $94.95 |
+> | Extraction (Haiku) | 3K runs x $0.25/1K | $0.75 |
+> | Embeddings | 3K runs x $0.02/1K | $0.06 |
+> | **TOTAL** | | **~$96/month** |
+>
+> With 10% failover to GPT-4o: **~$94/month** (GPT-4o is cheaper per run).
 
 ---
 

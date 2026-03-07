@@ -8,27 +8,37 @@ The entire flow is orchestrated through Convex, which manages session state, rel
 
 ## Sequence Diagram
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant D as Dashboard (Browser)
-    participant C as Convex
-    participant W as Fly.io (wacli Worker)
+<script setup>
+const connectSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "cw-dash", icon: "fa-gauge", title: "Dashboard", subtitle: "Browser", color: "teal" },
+    { id: "cw-convex", icon: "si:convex", title: "Convex", color: "warm" },
+    { id: "cw-worker", icon: "si:flydotio", title: "Fly.io Worker", subtitle: "wacli", color: "red" },
+  ],
+  steps: [
+    { from: "cw-dash", to: "cw-convex", label: "Click 'Connect WhatsApp'" },
+    { over: "cw-convex", note: "Create waConnectSession (created)" },
+    { from: "cw-convex", to: "cw-worker", label: "Allocate Machine + start auth" },
+    { over: "cw-worker", note: "wacli generates QR code" },
+    { from: "cw-worker", to: "cw-convex", label: "QR_READY event (signed)" },
+    { over: "cw-convex", note: "Update session (qr_ready)\nqrData = base64" },
+    { from: "cw-convex", to: "cw-dash", label: "Real-time push: QR code" },
+    { over: "cw-dash", note: "User scans QR from\nWhatsApp Linked Devices" },
+    { from: "cw-worker", to: "cw-convex", label: "SCANNED event (signed)" },
+    { over: "cw-convex", note: "Update session (scanned)" },
+    { from: "cw-worker", to: "cw-convex", label: "CONNECTED event (signed)" },
+    { over: "cw-convex", note: "Update session (connected)\nStore auth credentials\nCreate waAccount record" },
+    { from: "cw-convex", to: "cw-dash", label: "Dashboard shows 'Connected'" },
+  ],
+  groups: [
+    { label: "QR Generation", color: "warm", from: 2, to: 6 },
+    { label: "Authentication", color: "teal", from: 7, to: 12 },
+  ],
+}
+</script>
 
-    D->>C: Click "Connect WhatsApp"
-    Note over C: Create waConnectSession<br/>state = "created"
-    C->>W: Allocate Fly.io Machine<br/>Start wacli auth mode
-    Note over W: wacli generates QR code
-    W->>C: QR_READY event (signed)
-    Note over C: Update session:<br/>state = "qr_ready"<br/>qrData = base64
-    C->>D: Real-time push: QR code appears
-    Note over D: User scans QR from<br/>WhatsApp Linked Devices
-    W->>C: SCANNED event (signed)
-    Note over C: Update session:<br/>state = "scanned"
-    W->>C: CONNECTED event (signed)
-    Note over C: Update session:<br/>state = "connected"<br/>Store auth credentials<br/>Create waAccount record
-    C->>D: Dashboard shows "Connected"
-```
+<ArchDiagram :config="connectSeqConfig" />
 
 ## Session State Machine
 

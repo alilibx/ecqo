@@ -11,30 +11,31 @@ By default, Ecqqo follows a **metadata-first policy**: only chat-level metadata 
 
 ## Sync Sequence Diagram
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant S as Convex (Scheduler)
-    participant C as Convex (Mutation)
-    participant W as Fly.io (wacli Worker)
+<script setup>
+const syncSeqConfig = {
+  type: "sequence",
+  actors: [
+    { id: "si-sched", icon: "fa-clock", title: "Scheduler", subtitle: "Convex Cron", color: "warm" },
+    { id: "si-convex", icon: "si:convex", title: "Convex", subtitle: "Mutation", color: "teal" },
+    { id: "si-worker", icon: "si:flydotio", title: "Fly.io Worker", subtitle: "wacli", color: "red" },
+  ],
+  steps: [
+    { from: "si-sched", to: "si-convex", label: "5-min cron fires" },
+    { over: "si-convex", note: "Create syncJob (queued)\ncursor = lastCursor" },
+    { from: "si-convex", to: "si-worker", label: "Dispatch sync command" },
+    { over: "si-worker", note: "Fetch msgs since cursor\nSign + version each batch" },
+    { from: "si-worker", to: "si-convex", label: "Batch (signed, versioned)" },
+    { over: "si-convex", note: "Validate HMAC, version, allowlist\nIdempotent upsert (dedup)\nAdvance cursor" },
+    { from: "si-worker", to: "si-convex", label: "SYNC_COMPLETE" },
+    { over: "si-convex", note: "syncJob = completed\nprocessed = N, cursor = X\nPublish health to dashboard" },
+  ],
+  groups: [
+    { label: "Sync Loop (until caught up)", color: "teal", from: 4, to: 5 },
+  ],
+}
+</script>
 
-    S->>C: Scheduled function fires (5-min cron)
-    Note over C: Create syncJob<br/>state = "queued"<br/>cursor = lastCursor
-    C->>W: Dispatch sync command to worker via action
-    Note over W: wacli fetches messages since cursor
-    Note over W: For each batch:<br/>Sign payload + include schema version
-
-    loop Until caught up
-        W->>C: Batch posted (signed, versioned)
-        Note over C: Validate: HMAC signature,<br/>schema version, policy (allowlisted chat?)
-        Note over C: Idempotent upsert<br/>key: (waAccountId, chatExternalId, messageExternalId)
-        Note over C: Advance cursor
-    end
-
-    W->>C: SYNC_COMPLETE event
-    Note over C: Update syncJob:<br/>state = "completed"<br/>messagesProcessed = N, newCursor = X
-    Note over C: Publish sync health to dashboard
-```
+<ArchDiagram :config="syncSeqConfig" />
 
 ## Sync Job State Machine
 
@@ -57,34 +58,24 @@ stateDiagram-v2
 
 By default, Ecqqo does **not** sync full message content. This is a deliberate privacy-by-design choice.
 
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │                    What Gets Synced By Default                  │
-  └─────────────────────────────────────────────────────────────────┘
+### What Gets Synced By Default
 
-  ALL CHATS (automatic):
-  ┌──────────────────────────────────────────┐
-  │  Metadata only:                          │
-  │  - Chat ID (external)                    │
-  │  - Contact / group name                  │
-  │  - Last message timestamp                │
-  │  - Unread count                          │
-  │  - Chat type (individual / group)        │
-  │  - Muted status                          │
-  │  - Pinned status                         │
-  └──────────────────────────────────────────┘
+**All chats (automatic) — metadata only:**
+- Chat ID (external)
+- Contact / group name
+- Last message timestamp
+- Unread count
+- Chat type (individual / group)
+- Muted status
+- Pinned status
 
-  ALLOWLISTED CHATS (user opt-in):
-  ┌──────────────────────────────────────────┐
-  │  Metadata (above) PLUS:                  │
-  │  - Full message body (text)              │
-  │  - Message sender                        │
-  │  - Timestamps (sent, delivered, read)    │
-  │  - Reply-to references                   │
-  │  - Media metadata (type, size, caption)  │
-  │  - Media content (if enabled separately) │
-  └──────────────────────────────────────────┘
-```
+**Allowlisted chats (user opt-in) — metadata plus:**
+- Full message body (text)
+- Message sender
+- Timestamps (sent, delivered, read)
+- Reply-to references
+- Media metadata (type, size, caption)
+- Media content (if enabled separately)
 
 Users manage their allowlist from the dashboard. Each chat can be individually toggled. When a chat is added to the allowlist, a backfill sync is triggered to fetch historical messages (up to 30 days or 500 messages, whichever limit is hit first).
 
@@ -94,16 +85,16 @@ When a message batch fails to process, it follows this retry path:
 
 ```mermaid
 flowchart TD
-    A["Message Batch"] --> B{"Process batch"}
-    B -- SUCCESS --> S["Cursor advanced,<br/>batch acknowledged"]
+    A["fa:fa-envelope Message Batch"] --> B{"Process batch"}
+    B -- SUCCESS --> S["fa:fa-circle-check Cursor advanced<br/>Batch acked"]
     B -- FAILURE --> C{"Classify error"}
 
-    C -- "Transient<br/>(network, timeout, rate limit)" --> D["Retry with exponential backoff<br/>Attempt 1: 5s delay<br/>Attempt 2: 25s delay<br/>Attempt 3: 125s delay<br/>Attempt 4: 625s delay (~10 min)<br/>Attempt 5: max retries reached"]
-    D --> DLQ1["Dead-letter queue (DLQ)<br/>Stored for manual review/replay"]
+    C -- "Transient" --> D["fa:fa-rotate Exponential backoff<br/>5s / 25s / 125s / 625s<br/>then max retries"]
+    D --> DLQ1["fa:fa-inbox DLQ<br/>Manual review/replay"]
 
-    C -- "Validation<br/>(bad schema, signature mismatch)" --> DLQ2["DLQ (flagged for review)<br/>Immediate, no retry<br/>(likely bug or tampered payload)"]
+    C -- "Validation" --> DLQ2["fa:fa-inbox DLQ (no retry)<br/>Bad schema or signature"]
 
-    C -- "Policy<br/>(chat not allowlisted, user suspended)" --> DROP["Dropped (logged)<br/>Silently discarded<br/>(not an error, just policy)"]
+    C -- "Policy" --> DROP["fa:fa-circle-xmark Dropped (logged)<br/>Not allowlisted / suspended"]
 ```
 
 Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitter (+/- 20%) is added to prevent thundering herd when multiple accounts retry simultaneously.
@@ -112,20 +103,20 @@ Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitt
 
 Each `waAccount` maintains a **sync cursor** -- an opaque token representing the last successfully processed position in the message stream.
 
-```
-  Timeline of messages:
-  ──────────────────────────────────────────────────────>
+```mermaid
+flowchart LR
+    msg1 --> msg2 --> msg3 --> msg4 --> msg5 --> msg6 --> msg7
 
-  │ msg1 │ msg2 │ msg3 │ msg4 │ msg5 │ msg6 │ msg7 │
-                          ^                     ^
-                          │                     │
-                     lastCursor            currentHead
-                     (stored in          (latest on device)
-                      Convex)
+    msg3 -. "lastCursor<br/>(stored in Convex)" .-> msg3
+    msg7 -. "currentHead<br/>(latest on device)" .-> msg7
 
-  Sync fetches: msg4, msg5, msg6, msg7
-  On success:   lastCursor = msg7
+    style msg4 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
+    style msg5 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
+    style msg6 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
+    style msg7 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
 ```
+
+Sync fetches `msg4` through `msg7`. On success, `lastCursor` advances to `msg7`.
 
 ### Reconciliation
 
@@ -149,17 +140,20 @@ The dashboard displays a real-time sync health indicator per connected WhatsApp 
 | `stale`      | Orange dot   | Last successful sync > 15 min ago                      | Yes, re-trigger |
 | `error`      | Red dot      | Last sync failed, all retries exhausted                | No, manual      |
 
-```
-  Health Determination Logic
-  ──────────────────────────
+```mermaid
+flowchart TD
+    A{"syncJob.state?"} -- running --> SYNC["fa:fa-arrows-rotate syncing"]
+    A -- not running --> B{"Last sync<br/>< 10 min ago?"}
+    B -- YES --> C{"failureCount?"}
+    C -- "== 0" --> HEALTHY["fa:fa-circle-check healthy"]
+    C -- "> 0" --> DEGRADED["fa:fa-triangle-exclamation degraded"]
+    B -- "NO (> 15 min)" --> D{"Worker connected?"}
+    D -- YES --> STALE["fa:fa-clock stale (auto-retrigger)"]
+    D -- NO --> ERROR["fa:fa-circle-xmark error (manual)"]
 
-  lastSyncCompleted < 10 min ago
-       AND failureCount == 0          ──>  healthy
-       AND failureCount > 0           ──>  degraded
-
-  lastSyncCompleted > 15 min ago
-       AND worker is connected        ──>  stale (auto-retrigger)
-       AND worker is disconnected     ──>  error (manual intervention)
-
-  syncJob.state == "running"          ──>  syncing
+    style HEALTHY fill:#e8f5f2,stroke:#0d7a6a
+    style DEGRADED fill:#fef9f2,stroke:#d4a017
+    style STALE fill:#fff0ec,stroke:#e04b2c
+    style ERROR fill:#fff0ec,stroke:#e04b2c
+    style SYNC fill:#e8f0fe,stroke:#2563eb
 ```

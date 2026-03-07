@@ -4,52 +4,115 @@ This document covers how Ecqqo's components are deployed, why specific infrastru
 
 ## Deployment Topology
 
-```mermaid
-flowchart TB
-    subgraph VERCEL["Vercel"]
-        EDGE["Edge Network (CDN)<br/>Static assets · CSS/JS bundles<br/>Images · Fonts · Cache headers"]
-        SSR["Serverless Functions<br/>TanStack Start SSR<br/>API routes · Clerk webhook handler"]
-    end
+<script setup>
+const deployConfig = {
+  layers: [
+    {
+      id: "entry",
+      title: "Entry Points",
+      subtitle: "User Traffic · WhatsApp Webhooks",
+      icon: "fa-globe",
+      color: "teal",
+      nodes: [
+        { id: "edge", icon: "fa-globe", title: "Vercel Edge", subtitle: "CDN · Static Assets" },
+        { id: "ssr", icon: "fa-server", title: "Vercel SSR", subtitle: "Serverless Functions" },
+        { id: "metaapi", icon: "si:meta", title: "Meta Cloud API", subtitle: "WA Business API" },
+      ],
+    },
+    {
+      id: "convex",
+      title: "Control Plane",
+      subtitle: "Convex Cloud · Managed Backend",
+      icon: "si:convex",
+      color: "warm",
+      nodes: [
+        { id: "cvx-fn", icon: "fa-code", title: "Functions", subtitle: "Queries · Mutations · Actions" },
+        { id: "cvx-sched", icon: "fa-gear", title: "Scheduler", subtitle: "Cron · Delayed Jobs" },
+        { id: "cvx-vec", icon: "fa-magnifying-glass", title: "Vector Index", subtitle: "Embeddings" },
+        { id: "cvx-store", icon: "fa-database", title: "Storage", subtitle: "Database · Files" },
+      ],
+    },
+    {
+      id: "flyio",
+      title: "Connector Fleet",
+      subtitle: "Fly.io · Per-user wacli Machines",
+      icon: "si:flydotio",
+      color: "red",
+      nodes: [
+        { id: "fly-a", icon: "fa-server", title: "Machine A", subtitle: "User 1 · wacli" },
+        { id: "fly-b", icon: "fa-server", title: "Machine B", subtitle: "User 2 · wacli" },
+        { id: "fly-c", icon: "fa-server", title: "Machine C", subtitle: "Stopped · $0/mo" },
+      ],
+    },
+    {
+      id: "external",
+      title: "External Services",
+      subtitle: "AI Providers · Integrations",
+      icon: "fa-plug",
+      color: "blue",
+      nodes: [
+        { id: "ai-ext", icon: "fa-brain", title: "AI Providers", subtitle: "OpenAI · Anthropic · Groq" },
+        { id: "integrations", icon: "fa-plug", title: "Integrations", subtitle: "GCal · Gmail · Stripe" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "ssr", to: "cvx-fn", label: "Convex SDK" },
+    { from: "metaapi", to: "cvx-fn", label: "webhooks" },
+    { from: "cvx-fn", to: "fly-a", label: "lifecycle" },
+    { from: "fly-a", to: "cvx-fn", label: "signed events" },
+    { from: "cvx-fn", to: "ai-ext", label: "API calls" },
+    { from: "cvx-fn", to: "integrations", label: "actions" },
+  ],
+}
 
-    subgraph CONVEX["Convex Cloud"]
-        subgraph DEPLOY["Convex Deployment (managed, auto-scaling, zero-ops)"]
-            QE["Query Engine<br/>(real-time subs)"]
-            ME["Mutation Engine<br/>(transactional)"]
-            AR["Action Runner<br/>(external calls)"]
-            SCH["Scheduler<br/>(cron + delayed)"]
-            VI["Vector Index<br/>(embeddings)"]
-            FS["File Storage<br/>(media, docs)"]
-        end
-    end
+const cicdConfig = {
+  layers: [
+    {
+      id: "source",
+      title: "Source Control",
+      subtitle: "Git · GitHub",
+      icon: "si:github",
+      color: "dark",
+      nodes: [
+        { id: "gitpush", icon: "si:github", title: "git push", subtitle: "main branch" },
+      ],
+    },
+    {
+      id: "ci",
+      title: "Continuous Integration",
+      subtitle: "GitHub Actions · Quality Gates",
+      icon: "fa-gear",
+      color: "warm",
+      nodes: [
+        { id: "lint", icon: "fa-code", title: "Lint + Type Check", subtitle: "ESLint · TypeScript" },
+        { id: "test", icon: "fa-vial", title: "Unit Tests", subtitle: "All Must Pass" },
+      ],
+    },
+    {
+      id: "deploy",
+      title: "Deploy Targets",
+      subtitle: "Parallel Deployment",
+      icon: "fa-rocket",
+      color: "teal",
+      nodes: [
+        { id: "d-vercel", icon: "si:vercel", title: "Vercel", subtitle: "app/ · SSR · Edge" },
+        { id: "d-convex", icon: "si:convex", title: "Convex", subtitle: "convex/ · Migrations" },
+        { id: "d-fly", icon: "si:flydotio", title: "Fly.io", subtitle: "services/connector/" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "gitpush", to: "lint" },
+    { from: "lint", to: "test" },
+    { from: "test", to: "d-vercel", label: "all pass" },
+    { from: "test", to: "d-convex" },
+    { from: "test", to: "d-fly" },
+  ],
+}
+</script>
 
-    subgraph FLYIO["Fly.io"]
-        MA["Machine A<br/>(User 1) wacli"]
-        MB["Machine B<br/>(User 2) wacli"]
-        MC["Machine C<br/>(stopped, $0/mo)"]
-    end
-
-    subgraph AI["AI Providers"]
-        AIP["OpenAI · Anthropic<br/>Groq · OpenRouter · Azure OpenAI"]
-    end
-
-    subgraph META["Meta Cloud API"]
-        METAAPI["WhatsApp Business API<br/>Webhook delivery · Message sending"]
-    end
-
-    subgraph EXTAPI["External APIs"]
-        EXT["Google Calendar · Gmail API<br/>Stripe API"]
-    end
-
-    SSR -- "Convex client SDK<br/>(queries, mutations, subscriptions)" --> DEPLOY
-    SSR -. "Clerk JWT verification" .-> DEPLOY
-
-    AR -- "AI provider API calls" --> AIP
-    AR -- "lifecycle commands" --> FLYIO
-    FLYIO -- "signed events" --> DEPLOY
-    AR -- "webhooks" --> METAAPI
-    METAAPI -- "webhook delivery" --> DEPLOY
-    AR -- "Convex Actions" --> EXT
-```
+<ArchDiagram :config="deployConfig" />
 
 ## Why Fly.io for Connector Workers
 
@@ -186,23 +249,7 @@ ecqqo/
 
 ## CI/CD Pipeline
 
-```mermaid
-flowchart TB
-    GIT["git push<br/>(main branch)"]
-    GHA["GitHub Actions<br/>Triggered on: push to main · PR to main"]
-    LINT["Lint + Type Check<br/>(bun run check)"]
-    TEST["Unit Tests<br/>(bun run test)"]
-    VERCEL["Vercel Auto Deploy<br/>Builds app/ · SSR functions · Edge assets<br/>(via Vercel Git integration)"]
-    CONVEX["Convex Auto Deploy<br/>Pushes convex/ · Runs migrations<br/>Updates functions<br/>(via npx convex deploy)"]
-    FLY["Fly.io Deploy (Manual or CI)<br/>flyctl deploy services/connector/<br/>Triggered when services/connector/ changes"]
-
-    GIT --> GHA
-    GHA --> LINT
-    LINT --> TEST
-    TEST -- "all pass" --> VERCEL
-    TEST -- "all pass" --> CONVEX
-    TEST -- "all pass" --> FLY
-```
+<ArchDiagram :config="cicdConfig" />
 
 ### Deployment Notes
 

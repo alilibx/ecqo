@@ -36,7 +36,33 @@ export default withMermaid(
           href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&display=swap",
         },
       ],
+      [
+        "link",
+        {
+          rel: "stylesheet",
+          href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+          integrity:
+            "sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==",
+          crossorigin: "anonymous",
+          referrerpolicy: "no-referrer",
+        },
+      ],
+      [
+        "script",
+        {
+          src: "https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js",
+        },
+      ],
     ],
+    vite: {
+      vue: {
+        template: {
+          compilerOptions: {
+            isCustomElement: (tag) => tag === "iconify-icon",
+          },
+        },
+      },
+    },
     themeConfig: {
       logo: {
         light: "/logo.png",
@@ -127,13 +153,28 @@ export default withMermaid(
         },
       ],
       socialLinks: [
-        { icon: "github", link: "https://github.com/your-org/ecqqo" },
+        { icon: "github", link: "http://github.com/alilibx/ecqo" },
       ],
       search: { provider: "local" },
       outline: { level: [2, 3] },
     },
     mermaid: {
       theme: "base",
+      flowchart: {
+        htmlLabels: true,
+        curve: "linear",
+        wrappingWidth: 300,
+        nodeSpacing: 60,
+        rankSpacing: 70,
+        padding: 20,
+        diagramPadding: 16,
+      },
+      sequence: {
+        diagramMarginX: 20,
+        diagramMarginY: 20,
+        actorMargin: 80,
+        messageMargin: 40,
+      },
       themeVariables: {
         // Primary colors - Ecqqo teal accent
         primaryColor: "#e8f5f2",

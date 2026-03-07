@@ -4,155 +4,209 @@ This document describes every entity in the Ecqqo data model, their relationship
 
 ## Entity-Relationship Diagram
 
-```
-+========================================================================================+
-|                                   ECQO DATA MODEL                                      |
-+========================================================================================+
+```mermaid
+erDiagram
+    workspaces {
+        id _id
+        string name
+        string plan
+        string stripeCustomerId
+        string stripeSubscriptionId
+    }
 
-  +-------------------+        +-------------------------------+
-  |    workspaces     |        |           users               |
-  |-------------------|        |-------------------------------|
-  | _id               |<──┐    | _id                           |
-  | name              |   │    | clerkId                       |
-  | plan              |   │    | name                          |
-  | stripeCustomerId  |   │    | email                         |
-  | stripeSubscriptionId  │    | phone                         |
-  +-------------------+   │    | role (owner|principal|operator)|
-           │              └────| workspaceId                   |
-           │                   +-------------------------------+
-           │
-           │ 1:N
-           ├──────────────────────────────────────────────────────────────────────┐
-           │                          │                           │              │
-           v                          v                           v              v
-  +---------------------+  +-------------------------+  +------------------+  +----------------------+
-  |     waAccounts      |  | integrationConnections  |  |  subscriptions   |  |    auditEvents       |
-  |---------------------|  |-------------------------|  |------------------|  |----------------------|
-  | _id                 |  | _id                     |  | _id              |  | _id                  |
-  | workspaceId     [FK]|  | workspaceId         [FK]|  | workspaceId  [FK]|  | workspaceId      [FK]|
-  | principalId     [FK]|  | provider                |  | stripeSubId      |  | actorId          [FK]|
-  | phone               |  | status                  |  | plan             |  | entityType           |
-  | status              |  | tokenEncrypted          |  | status           |  | entityId             |
-  | syncState           |  | scopes                  |  | currentPeriodEnd |  | action               |
-  | connectorWorkerId   |  | lastRefreshedAt         |  +------------------+  | metadata             |
-  +--------+------------+  +-------------------------+                        | occurredAt           |
-           │                                                                  +----------------------+
-           │
-           │ 1:N
-           ├───────────────────────────────────────┐
-           │                    │                   │
-           v                    v                   v
-  +--------------------+  +------------------+  +---------------------+
-  | waConnectSessions  |  | waConnectorWorkers| |      waChats        |
-  |--------------------|  |------------------|  |---------------------|
-  | _id                |  | _id              |  | _id                 |
-  | waAccountId    [FK]|  | waAccountId  [FK]|  | waAccountId     [FK]|
-  | status             |  | flyMachineId     |  | chatExternalId      |
-  | qrPayload          |  | leaseStatus      |  | name                |
-  | workerId           |  | lastHeartbeat    |  | isGroup             |
-  | createdAt          |  +------------------+  | allowlistMode       |
-  | expiresAt          |                        | lastSyncedAt        |
-  +--------------------+                        +---------------------+
-                                                         │
-                                                         │ (shared key:
-                                                         │  waAccountId +
-                                                         │  chatExternalId)
-           ┌─────────────────────────────────────────────┤
-           │                          │                   │
-           v                          v                   v
-  +------------------------+  +-------------------+  +-----------------------+
-  |      waMessages        |  |   waSyncCursors   |  |    inboundMessages    |
-  |------------------------|  |-------------------|  |-----------------------|
-  | _id                    |  | _id               |  | _id                   |
-  | waAccountId        [FK]|  | waAccountId   [FK]|  | fromPhone             |
-  | chatExternalId         |  | chatExternalId    |  | waAccountId       [FK]|
-  | messageExternalId      |  | lastMsgTimestamp  |  | messageId             |
-  | sender                 |  | lastSyncJobId [FK]|  | body                  |
-  | body                   |  +-------------------+  | timestamp             |
-  | timestamp              |                         | type                  |
-  | language               |                         | processed             |
-  | ingestionHash          |                         +-----------------------+
-  +------------------------+
-                                                +-------------------+
-  waAccounts ──1:N──> waSyncJobs                |   waSyncJobs      |
-                                                |-------------------|
-                                                | _id               |
-                                                | waAccountId   [FK]|
-                                                | status            |
-                                                | startedAt         |
-                                                | completedAt       |
-                                                | messagesProcessed |
-                                                | errors            |
-                                                +-------------------+
+    users {
+        id _id
+        string clerkId
+        string name
+        string email
+        string phone
+        string role
+        id workspaceId FK
+    }
 
-  +---------------------------------------------------------------------------+
-  |                          AGENT RUNTIME                                    |
-  +---------------------------------------------------------------------------+
+    waAccounts {
+        id _id
+        id workspaceId FK
+        id principalId FK
+        string phone
+        string status
+        string syncState
+        id connectorWorkerId FK
+    }
 
-  workspaces ──1:N──> agentRuns
+    integrationConnections {
+        id _id
+        id workspaceId FK
+        string provider
+        string status
+        string tokenEncrypted
+        string scopes
+        number lastRefreshedAt
+    }
 
-  +------------------------+
-  |      agentRuns         |
-  |------------------------|
-  | _id                    |
-  | workspaceId        [FK]|
-  | principalId        [FK]|
-  | triggerId              |
-  | status                 |
-  | specialistType         |
-  | startedAt              |
-  | completedAt            |
-  +--------+---------------+
-           │
-           │ 1:N
-           ├───────────────────────────────────────────┐
-           │                                           │
-           v                                           v
-  +---------------------+                    +------------------------+
-  |     runSteps        |                    |   approvalRequests     |
-  |---------------------|                    |------------------------|
-  | _id                 |                    | _id                    |
-  | agentRunId      [FK]|                    | agentRunId         [FK]|
-  | stepType            |                    | toolCallId         [FK]|
-  | input               |                    | status                 |
-  | output              |                    | requestedAt            |
-  | durationMs          |                    | decidedAt              |
-  +--------+------------+                    | decidedBy          [FK]|
-           │                                 | rationale              |
-           │ 1:N                             +------------------------+
-           v
-  +---------------------+
-  |     toolCalls       |
-  |---------------------|
-  | _id                 |
-  | runStepId       [FK]|
-  | toolName            |
-  | dryRunPayload       |
-  | approvedPayload     |
-  | result              |
-  | status              |
-  +---------------------+
+    subscriptions {
+        id _id
+        id workspaceId FK
+        string stripeSubscriptionId
+        string plan
+        string status
+        number currentPeriodEnd
+    }
 
-  +---------------------------------------------------------------------------+
-  |                             MEMORY                                        |
-  +---------------------------------------------------------------------------+
+    auditEvents {
+        id _id
+        id workspaceId FK
+        id actorId FK
+        string entityType
+        string entityId
+        string action
+        string metadata
+        number occurredAt
+    }
 
-  users (principalId) ──1:N──> memories
+    waConnectSessions {
+        id _id
+        id waAccountId FK
+        string status
+        string qrPayload
+        id workerId FK
+        number createdAt
+        number expiresAt
+    }
 
-  +------------------------+
-  |      memories          |
-  |------------------------|
-  | _id                    |
-  | principalId        [FK]|
-  | tier                   |
-  | content                |
-  | embedding              |  <── vector index for semantic search
-  | confidence             |
-  | language               |
-  | source                 |
-  | expiresAt              |
-  | isPinned               |
-  +------------------------+
+    waConnectorWorkers {
+        id _id
+        id waAccountId FK
+        string flyMachineId
+        string leaseStatus
+        number lastHeartbeat
+    }
+
+    waChats {
+        id _id
+        id waAccountId FK
+        string chatExternalId
+        string name
+        boolean isGroup
+        string allowlistMode
+        number lastSyncedAt
+    }
+
+    waMessages {
+        id _id
+        id waAccountId FK
+        string chatExternalId
+        string messageExternalId
+        string sender
+        string body
+        number timestamp
+        string language
+        string ingestionHash
+    }
+
+    waSyncCursors {
+        id _id
+        id waAccountId FK
+        string chatExternalId
+        number lastMessageTimestamp
+        id lastSyncJobId FK
+    }
+
+    inboundMessages {
+        id _id
+        string fromPhone
+        id waAccountId FK
+        string messageId
+        string body
+        number timestamp
+        string type
+        boolean processed
+    }
+
+    waSyncJobs {
+        id _id
+        id waAccountId FK
+        string status
+        number startedAt
+        number completedAt
+        number messagesProcessed
+        string errors
+    }
+
+    agentRuns {
+        id _id
+        id workspaceId FK
+        id principalId FK
+        string triggerId
+        string status
+        string specialistType
+        number startedAt
+        number completedAt
+    }
+
+    runSteps {
+        id _id
+        id agentRunId FK
+        string stepType
+        string input
+        string output
+        number durationMs
+    }
+
+    toolCalls {
+        id _id
+        id runStepId FK
+        string toolName
+        string dryRunPayload
+        string approvedPayload
+        string result
+        string status
+    }
+
+    approvalRequests {
+        id _id
+        id agentRunId FK
+        id toolCallId FK
+        string status
+        number requestedAt
+        number decidedAt
+        id decidedBy FK
+        string rationale
+    }
+
+    memories {
+        id _id
+        id principalId FK
+        string tier
+        string content
+        number embedding
+        number confidence
+        string language
+        string source
+        number expiresAt
+        boolean isPinned
+    }
+
+    workspaces ||--o{ users : "has members"
+    workspaces ||--o{ waAccounts : "has accounts"
+    workspaces ||--o{ integrationConnections : "has connections"
+    workspaces ||--o{ subscriptions : "has subscription"
+    workspaces ||--o{ auditEvents : "has events"
+    workspaces ||--o{ agentRuns : "has runs"
+
+    waAccounts ||--o{ waConnectSessions : "has sessions"
+    waAccounts ||--o{ waConnectorWorkers : "has workers"
+    waAccounts ||--o{ waChats : "has chats"
+    waAccounts ||--o{ waMessages : "has messages"
+    waAccounts ||--o{ waSyncCursors : "has cursors"
+    waAccounts ||--o{ waSyncJobs : "has sync jobs"
+    waAccounts ||--o{ inboundMessages : "receives"
+
+    agentRuns ||--o{ runSteps : "has steps"
+    agentRuns ||--o{ approvalRequests : "has approvals"
+    runSteps ||--o{ toolCalls : "has tool calls"
+
+    users ||--o{ memories : "has memories"
 ```
 
 ## Entity Details

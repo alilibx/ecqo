@@ -209,3 +209,179 @@
   background: var(--vp-c-brand-soft);
   color: var(--vp-c-brand-1);
 }
+
+/* ── Mermaid diagram improvements ── */
+
+/* Make Mermaid containers scrollable and zoomable */
+.mermaid {
+  overflow-x: auto;
+  padding: 16px 0;
+  cursor: zoom-in;
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+/* Fullscreen overlay when clicked */
+.mermaid.zoomed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: var(--vp-c-bg);
+  padding: 40px;
+  cursor: zoom-out;
+  overflow: auto;
+}
+
+.mermaid.zoomed svg {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+
+/* Ensure SVGs inside Mermaid don't overflow the page */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Hint icon for zoom */
+.mermaid::after {
+  content: "🔍 Click to zoom";
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 11px;
+  color: var(--vp-c-text-3);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.mermaid:hover::after {
+  opacity: 1;
+}
+
+.mermaid.zoomed::after {
+  content: "✕ Click to close";
+  position: fixed;
+  top: 12px;
+  right: 20px;
+  font-size: 14px;
+  color: var(--vp-c-text-1);
+  opacity: 1;
+  z-index: 201;
+}
+
+/* ── Dark-mode: force light rendering for Mermaid diagrams ──
+   The plugin overrides our theme:"base" with "dark" in dark mode,
+   so we force a light surface + brand colors via CSS. */
+
+.dark .mermaid {
+  background: #faf7f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.dark .mermaid.zoomed {
+  background: #faf7f0;
+}
+
+/* Node shapes — including path for cylinders/database icons */
+.dark .mermaid .node rect,
+.dark .mermaid .node polygon,
+.dark .mermaid .node circle,
+.dark .mermaid .node ellipse,
+.dark .mermaid .node path {
+  fill: #e8f5f2 !important;
+  stroke: #0d7a6a !important;
+}
+
+/* All SVG text: dark and readable */
+.dark .mermaid text {
+  fill: #1a1612 !important;
+}
+
+/* HTML labels inside foreignObject */
+.dark .mermaid .nodeLabel,
+.dark .mermaid .label,
+.dark .mermaid .cluster-label .nodeLabel {
+  color: #1a1612 !important;
+}
+
+/* Subgraph / cluster backgrounds */
+.dark .mermaid .cluster rect {
+  fill: #fef9f2 !important;
+  stroke: #e8e0d0 !important;
+}
+
+/* Edge labels — target every layer (g, rect, foreignObject span) */
+.dark .mermaid .edgeLabel {
+  background-color: #faf7f0 !important;
+  color: #1a1612 !important;
+}
+
+.dark .mermaid .edgeLabel rect,
+.dark .mermaid .labelBkg {
+  fill: #faf7f0 !important;
+  opacity: 1 !important;
+}
+
+.dark .mermaid .edgeLabel span,
+.dark .mermaid .edgeLabel p {
+  background-color: #faf7f0 !important;
+  color: #1a1612 !important;
+}
+
+/* Lines and arrows */
+.dark .mermaid .edge-pattern-solid,
+.dark .mermaid .flowchart-link,
+.dark .mermaid .edgePath path,
+.dark .mermaid line.messageLine0,
+.dark .mermaid line.messageLine1,
+.dark .mermaid .relation {
+  stroke: #8a7e6d !important;
+}
+
+.dark .mermaid marker path {
+  fill: #8a7e6d !important;
+}
+
+/* ER diagrams */
+.dark .mermaid .er.entityBox {
+  fill: #e8f5f2 !important;
+  stroke: #0d7a6a !important;
+}
+
+.dark .mermaid .er.attributeBoxEven,
+.dark .mermaid .er.attributeBoxOdd {
+  fill: #fef9f2 !important;
+  stroke: #e8e0d0 !important;
+}
+
+/* Sequence diagram */
+.dark .mermaid .actor,
+.dark .mermaid .actor-man circle,
+.dark .mermaid .actor-man line {
+  fill: #e8f5f2 !important;
+  stroke: #0d7a6a !important;
+}
+
+.dark .mermaid .note rect,
+.dark .mermaid .activation0,
+.dark .mermaid .loopLine {
+  fill: #fef9f2 !important;
+  stroke: #e8e0d0 !important;
+}
+
+/* State diagrams */
+.dark .mermaid .stateGroup rect,
+.dark .mermaid .statediagram-state rect {
+  fill: #fef9f2 !important;
+  stroke: #e8e0d0 !important;
+}

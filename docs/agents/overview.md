@@ -4,158 +4,254 @@ This document describes Ecqqo's AI agent system: the orchestrator, specialist ag
 
 ## Complete Agent Architecture
 
+### Inbound Pipeline
+
+```mermaid
+flowchart LR
+    A["fa:fa-message Inbound Message<br/>(webhook / wacli)"] --> B["fa:fa-gear Preprocessing"]
+    B --> C["fa:fa-database Context Assembly"]
+
+    B -.- B1["fa:fa-language Lang detect"]
+    B -.- B2["fa:fa-shield-halved Sanitize"]
+    B -.- B3["fa:fa-magnifying-glass Extract metadata"]
+
+    C -.- C1["fa:fa-comments Recent msgs (10)"]
+    C -.- C2["fa:fa-thumbtack Pinned memories"]
+    C -.- C3["fa:fa-magnifying-glass Vector hits"]
+    C -.- C4["fa:fa-scale-balanced User policies"]
+    C -.- C5["fa:fa-clock Active reminders"]
+    C -.- C6["fa:fa-calendar Calendar context"]
 ```
-+===========================================================================================+
-|                               ECQO AGENT RUNTIME                                          |
-|                          (runs as Convex Actions)                                         |
-+===========================================================================================+
-|                                                                                           |
-|  INBOUND                                                                                  |
-|  ───────                                                                                  |
-|                                                                                           |
-|  +-------------------+     +-------------------+     +------------------------+           |
-|  | Inbound Message   |     | Message           |     | Context Assembly       |           |
-|  | (Meta webhook or  |---->| Preprocessing     |---->|                        |           |
-|  |  wacli sync)      |     |                   |     | - Recent messages (10) |           |
-|  +-------------------+     | - Language detect  |     | - Pinned memories      |           |
-|                            | - Sanitize input   |     | - Vector search hits   |           |
-|                            | - Extract metadata |     | - User policies        |           |
-|                            +-------------------+     | - Active reminders     |           |
-|                                                      | - Calendar context     |           |
-|                                                      +----------+-------------+           |
-|                                                                 |                         |
-|  ORCHESTRATOR                                                   |                         |
-|  ────────────                                                   v                         |
-|                                                                                           |
-|  +------------------------------------------------------------------------+               |
-|  |                        ORCHESTRATOR                                    |               |
-|  |                   (Claude Sonnet / GPT-4o)                             |               |
-|  |                                                                        |               |
-|  |  +------------------+     +------------------+     +----------------+  |               |
-|  |  | Intent Detection |---->| Specialist       |---->| Response       |  |               |
-|  |  |                  |     | Routing          |     | Formatting     |  |               |
-|  |  | - scheduling     |     |                  |     |                |  |               |
-|  |  | - calendar_query |     | Routes to 1+     |     | - Language     |  |               |
-|  |  | - email          |     | specialists      |     |   match (EN/AR)|  |               |
-|  |  | - reminder       |     | based on intent  |     | - WhatsApp     |  |               |
-|  |  | - travel         |     |                  |     |   formatting   |  |               |
-|  |  | - brief          |     |                  |     | - Concise tone |  |               |
-|  |  | - chitchat       |     |                  |     +--------+-------+  |               |
-|  |  | - unclear        |     |                  |              |          |               |
-|  |  +------------------+     +------------------+              |          |               |
-|  |                                                             |          |               |
-|  +-------------------------------------------------------------|----------+               |
-|                                                                |                          |
-|  SPECIALISTS                                                   |                          |
-|  ───────────                                                   |                          |
-|                                                                |                          |
-|  +------------------+ +------------------+ +------------------+|                          |
-|  | Scheduler Agent  | | Calendar Agent   | | Email Agent      ||                          |
-|  |                  | |                  | |                  ||                          |
-|  | - Meeting intent | | - Availability   | | - Inbox digest   ||                          |
-|  |   detection      | |   check          | | - Summarize      ||                          |
-|  | - Time parsing   | | - Day summary    | | - Flag important ||                          |
-|  | - Participant    | | - Event CRUD     | | - Draft reply    ||                          |
-|  |   resolution     | | - Conflict       | |                  ||                          |
-|  | - Calendar ops   | |   detection      | |                  ||                          |
-|  +--------+---------+ +--------+---------+ +--------+---------+|                          |
-|           |                    |                    |           |                          |
-|  +--------+---------+ +-------+----------+ +-------+----------+|                          |
-|  | Reminder Agent   | | Travel Agent     | | Brief Agent      ||                          |
-|  |                  | |                  | |                  ||                          |
-|  | - Set reminders  | | - Extract travel | | - Pre-meeting    ||                          |
-|  | - Track delivery | |   details        | |   context        ||                          |
-|  | - Recurring      | | - Propose cal    | | - Attendee info  ||                          |
-|  |   schedules      | |   entries        | | - Past notes     ||                          |
-|  | - Snooze/cancel  | | - Timezone aware | | - Agenda items   ||                          |
-|  +--------+---------+ +--------+---------+ +--------+---------+|                          |
-|           |                    |                    |           |                          |
-|           +--------------------+--------------------+           |                          |
-|                                |                                |                          |
-|  TOOLS                         v                                |                          |
-|  ─────                                                          |                          |
-|                                                                 |                          |
-|  +----------------------------------------------------------------------+                 |
-|  |                         TOOL EXECUTOR                                |                 |
-|  |                                                                      |                 |
-|  |  +-----------------+  +------------------+  +--------------------+   |                 |
-|  |  | Read-only tools |  | Write tools      |  | Internal tools     |   |                 |
-|  |  | (no approval)   |  | (approval-gated) |  | (no approval)      |   |                 |
-|  |  |                 |  |                  |  |                    |   |                 |
-|  |  | calendar_read   |  | calendar_write   |  | memory_query       |   |                 |
-|  |  | email_read      |  | whatsapp_send    |  | memory_pin         |   |                 |
-|  |  |                 |  | reminder_deliver |  | reminder_set       |   |                 |
-|  |  +-----------------+  +--------+---------+  +--------------------+   |                 |
-|  |                                |                                     |                 |
-|  +--------------------------------|-------------------------------------+                 |
-|                                   |                                                       |
-|  APPROVAL GATE                    v                                                       |
-|  ─────────────                                                                            |
-|                                                                                           |
-|  +----------------------------------------------------------------------+                 |
-|  |                       APPROVAL WORKFLOW                              |                 |
-|  |                                                                      |                 |
-|  |  +----------------+     +------------------+     +--------------+    |                 |
-|  |  | Dry-run        |---->| Send approval    |---->| Wait for     |    |                 |
-|  |  | payload        |     | request via      |     | decision     |    |                 |
-|  |  | generated      |     | WhatsApp to      |     | (up to 30m)  |    |                 |
-|  |  |                |     | operator         |     |              |    |                 |
-|  |  +----------------+     +------------------+     +------+-------+    |                 |
-|  |                                                         |            |                 |
-|  |                                        +----------------+-------+    |                 |
-|  |                                        |                        |    |                 |
-|  |                                        v                        v    |                 |
-|  |                                 +------------+          +----------+ |                 |
-|  |                                 | Approved   |          | Rejected | |                 |
-|  |                                 | -> Execute |          | -> Notify| |                 |
-|  |                                 |    tool    |          |   user   | |                 |
-|  |                                 +------------+          +----------+ |                 |
-|  |                                                                      |                 |
-|  +----------------------------------------------------------------------+                 |
-|                                                                                           |
-|  MEMORY                            |                                                      |
-|  ──────                            v                                                      |
-|                                                                                           |
-|  +----------------------------------------------------------------------+                 |
-|  |                       MEMORY SYSTEM                                  |                 |
-|  |                                                                      |                 |
-|  |  +------------------+  +------------------+  +-------------------+   |                 |
-|  |  | Pinned Facts     |  | Short-term       |  | Episodic          |   |                 |
-|  |  | (never expire)   |  | Buffer           |  | Summaries         |   |                 |
-|  |  |                  |  | (7-day TTL)      |  | (90-day TTL)      |   |                 |
-|  |  | - Operator-set   |  |                  |  |                   |   |                 |
-|  |  | - "Prefers 9am"  |  | - Recent facts   |  | - Daily digests   |   |                 |
-|  |  | - "No Fridays"   |  | - In-flight ctx  |  | - Decision logs   |   |                 |
-|  |  +------------------+  +------------------+  +-------------------+   |                 |
-|  |                                                                      |                 |
-|  |  +------------------+  +------------------------------------------+  |                 |
-|  |  | Semantic Store   |  | Vector Search (Convex)                   |  |                 |
-|  |  | (365-day TTL)    |  |                                          |  |                 |
-|  |  |                  |  | - text-embedding-3-small (1536 dims)     |  |                 |
-|  |  | - Long-term      |  | - Filtered by principalId               |  |                 |
-|  |  |   preferences    |  | - Top-K retrieval (k=10)                 |  |                 |
-|  |  | - Relationships  |  | - Confidence threshold: 0.7             |  |                 |
-|  |  | - Patterns       |  |                                          |  |                 |
-|  |  +------------------+  +------------------------------------------+  |                 |
-|  |                                                                      |                 |
-|  +----------------------------------------------------------------------+                 |
-|                                                                                           |
-|  OUTPUT                            |                                                      |
-|  ──────                            v                                                      |
-|                                                                                           |
-|  +----------------------------------------------------------------------+                 |
-|  |                    RESPONSE DELIVERY                                 |                 |
-|  |                                                                      |                 |
-|  |  +-------------------+     +-------------------+                     |                 |
-|  |  | Format for        |---->| Send via Meta     |                     |                 |
-|  |  | WhatsApp          |     | Cloud API         |                     |                 |
-|  |  | (bold, lists,     |     | (POST /messages)  |                     |                 |
-|  |  |  emojis, brevity) |     |                   |                     |                 |
-|  |  +-------------------+     +-------------------+                     |                 |
-|  |                                                                      |                 |
-|  +----------------------------------------------------------------------+                 |
-|                                                                                           |
-+===========================================================================================+
+
+### Orchestrator
+
+```mermaid
+flowchart LR
+    ID["fa:fa-magnifying-glass Intent Detection"] --> SR["fa:fa-sitemap Specialist<br/>Routing"] --> RF["fa:fa-align-left Response<br/>Formatting"]
+
+    ID -.- I1["fa:fa-calendar scheduling"]
+    ID -.- I2["fa:fa-calendar calendar_query"]
+    ID -.- I3["fa:fa-envelope email"]
+    ID -.- I4["fa:fa-clock reminder"]
+    ID -.- I5["fa:fa-paper-plane travel"]
+    ID -.- I6["fa:fa-microchip brief"]
+    ID -.- I7["fa:fa-comments chitchat"]
+    ID -.- I8["fa:fa-circle-question unclear"]
+
+    SR -.- S1["fa:fa-sitemap Route to 1+<br/>specialists"]
+
+    RF -.- R1["fa:fa-language Lang match (EN/AR)"]
+    RF -.- R2["fa:fa-align-left WA formatting"]
+    RF -.- R3["fa:fa-comments Concise tone"]
+```
+
+Orchestrator model: Claude Sonnet / GPT-4o (runs as Convex Actions).
+
+### Specialist Agents
+
+<script setup>
+const agentsConfig = {
+  layers: [
+    {
+      id: "ag-orch",
+      title: "Orchestrator",
+      subtitle: "Intent Detection · Specialist Routing",
+      icon: "fa-sitemap",
+      color: "teal",
+      nodes: [
+        { id: "ag-orchestrator", icon: "fa-sitemap", title: "Orchestrator", subtitle: "Claude Sonnet / GPT-4o" },
+      ],
+    },
+    {
+      id: "ag-core",
+      title: "Core Specialists",
+      subtitle: "Primary Domain Agents",
+      icon: "fa-robot",
+      color: "warm",
+      nodes: [
+        { id: "ag-sched", icon: "fa-calendar", title: "Scheduler", subtitle: "Time · Participants · Ops" },
+        { id: "ag-cal", icon: "fa-calendar", title: "Calendar", subtitle: "Availability · Conflicts" },
+        { id: "ag-email", icon: "fa-envelope", title: "Email", subtitle: "Digest · Draft · Reply" },
+      ],
+    },
+    {
+      id: "ag-extended",
+      title: "Extended Specialists",
+      subtitle: "Support Domain Agents",
+      icon: "fa-robot",
+      color: "warm",
+      nodes: [
+        { id: "ag-remind", icon: "fa-clock", title: "Reminder", subtitle: "Set · Track · Recur" },
+        { id: "ag-travel", icon: "fa-paper-plane", title: "Travel", subtitle: "Details · Cal Entries" },
+        { id: "ag-brief", icon: "fa-microchip", title: "Brief", subtitle: "Pre-meeting Context" },
+      ],
+    },
+    {
+      id: "ag-exec",
+      title: "Execution",
+      subtitle: "Tool Invocation",
+      icon: "fa-play",
+      color: "dark",
+      nodes: [
+        { id: "ag-executor", icon: "fa-play", title: "Tool Executor", subtitle: "External API Calls" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "ag-orchestrator", to: "ag-sched" },
+    { from: "ag-orchestrator", to: "ag-cal" },
+    { from: "ag-orchestrator", to: "ag-email" },
+    { from: "ag-orchestrator", to: "ag-remind" },
+    { from: "ag-orchestrator", to: "ag-travel" },
+    { from: "ag-orchestrator", to: "ag-brief" },
+    { from: "ag-sched", to: "ag-executor" },
+    { from: "ag-email", to: "ag-executor" },
+    { from: "ag-brief", to: "ag-executor" },
+  ],
+}
+
+const toolsConfig = {
+  layers: [
+    {
+      id: "tools-ro",
+      title: "Read-only Tools",
+      subtitle: "No Approval Required",
+      icon: "fa-magnifying-glass",
+      color: "teal",
+      nodes: [
+        { id: "tl-cal-read", icon: "fa-calendar", title: "calendar_read", subtitle: "Availability · Events" },
+        { id: "tl-email-read", icon: "fa-envelope", title: "email_read", subtitle: "Inbox · Threads" },
+      ],
+    },
+    {
+      id: "tools-internal",
+      title: "Internal Tools",
+      subtitle: "No Approval Required",
+      icon: "fa-gear",
+      color: "warm",
+      nodes: [
+        { id: "tl-mem-query", icon: "fa-magnifying-glass", title: "memory_query", subtitle: "Semantic Search" },
+        { id: "tl-mem-pin", icon: "fa-thumbtack", title: "memory_pin", subtitle: "Pin Facts" },
+        { id: "tl-rem-set", icon: "fa-clock", title: "reminder_set", subtitle: "Create Reminders" },
+      ],
+    },
+    {
+      id: "tools-write",
+      title: "Write Tools",
+      subtitle: "Approval-gated · Side Effects",
+      icon: "fa-lock",
+      color: "red",
+      nodes: [
+        { id: "tl-cal-write", icon: "fa-calendar", title: "calendar_write", subtitle: "Create · Update · Delete" },
+        { id: "tl-wa-send", icon: "si:whatsapp", title: "whatsapp_send", subtitle: "Send Messages" },
+        { id: "tl-rem-deliver", icon: "fa-bolt", title: "reminder_deliver", subtitle: "Trigger Delivery" },
+      ],
+    },
+    {
+      id: "tools-gate",
+      title: "Approval Gate",
+      subtitle: "Policy Enforcement",
+      icon: "fa-shield-halved",
+      color: "dark",
+      nodes: [
+        { id: "tl-gate", icon: "fa-circle-check", title: "Approval Gate", subtitle: "Dry-run · Approve · Execute" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "tl-cal-write", to: "tl-gate", label: "requires approval" },
+    { from: "tl-wa-send", to: "tl-gate" },
+    { from: "tl-rem-deliver", to: "tl-gate" },
+  ],
+}
+
+const memoryConfig = {
+  layers: [
+    {
+      id: "mem-pinned",
+      title: "Pinned",
+      subtitle: "No Expiry · Always Included",
+      icon: "fa-thumbtack",
+      color: "blue",
+      nodes: [
+        { id: "mem-pin", icon: "fa-thumbtack", title: "Pinned Facts", subtitle: "Operator preferences" },
+      ],
+    },
+    {
+      id: "mem-short",
+      title: "Short-term",
+      subtitle: "7d TTL · Recent Context",
+      icon: "fa-clock",
+      color: "teal",
+      nodes: [
+        { id: "mem-st", icon: "fa-clock", title: "Short-term", subtitle: "Recent facts · In-flight" },
+      ],
+    },
+    {
+      id: "mem-episodic",
+      title: "Episodic",
+      subtitle: "90d TTL · Decision History",
+      icon: "fa-database",
+      color: "warm",
+      nodes: [
+        { id: "mem-ep", icon: "fa-chart-line", title: "Episodic", subtitle: "Daily digests · Logs" },
+      ],
+    },
+    {
+      id: "mem-semantic",
+      title: "Semantic",
+      subtitle: "365d TTL · Vector Embeddings",
+      icon: "fa-brain",
+      color: "dark",
+      nodes: [
+        { id: "mem-sem", icon: "fa-microchip", title: "Semantic", subtitle: "Long-term prefs · Patterns" },
+      ],
+    },
+    {
+      id: "mem-vector",
+      title: "Vector Search",
+      subtitle: "embed-3-small · 1536 Dimensions",
+      icon: "fa-magnifying-glass",
+      color: "teal",
+      nodes: [
+        { id: "mem-embed", icon: "fa-microchip", title: "Embeddings", subtitle: "text-embedding-3-small" },
+        { id: "mem-filter", icon: "fa-user", title: "Filter", subtitle: "By principalId" },
+        { id: "mem-rank", icon: "fa-chart-line", title: "Ranking", subtitle: "Top-10 · Threshold 0.7" },
+      ],
+    },
+  ],
+  connections: [
+    { from: "mem-sem", to: "mem-embed" },
+    { from: "mem-embed", to: "mem-filter" },
+    { from: "mem-filter", to: "mem-rank" },
+  ],
+}
+</script>
+
+<ArchDiagram :config="agentsConfig" />
+
+### Tools
+
+<ArchDiagram :config="toolsConfig" />
+
+### Approval Workflow
+
+```mermaid
+flowchart TD
+    DR["fa:fa-code Dry-run payload"] --> SA["fa:fa-paper-plane Send approval<br/>via WhatsApp"] --> WD["fa:fa-clock Wait for decision<br/>(30m timeout)"]
+    WD -->|Approved| EX["fa:fa-circle-check Execute tool"]
+    WD -->|Rejected| NO["fa:fa-circle-xmark Notify user"]
+```
+
+### Memory System
+
+<ArchDiagram :config="memoryConfig" />
+
+### Response Delivery
+
+```mermaid
+flowchart LR
+    F["fa:fa-align-left Format for WA<br/>(bold, lists, brevity)"] --> S["fa:fa-paper-plane Send via Meta API<br/>(POST /messages)"]
 ```
 
 ## Orchestrator Responsibilities
@@ -183,23 +279,19 @@ For `unclear` intents, the orchestrator asks a clarifying question before routin
 
 Based on the detected intent, the orchestrator selects one or more specialist agents. Complex requests may involve multiple specialists in sequence:
 
-```
-  "Set up a call with Ahmed tomorrow at 3pm and send me
-   a brief about him 30 minutes before"
+Example: *"Set up a call with Ahmed tomorrow at 3pm and send me a brief about him 30 minutes before"*
 
-  Orchestrator
-       |
-       +---> Scheduler Agent (create calendar event)
-       |         |
-       |         +--> calendar_read (check availability)
-       |         +--> calendar_write (create event) [APPROVAL]
-       |
-       +---> Brief Agent (schedule pre-meeting brief)
-       |         |
-       |         +--> memory_query (search for Ahmed context)
-       |         +--> reminder_set (set brief delivery 30min before)
-       |
-       +---> Format combined response
+```mermaid
+flowchart TD
+    O["fa:fa-sitemap Orchestrator"] --> SA["fa:fa-robot Scheduler<br/>(create event)"]
+    O --> BA["fa:fa-robot Brief<br/>(pre-meeting)"]
+    O --> FR["fa:fa-align-left Format response"]
+
+    SA --> CR["fa:fa-calendar calendar_read<br/>(check avail)"]
+    SA --> CW["fa:fa-lock calendar_write<br/>(create) APPROVAL"]
+
+    BA --> MQ["fa:fa-magnifying-glass memory_query<br/>(Ahmed context)"]
+    BA --> RS["fa:fa-clock reminder_set<br/>(brief 30m before)"]
 ```
 
 ### 3. Context Assembly
@@ -221,33 +313,13 @@ Total context budget: ~4500 tokens, leaving room for the system prompt and respo
 
 Before executing any tool, the orchestrator checks the principal's policies:
 
-```
-  Tool call requested
-       |
-       v
-  +----+----+
-  | Is tool |
-  | in auto |----yes----> Execute immediately
-  | approve |
-  | list?   |
-  +----+----+
-       |
-       no
-       |
-       v
-  +----+----+
-  | Is it   |
-  | within  |----yes----> Execute immediately
-  | working |
-  | hours?  |
-  +----+----+
-       |
-       no
-       |
-       v
-  Create approval request
-  Notify operator via WhatsApp
-  Pause agent run
+```mermaid
+flowchart TD
+    TC["fa:fa-wrench Tool call requested"] --> AA{"Auto-approved?"}
+    AA -->|Yes| EX1["fa:fa-play Execute now"]
+    AA -->|No| WH{"Within working<br/>hours?"}
+    WH -->|Yes| EX2["fa:fa-play Execute now"]
+    WH -->|No| AP["fa:fa-pause Create approval<br/>notify operator<br/>pause run"]
 ```
 
 ### 5. Approval Workflow
@@ -427,66 +499,20 @@ The orchestrator formats the final response for WhatsApp delivery:
 
 ### Tool Execution Flow
 
-```
-  Specialist Agent
-       |
-       |  requests tool call
-       v
-  +----+----------+
-  | Tool Executor |
-  +----+----------+
-       |
-       v
-  +----+----------+     +---+
-  | Has side      |--no-| Execute immediately   |
-  | effect?       |     | Return result         |
-  +----+----------+     +-----------------------+
-       |
-       yes
-       |
-       v
-  +----+----------+     +---+
-  | Approval      |--no-| Execute immediately   |
-  | required?     |     | Return result         |
-  | (check policy)|     +-----------------------+
-  +----+----------+
-       |
-       yes
-       |
-       v
-  +----+----------+
-  | Generate      |
-  | dry-run       |
-  | payload       |
-  +----+----------+
-       |
-       v
-  +----+----------+
-  | Create        |
-  | toolCall      |
-  | record        |
-  +----+----------+
-       |
-       v
-  +----+----------+
-  | Create        |
-  | approval      |
-  | Request       |
-  +----+----------+
-       |
-       v
-  +----+----------+
-  | Notify        |
-  | operator      |
-  | via WhatsApp  |
-  +----+----------+
-       |
-       v
-  +----+----------+
-  | Pause run     |
-  | Wait for      |-----> [Approval Decision] -----> Execute or Reject
-  | decision      |
-  +--------------+
+```mermaid
+flowchart TD
+    SA["fa:fa-robot Specialist requests<br/>tool call"] --> TE["fa:fa-play Tool Executor"]
+    TE --> SE{"Side effect?"}
+    SE -->|No| EX1["fa:fa-play Execute, return"]
+    SE -->|Yes| AR{"Approval needed?"}
+    AR -->|No| EX2["fa:fa-play Execute, return"]
+    AR -->|Yes| DR["fa:fa-code Gen dry-run payload"]
+    DR --> TC["fa:fa-wrench Create toolCall"]
+    TC --> CR["fa:fa-circle-check Create approval req"]
+    CR --> NO["fa:fa-paper-plane Notify operator"]
+    NO --> PA["fa:fa-pause Pause, await decision"]
+    PA -->|Approved| EX3["fa:fa-circle-check Execute tool"]
+    PA -->|Rejected| RJ["fa:fa-circle-xmark Reject + notify"]
 ```
 
 ---
@@ -497,108 +523,49 @@ The orchestrator formats the final response for WhatsApp delivery:
 
 Each agent (orchestrator and specialists) receives a structured system prompt composed of these sections:
 
-```
-  +=====================================================+
-  |                  SYSTEM PROMPT                       |
-  +=====================================================+
-  |                                                     |
-  |  1. ROLE DEFINITION                                 |
-  |     "You are Ecqqo, a WhatsApp-native executive     |
-  |      assistant for {principal_name}."               |
-  |                                                     |
-  |  2. CAPABILITIES                                    |
-  |     List of what this agent can and cannot do.      |
-  |     Explicit boundaries and limitations.            |
-  |                                                     |
-  |  3. POLICIES                                        |
-  |     Working hours: {start} - {end} ({timezone})     |
-  |     Auto-approve rules: {list}                      |
-  |     Approval-required actions: {list}               |
-  |                                                     |
-  |  4. LANGUAGE INSTRUCTIONS                           |
-  |     "Respond in the same language as the user's     |
-  |      message. If Arabic, use Gulf dialect. If       |
-  |      English, be professional but warm."            |
-  |                                                     |
-  |  5. FORMATTING RULES                                |
-  |     "Use WhatsApp formatting: *bold*, _italic_.     |
-  |      Keep responses under 500 chars for simple      |
-  |      confirmations. Use bullet lists for multiple   |
-  |      items."                                        |
-  |                                                     |
-  |  6. TOOL DEFINITIONS                                |
-  |     JSON schema for each available tool.            |
-  |     Usage guidelines and constraints.               |
-  |                                                     |
-  +=====================================================+
-  |                                                     |
-  |  7. CONTEXT WINDOW (injected per-request)           |
-  |                                                     |
-  |  [PINNED MEMORIES]                                  |
-  |  - Prefers morning meetings (before 10am)           |
-  |  - Never schedule on Fridays                        |
-  |  - Assistant: Sarah (operator)                      |
-  |                                                     |
-  |  [RELEVANT MEMORIES]                                |
-  |  - Last met Ahmed on Feb 15, discussed Q2 targets   |
-  |  - Traveling to London March 10-14                  |
-  |                                                     |
-  |  [TODAY'S CALENDAR]                                 |
-  |  - 09:00 - 09:30  Team standup                     |
-  |  - 11:00 - 12:00  Board review                     |
-  |  - 14:00 - 14:30  Call with supplier               |
-  |                                                     |
-  |  [RECENT CONVERSATION]                              |
-  |  User: Can you move my 2pm to tomorrow?            |
-  |  Ecqqo: Done. Moved "Call with supplier" to         |
-  |        tomorrow at 2pm. Anything else?              |
-  |  User: Actually make it 3pm                        |
-  |                                                     |
-  +=====================================================+
+```mermaid
+flowchart TD
+    subgraph SP["fa:fa-gear SYSTEM PROMPT"]
+        direction TB
+        R["fa:fa-user 1. ROLE<br/>WA assistant for principal"]
+        C["fa:fa-wrench 2. CAPABILITIES<br/>Boundaries + limits"]
+        P["fa:fa-scale-balanced 3. POLICIES<br/>Hours, auto-approve"]
+        L["fa:fa-language 4. LANGUAGE<br/>Match EN/AR, Gulf dialect"]
+        F["fa:fa-align-left 5. FORMATTING<br/>WA bold/italic, ≤500ch"]
+        T["fa:fa-code 6. TOOLS<br/>JSON schemas, constraints"]
+        R --> C --> P --> L --> F --> T
+    end
+
+    subgraph CW["fa:fa-database CONTEXT WINDOW"]
+        direction TB
+        PM["fa:fa-thumbtack PINNED MEMORIES<br/>Prefs, contacts, rules"]
+        RM["fa:fa-magnifying-glass RELEVANT MEMORIES<br/>Semantic search hits"]
+        TC2["fa:fa-calendar TODAY'S CALENDAR<br/>Scheduled events"]
+        RC["fa:fa-comments RECENT CONVERSATION<br/>Last 10 messages"]
+        PM --> RM --> TC2 --> RC
+    end
+
+    SP --> CW
 ```
 
 ### Language Handling (EN/AR)
 
 The agent detects the language of the inbound message and responds accordingly:
 
-```
-  Inbound message
-       |
-       v
-  +----+----------+
-  | Detect        |
-  | language      |
-  +----+----------+
-       |
-       +------- "en" -------> English response
-       |                      Professional, warm tone
-       |                      Standard formatting
-       |
-       +------- "ar" -------> Arabic response
-                              Gulf dialect preferred
-                              RTL-aware formatting
-                              Cultural context
+```mermaid
+flowchart TD
+    IN["fa:fa-message Inbound message"] --> DL["fa:fa-language Detect language"]
+    DL -->|"en"| EN["fa:fa-align-left English response<br/>Warm tone, standard fmt"]
+    DL -->|"ar"| AR["fa:fa-align-left Arabic response<br/>Gulf dialect, RTL fmt"]
 ```
 
 Language detection uses a lightweight classifier (no LLM call). The detected language is stored on the message record and passed to the agent as context. The agent's system prompt includes bilingual instructions.
 
 ### Prompt Composition Pipeline
 
-```
-  +------------------+     +------------------+     +------------------+
-  |  Base system     |     |  Policy          |     |  Context         |
-  |  prompt          |---->|  injection       |---->|  injection       |
-  |  (per agent      |     |  (per principal) |     |  (per request)   |
-  |   type, static)  |     |                  |     |                  |
-  +------------------+     +------------------+     +------------------+
-                                                           |
-                                                           v
-                                                    +------------------+
-                                                    |  Final prompt    |
-                                                    |  sent to LLM    |
-                                                    |  via Vercel      |
-                                                    |  AI SDK          |
-                                                    +------------------+
+```mermaid
+flowchart LR
+    BP["fa:fa-code Base prompt<br/>(per agent, static)"] --> PI["fa:fa-scale-balanced Policy injection<br/>(per principal)"] --> CI["fa:fa-database Context injection<br/>(per request)"] --> FP["fa:fa-brain Final prompt<br/>to LLM via AI SDK"]
 ```
 
 1. **Base prompt** is static per agent type (orchestrator, scheduler, calendar, etc.) and defines the role, capabilities, and formatting rules.
@@ -613,21 +580,15 @@ The composed prompt is passed to `generateText()` or `streamText()` from the Ver
 
 Every agent run is traced via LangSmith for production observability. See [Security Posture > Agent Observability](/security/posture#agent-observability-langsmith) for the full integration architecture, PII redaction policy, and alerting thresholds.
 
-```
-  Agent Run
-       |
-       |  All LLM calls wrapped with traceable()
-       v
-  Vercel AI SDK -----> LLM Provider
-       |
-       |  Async trace capture (non-blocking)
-       v
-  LangSmith Cloud
-       |
-       +-- Trace explorer (per-run breakdown)
-       +-- Latency / cost dashboards
-       +-- Prompt evals and regression tests
-       +-- Production datasets for testing
+```mermaid
+flowchart TD
+    AR["fa:fa-robot Agent Run"] -->|"traceable() wrapped"| SDK["fa:fa-code Vercel AI SDK"]
+    SDK --> LLM["fa:fa-brain LLM Provider"]
+    SDK -->|"Async, non-blocking"| LS["fa:fa-chart-line LangSmith"]
+    LS --> TE["fa:fa-magnifying-glass Trace explorer"]
+    LS --> DA["fa:fa-gauge Latency/cost dash"]
+    LS --> PE["fa:fa-play Prompt evals"]
+    LS --> PD["fa:fa-database Prod datasets"]
 ```
 
 Key: tracing is async and non-blocking. LangSmith outage does not affect agent execution.
