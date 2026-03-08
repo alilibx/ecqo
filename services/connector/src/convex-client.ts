@@ -149,4 +149,11 @@ export class ConnectorConvexClient {
       machineId,
     });
   }
+
+  async cleanupStaleMachines() {
+    return await this.client.mutation(
+      api.connector.cleanupStaleMachines,
+      {},
+    );
+  }
 }

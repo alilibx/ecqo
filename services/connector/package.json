@@ -8,6 +8,7 @@
     "start": "node --import tsx --env-file=.env src/index.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1004.0",
     "@ecqqo/shared": "workspace:*",
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",

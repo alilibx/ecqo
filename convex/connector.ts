@@ -320,6 +320,29 @@ export const deregisterMachine = mutation({
   },
 });
 
+export const cleanupStaleMachines = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const staleThreshold = Date.now() - 2 * 60_000; // 2 minutes
+    const machines = await ctx.db.query("waMachines").collect();
+
+    let cleaned = 0;
+    for (const machine of machines) {
+      if (
+        machine.status !== "offline" &&
+        machine.lastHealthAt < staleThreshold
+      ) {
+        await ctx.db.patch(machine._id, {
+          status: "offline",
+          workerCount: 0,
+        });
+        cleaned++;
+      }
+    }
+    return cleaned;
+  },
+});
+
 export const getAvailableMachine = query({
   args: {},
   handler: async (ctx) => {

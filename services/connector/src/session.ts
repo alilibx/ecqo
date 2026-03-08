@@ -24,6 +24,7 @@ import pino from "pino";
 import { ConnectorConvexClient } from "./convex-client.js";
 import { normalizeMessage, computeIngestionHash } from "./normalize.js";
 import { HEARTBEAT_INTERVAL_MS } from "@ecqqo/shared";
+import { downloadAuthState, syncAuthDir, isTigrisConfigured } from "./auth-sync.js";
 import type { ConnectSessionStatus } from "./ipc-protocol.js";
 import type { Id } from "../../../convex/_generated/dataModel.js";
 
@@ -62,6 +63,15 @@ export async function createWhatsAppSession(opts: SessionOptions) {
 
   // Per-session auth directory for isolation
   const authDir = `${BASE_AUTH_DIR}/${sessionId}`;
+
+  // Download auth state from Tigris if available (enables cross-machine restore)
+  if (isTigrisConfigured()) {
+    try {
+      await downloadAuthState(sessionId, authDir);
+    } catch (err) {
+      console.error(`[session] Tigris download failed, continuing with local:`, err);
+    }
+  }
 
   // Load auth state (in-memory on Fly.io via tmpfs)
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
@@ -161,8 +171,16 @@ export async function createWhatsAppSession(opts: SessionOptions) {
       }
     });
 
-    // ── Save credentials on update ──
-    sock.ev.on("creds.update", saveCreds);
+    // ── Save credentials on update + sync to Tigris ──
+    sock.ev.on("creds.update", async () => {
+      await saveCreds();
+      // Background sync to Tigris — don't await to avoid blocking
+      if (isTigrisConfigured()) {
+        syncAuthDir(sessionId, authDir).catch((err) =>
+          console.error(`[session] Tigris sync failed:`, err),
+        );
+      }
+    });
 
     // ── Message ingestion ──
     sock.ev.on("messages.upsert", async (event) => {
@@ -271,6 +289,14 @@ export async function createWhatsAppSession(opts: SessionOptions) {
       stopped = true;
       stopHeartbeat();
       sock?.end(undefined);
+      // Final sync to Tigris before stopping
+      if (isTigrisConfigured()) {
+        try {
+          await syncAuthDir(sessionId, authDir);
+        } catch (err) {
+          console.error(`[session] Final Tigris sync failed:`, err);
+        }
+      }
       await convex.updateSessionStatus("disconnected");
       await convex.updateAccountStatus("disconnected");
       reportStatus("disconnected");

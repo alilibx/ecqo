@@ -81,3 +81,59 @@ fly scale count 2 -a ecqqo-connector
 ```
 
 Convex's `waMachines` table tracks each machine's health and worker count. New sessions are assigned to the least-loaded active machine via the `getAvailableMachine` query.
+
+## Tigris S3 Auth State Storage
+
+Auth credentials are persisted to Tigris (Fly.io's S3-compatible object storage) so that sessions are not tied to a specific machine or volume.
+
+### Setup
+
+Create a Tigris bucket attached to the Fly app:
+
+```bash
+fly storage create -a ecqqo-connector
+```
+
+This automatically sets the following secrets on the Fly app:
+
+| Env Var | Purpose |
+|---------|---------|
+| `AWS_ENDPOINT_URL_S3` | Tigris S3 endpoint |
+| `AWS_ACCESS_KEY_ID` | Tigris access key |
+| `AWS_SECRET_ACCESS_KEY` | Tigris secret key |
+| `BUCKET_NAME` | Tigris bucket name |
+
+### How It Works
+
+Auth files are synced to and from Tigris at key lifecycle points:
+
+1. **Session start** — Downloads all auth files from Tigris into the local `/tmp/wa-auth/{sessionId}/` directory before Baileys connects.
+2. **Credential updates** — On every `creds.update` event from Baileys, the updated auth files are incrementally uploaded to Tigris.
+3. **Session stop** — Performs a final sync of all auth files to Tigris before the worker shuts down.
+
+Local tmpfs (`/tmp/wa-auth/`) is still used for fast Baileys I/O during the session. Tigris serves as the durable backing store.
+
+### S3 Key Structure
+
+Files are stored under a per-session prefix:
+
+```
+auth/{sessionId}/{filename}
+```
+
+For example: `auth/user_abc123/creds.json`, `auth/user_abc123/app-state-sync-key-AABBCCDD.json`.
+
+### Benefits
+
+- **Machine portability** — Sessions can be restored on any machine, not tied to a specific Fly volume.
+- **Horizontal scaling** — New machines pull auth state on demand; no need to migrate volumes.
+- **Machine replacement** — Fly.io can destroy and recreate machines freely without losing session state.
+- **Zero-downtime deploys** — Combined with the existing session restoration logic, deploys remain transparent to users.
+
+### Local Development Fallback
+
+The sync logic checks whether Tigris is configured (`isTigrisConfigured`). When the `AWS_ENDPOINT_URL_S3` env var is not set (e.g., local dev), Tigris sync is skipped entirely and auth files are only stored on the local filesystem. No additional setup is needed for local development.
+
+### Key File
+
+The sync implementation lives in `services/connector/src/auth-sync.ts`.

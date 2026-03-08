@@ -13,6 +13,7 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { ConnectorConvexClient } from "./convex-client.js";
+import { listRemoteSessions, isTigrisConfigured } from "./auth-sync.js";
 import type {
   SupervisorToWorker,
   WorkerToSupervisor,
@@ -322,46 +323,57 @@ async function reportHealth() {
 const AUTH_DIR = process.env.AUTH_DIR ?? "/tmp/wa-auth";
 
 async function restoreSessions() {
-  try {
-    const entries = readdirSync(AUTH_DIR, { withFileTypes: true });
-    // Filter out filesystem artifacts (lost+found) — session IDs are alphanumeric Convex IDs
-    const sessionDirs = entries.filter(
-      (e) => e.isDirectory() && /^[a-z0-9]+$/.test(e.name),
-    );
+  let sessionIds: string[] = [];
 
-    if (!sessionDirs.length) {
-      console.log("   No sessions to restore");
+  // Prefer Tigris as source of truth for restorable sessions
+  if (isTigrisConfigured()) {
+    try {
+      sessionIds = await listRemoteSessions();
+      console.log(`   Tigris: found ${sessionIds.length} session(s)`);
+    } catch (err) {
+      console.error("   Tigris listing failed, falling back to local disk:", err);
+    }
+  }
+
+  // Fallback: scan local auth directory
+  if (!sessionIds.length) {
+    try {
+      const entries = readdirSync(AUTH_DIR, { withFileTypes: true });
+      sessionIds = entries
+        .filter((e) => e.isDirectory() && /^[a-z0-9]+$/.test(e.name))
+        .map((e) => e.name);
+    } catch {
+      console.log("   No auth directory found, skipping restore");
       return;
     }
+  }
 
-    console.log(`   Found ${sessionDirs.length} session(s) to restore`);
+  if (!sessionIds.length) {
+    console.log("   No sessions to restore");
+    return;
+  }
 
-    for (const dir of sessionDirs) {
-      const sessionId = dir.name;
+  console.log(`   Found ${sessionIds.length} session(s) to restore`);
 
-      const check = canAcceptWorker();
-      if (!check.ok) {
-        console.log(`   Skipping restore of ${sessionId}: ${check.reason}`);
-        break;
-      }
-
-      console.log(`   Restoring session ${sessionId}`);
-      try {
-        await convex.assignSessionToMachine(sessionId as any, MACHINE_ID);
-      } catch {
-        // Session may no longer exist in Convex — skip
-        console.log(`   Skipping ${sessionId} — not found in Convex`);
-        continue;
-      }
-      const info = spawnWorker(sessionId);
-      workers.set(sessionId, info);
+  for (const sessionId of sessionIds) {
+    const check = canAcceptWorker();
+    if (!check.ok) {
+      console.log(`   Skipping restore of ${sessionId}: ${check.reason}`);
+      break;
     }
 
-    console.log(`   Restored ${workers.size} session(s)`);
-  } catch (err) {
-    // AUTH_DIR might not exist yet on first boot
-    console.log("   No auth directory found, skipping restore");
+    console.log(`   Restoring session ${sessionId}`);
+    try {
+      await convex.assignSessionToMachine(sessionId as any, MACHINE_ID);
+    } catch {
+      console.log(`   Skipping ${sessionId} — not found in Convex`);
+      continue;
+    }
+    const info = spawnWorker(sessionId);
+    workers.set(sessionId, info);
   }
+
+  console.log(`   Restored ${workers.size} session(s)`);
 }
 
 // ── Lifecycle ──
