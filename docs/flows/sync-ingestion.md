@@ -84,6 +84,29 @@ const cursorFlowConfig = {
   ],
 }
 
+const syncJobStateConfig = {
+  type: "state",
+  states: [
+    { id: "si-s-start", shape: "initial", row: 0, col: 1 },
+    { id: "si-s-queued", icon: "fa-inbox", title: "queued", row: 1, col: 1, color: "warm" },
+    { id: "si-s-running", icon: "fa-arrows-rotate", title: "running", subtitle: "Worker processing", row: 2, col: 1, color: "teal" },
+    { id: "si-s-retry", icon: "fa-rotate", title: "retry_pending", subtitle: "Transient error", row: 2, col: 2, color: "blue" },
+    { id: "si-s-completed", icon: "fa-circle-check", title: "completed", row: 3, col: 0, color: "dark" },
+    { id: "si-s-failed", icon: "fa-circle-xmark", title: "failed", subtitle: "Max retries (>= 5)", row: 3, col: 2, color: "red" },
+    { id: "si-s-end", shape: "final", row: 4, col: 1 },
+  ],
+  transitions: [
+    { from: "si-s-start", to: "si-s-queued" },
+    { from: "si-s-queued", to: "si-s-running", label: "Worker picks up" },
+    { from: "si-s-running", to: "si-s-completed", label: "Success" },
+    { from: "si-s-running", to: "si-s-retry", label: "Transient error" },
+    { from: "si-s-retry", to: "si-s-running", label: "< 5 retries", dashed: true },
+    { from: "si-s-retry", to: "si-s-failed", label: "Max retries" },
+    { from: "si-s-completed", to: "si-s-end" },
+    { from: "si-s-failed", to: "si-s-end" },
+  ],
+}
+
 const healthFlowConfig = {
   type: "flow",
   direction: "TD",
@@ -115,20 +138,7 @@ const healthFlowConfig = {
 
 ## Sync Job State Machine
 
-```mermaid
-stateDiagram-v2
-    [*] --> queued
-    queued --> running : Worker picks up job
-
-    running --> completed : Success
-    running --> retry_pending : Transient error
-
-    retry_pending --> running : Retry ok (< 5 retries)
-    retry_pending --> failed : Max retries exceeded (>= 5)
-
-    completed --> [*]
-    failed --> [*]
-```
+<ArchDiagram :config="syncJobStateConfig" />
 
 ## Metadata-First Policy
 

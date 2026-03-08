@@ -181,6 +181,90 @@ const mwaAgentSeqConfig = {
     { label: "Execution", color: "blue", from: 9, to: 11 },
   ],
 }
+
+const mwaConnectStateConfig = {
+  type: "state",
+  states: [
+    { id: "mwa-cs-start", shape: "initial", row: 0, col: 1 },
+    { id: "mwa-cs-created", icon: "fa-plus", title: "created", row: 1, col: 1, color: "warm" },
+    { id: "mwa-cs-qr", icon: "fa-qrcode", title: "qr_ready", row: 2, col: 1, color: "teal" },
+    { id: "mwa-cs-scanned", icon: "fa-camera", title: "scanned", row: 3, col: 0, color: "teal" },
+    { id: "mwa-cs-retry", icon: "fa-rotate", title: "retry_pending", row: 2, col: 2, color: "blue" },
+    { id: "mwa-cs-connected", icon: "fa-circle-check", title: "connected", row: 4, col: 0, color: "dark" },
+    { id: "mwa-cs-expired", icon: "fa-hourglass", title: "expired", row: 4, col: 1, color: "red" },
+    { id: "mwa-cs-failed", icon: "fa-circle-xmark", title: "failed", row: 4, col: 2, color: "red" },
+    { id: "mwa-cs-end", shape: "final", row: 5, col: 1 },
+  ],
+  transitions: [
+    { from: "mwa-cs-start", to: "mwa-cs-created" },
+    { from: "mwa-cs-created", to: "mwa-cs-qr" },
+    { from: "mwa-cs-qr", to: "mwa-cs-scanned" },
+    { from: "mwa-cs-scanned", to: "mwa-cs-connected" },
+    { from: "mwa-cs-qr", to: "mwa-cs-retry" },
+    { from: "mwa-cs-retry", to: "mwa-cs-qr", dashed: true },
+    { from: "mwa-cs-qr", to: "mwa-cs-expired" },
+    { from: "mwa-cs-retry", to: "mwa-cs-failed" },
+    { from: "mwa-cs-connected", to: "mwa-cs-end" },
+    { from: "mwa-cs-expired", to: "mwa-cs-end" },
+    { from: "mwa-cs-failed", to: "mwa-cs-end" },
+  ],
+}
+
+const mwaSyncStateConfig = {
+  type: "state",
+  states: [
+    { id: "mwa-sj-start", shape: "initial", row: 0, col: 1 },
+    { id: "mwa-sj-queued", icon: "fa-inbox", title: "queued", row: 1, col: 1, color: "warm" },
+    { id: "mwa-sj-running", icon: "fa-arrows-rotate", title: "running", row: 2, col: 1, color: "teal" },
+    { id: "mwa-sj-retry", icon: "fa-rotate", title: "retry_pending", row: 2, col: 2, color: "blue" },
+    { id: "mwa-sj-completed", icon: "fa-circle-check", title: "completed", row: 3, col: 0, color: "dark" },
+    { id: "mwa-sj-failed", icon: "fa-circle-xmark", title: "failed", row: 3, col: 2, color: "red" },
+    { id: "mwa-sj-end", shape: "final", row: 4, col: 1 },
+  ],
+  transitions: [
+    { from: "mwa-sj-start", to: "mwa-sj-queued" },
+    { from: "mwa-sj-queued", to: "mwa-sj-running" },
+    { from: "mwa-sj-running", to: "mwa-sj-completed" },
+    { from: "mwa-sj-running", to: "mwa-sj-retry" },
+    { from: "mwa-sj-retry", to: "mwa-sj-running", dashed: true },
+    { from: "mwa-sj-running", to: "mwa-sj-failed" },
+    { from: "mwa-sj-completed", to: "mwa-sj-end" },
+    { from: "mwa-sj-failed", to: "mwa-sj-end" },
+  ],
+}
+
+const mwaAgentRunStateConfig = {
+  type: "state",
+  states: [
+    { id: "mwa-ar-start", shape: "initial", row: 0, col: 2 },
+    { id: "mwa-ar-queued", icon: "fa-inbox", title: "queued", row: 1, col: 2, color: "warm" },
+    { id: "mwa-ar-planning", icon: "fa-brain", title: "planning", row: 2, col: 2, color: "teal" },
+    { id: "mwa-ar-awaiting", icon: "fa-clock", title: "awaiting_approval", row: 3, col: 1, color: "warm" },
+    { id: "mwa-ar-executing", icon: "fa-play", title: "executing", row: 3, col: 3, color: "teal" },
+    { id: "mwa-ar-rejected", icon: "fa-ban", title: "rejected", row: 4, col: 0, color: "red" },
+    { id: "mwa-ar-expired", icon: "fa-hourglass", title: "expired", row: 4, col: 1, color: "red" },
+    { id: "mwa-ar-retry", icon: "fa-rotate", title: "retry_executing", row: 4, col: 3, color: "blue" },
+    { id: "mwa-ar-completed", icon: "fa-circle-check", title: "completed", row: 4, col: 2, color: "dark" },
+    { id: "mwa-ar-failed", icon: "fa-circle-xmark", title: "failed", row: 5, col: 3, color: "red" },
+    { id: "mwa-ar-end", shape: "final", row: 6, col: 2 },
+  ],
+  transitions: [
+    { from: "mwa-ar-start", to: "mwa-ar-queued" },
+    { from: "mwa-ar-queued", to: "mwa-ar-planning" },
+    { from: "mwa-ar-planning", to: "mwa-ar-awaiting" },
+    { from: "mwa-ar-awaiting", to: "mwa-ar-executing" },
+    { from: "mwa-ar-awaiting", to: "mwa-ar-rejected" },
+    { from: "mwa-ar-awaiting", to: "mwa-ar-expired" },
+    { from: "mwa-ar-executing", to: "mwa-ar-completed" },
+    { from: "mwa-ar-executing", to: "mwa-ar-retry" },
+    { from: "mwa-ar-retry", to: "mwa-ar-executing", dashed: true },
+    { from: "mwa-ar-retry", to: "mwa-ar-failed" },
+    { from: "mwa-ar-completed", to: "mwa-ar-end" },
+    { from: "mwa-ar-failed", to: "mwa-ar-end" },
+    { from: "mwa-ar-rejected", to: "mwa-ar-end" },
+    { from: "mwa-ar-expired", to: "mwa-ar-end" },
+  ],
+}
 </script>
 
 ### Component diagram
@@ -264,60 +348,27 @@ User-visible status:
 
 ### State machines
 #### Connect Session State Machine
-```mermaid
-stateDiagram-v2
-[*] --> created
-created --> qr_ready
-qr_ready --> scanned
-scanned --> connected
-qr_ready --> retry_pending
-retry_pending --> qr_ready
-qr_ready --> expired
-retry_pending --> failed
-connected --> [*]
-expired --> [*]
-failed --> [*]
-```
+
+<ArchDiagram :config="mwaConnectStateConfig" />
+
 Terminal states:
 - `connected`, `expired`, `failed`.
 Retry states:
 - `retry_pending`.
 
 #### Sync Job State Machine
-```mermaid
-stateDiagram-v2
-[*] --> queued
-queued --> running
-running --> completed
-running --> retry_pending
-retry_pending --> running
-running --> failed
-completed --> [*]
-failed --> [*]
-```
+
+<ArchDiagram :config="mwaSyncStateConfig" />
+
 Terminal states:
 - `completed`, `failed`.
 Retry states:
 - `retry_pending`.
 
 #### Agent Run State Machine
-```mermaid
-stateDiagram-v2
-[*] --> queued
-queued --> planning
-planning --> awaiting_approval
-awaiting_approval --> executing
-awaiting_approval --> rejected
-awaiting_approval --> expired
-executing --> completed
-executing --> retry_executing
-retry_executing --> executing
-retry_executing --> failed
-completed --> [*]
-failed --> [*]
-rejected --> [*]
-expired --> [*]
-```
+
+<ArchDiagram :config="mwaAgentRunStateConfig" />
+
 Terminal states:
 - `completed`, `failed`, `rejected`, `expired`.
 Retry states:

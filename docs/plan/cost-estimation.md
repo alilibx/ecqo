@@ -1,117 +1,143 @@
 # Cost Estimation
 
-Monthly infrastructure costs, AI API costs per user, and revenue projections for Ecqqo from pilot through scale.
+Monthly infrastructure, AI, and transaction costs for Ecqqo — from pilot through scale.
 
-## Monthly Infrastructure Costs
+## TL;DR — Total Cost & Unit Economics
 
-| Service | Tier | Cost/mo | Notes |
-|---------|------|---------|-------|
-| Vercel | Pro | $20 | SSR hosting, edge functions, TanStack Start deployment |
-| Convex | Pro | $25 | Reactive backend, 1M function calls/mo, vector search, scheduled functions |
-| Fly.io | Pay-as-you-go | $15 - $50 | 5-15 active wacli machines, shared-cpu-1x 256MB each. ~$0.0000022/s per machine. Stopped machines cost $0. |
-| Clerk | Free -> Pro | $0 - $25 | Free tier: 10K MAU. Pro at $25/mo adds custom domain + advanced RBAC. |
-| Stripe | Standard | 2.9% + 30c | Per-transaction fee. No monthly base. |
-| Resend | Free | $0 | 3,000 emails/mo on free tier. More than enough for pilot. |
-| Domain + DNS | -- | ~$1.25 | ~$15/yr via Cloudflare or Namecheap. |
-| **SUBTOTAL** | | **$60 - $120** | Before AI API costs. |
+### All-In Monthly Cost
 
-### Fly.io Cost Breakdown
+| Stage | Users | Total Cost | Cost/User | Revenue/User | Margin |
+|-------|------:|-----------:|----------:|-------------:|-------:|
+| Pilot | 5 | **$174** | **$34.80** | $199 | **83%** |
+| Growth | 20 | **$404** | **$20.20** | $199 | **90%** |
+| Scale | 50 | **$897** | **$17.94** | $199 | **91%** |
+| Blended 100 | 100 | ~$1,600 | **~$16.00** | $289* | **94%** |
 
-Each wacli connector machine runs as a `shared-cpu-1x` with 256MB RAM.
+> *Blended revenue assumes 60% Founder ($199) + 30% Dreamer ($399) + 10% Custom (~$500) = $289 avg.*
 
-| Scenario | Machines | Uptime/mo | Cost/mo |
-|----------|----------|-----------|---------|
-| Pilot (5 users) | 5 | ~720 hrs | ~$15 |
-| Growth (20) | 20 | ~720 hrs | ~$35 |
-| Scale (50) | 50 | ~720 hrs | ~$50 - $80 |
+**Key assumption:** 50–100 agent runs per user per month. Each run = one orchestrator → specialist → extraction → embedding pipeline.
 
-> Machines auto-stop when user disconnects WhatsApp. Average uptime is lower than 720 hrs; cost estimates are worst-case (always-on).
+### Cost Per User Breakdown (at Pilot)
 
-## AI API Costs per 1,000 Agent Runs
+| Category | $/user/mo | % of total |
+|----------|----------:|-----------:|
+| Infrastructure | $24.00 | 69% |
+| AI API calls | $2.65 | 8% |
+| Stripe fees | $6.08 | 17% |
+| WhatsApp outbound | $2.00 | 6% |
+| Google APIs | $0.00 | 0% |
+| **Total** | **$34.73** | 100% |
 
-| Model | Role | Input tokens | Output tokens | Cost/1K runs |
-|-------|------|-------------|---------------|-------------|
-| Claude Sonnet 4 | Orchestrator | ~2,000 | ~500 | ~$9.00 |
-| Claude Sonnet 4 | Specialist | ~3,000 | ~1,000 | ~$16.00 |
-| Claude Haiku 3.5 | Extraction | ~2,000 | ~500 | ~$1.50 |
-| text-embedding-3-small | Embeddings | ~500 | -- | ~$0.01 |
-| **TOTAL per 1K runs** | | | | **~$26.50** |
+> Infrastructure cost per user drops significantly at scale (shared base costs like Vercel, Convex, domain are amortized). AI and Stripe scale linearly.
 
-### Per-User AI Cost Estimate
-
-- Estimated runs per user per month: **50 - 100**
-- Cost per run: **~$0.0265**
-- AI cost per user per month: **$1.33 - $2.65**
-
-**Breakdown of a typical run:**
-
-| Step | Cost |
-|---|---|
-| 1. Orchestrator call (planning) | ~$0.009 |
-| 2. Specialist call (action proposal) | ~$0.016 |
-| 3. Extraction call (memory update) | ~$0.0015 |
-| 4. Embedding call (vector indexing) | ~$0.00001 |
-| **Total per run** | **~$0.0265** |
+---
 
 ## Revenue Projections
 
-All revenue assumes average plan price of $199/user/mo (Founder tier).
+| Milestone | Users | MRR | Total Cost | Net Profit | Margin |
+|-----------|------:|----:|-----------:|-----------:|-------:|
+| Pilot | 5 | $995 | $174 | $821 | 83% |
+| Growth | 20 | $3,980 | $404 | $3,576 | 90% |
+| Scale | 50 | $9,950 | $897 | $9,053 | 91% |
+| Blended 100 | 100 | $28,910 | ~$1,600 | ~$27,310 | 94% |
 
-| Milestone | Users | MRR | Infra | AI Cost | Margin |
-|-----------|------:|----:|------:|--------:|-------:|
-| Pilot | 5 | $995 | $120 | $13 | 87% |
-| Growth | 20 | $3,980 | $200 | $53 | 94% |
-| Scale | 50 | $9,950 | $400 | $133 | 95% |
-| Blended 100 | 100 | $24,900* | $700 | $265 | 96% |
+> Blended 100: (60 × $199) + (30 × $399) + (10 × $500) = $28,910 MRR.
 
-> *Blended assumes 60% Founder ($199), 30% Dreamer ($399), 10% Custom (~$500 avg) = (60 x $199) + (30 x $399) + (10 x $500) = $11,940 + $11,970 + $5,000 = $28,910. Adjusted MRR at 100 users: ~$28,910.*
+---
 
-### Stripe Transaction Fees
+## Cost Breakdown by Category
 
-| Users | MRR | Stripe fee | Net after Stripe |
-|------:|----:|-----------|-----------------|
-| 5 | $995 | $29 + $1.50 | $965 |
-| 20 | $3,980 | $115 + $6.00 | $3,859 |
-| 50 | $9,950 | $289 + $15.00 | $9,646 |
+### 1. AI API Costs — $1.33–$2.65/user/mo
 
-> Fee = (2.9% x MRR) + ($0.30 x users)
+The largest variable cost. Each "agent run" passes through 4 steps:
 
-## Third-Party API Costs
+| Step | Model | Input | Output | Cost/run |
+|------|-------|------:|-------:|---------:|
+| 1. Orchestrator (planning) | Claude Sonnet 4 | ~2,000 tok | ~500 tok | $0.009 |
+| 2. Specialist (action) | Claude Sonnet 4 | ~3,000 tok | ~1,000 tok | $0.016 |
+| 3. Extraction (memory) | Claude Haiku 3.5 | ~2,000 tok | ~500 tok | $0.0015 |
+| 4. Embedding (indexing) | text-embedding-3-small | ~500 tok | — | $0.00001 |
+| **Total per run** | | | | **$0.0265** |
 
-### Google Workspace APIs
+| Usage level | Runs/user/mo | AI cost/user/mo |
+|-------------|-------------:|----------------:|
+| Light | 50 | $1.33 |
+| Average | 75 | $1.99 |
+| Heavy | 100 | $2.65 |
 
-| API | Free quota | Ecqqo usage estimate |
-|-----|-----------|-------------------|
-| Google Calendar API | 1M queries/day | ~500/user/day = well within |
-| Gmail API | 1B quota units/day | ~200/user/day = well within |
-| **Estimated cost** | **$0/mo** | Google APIs are free at this scale. Paid tier starts at enterprise volumes. |
+**At scale (per 1,000 runs):**
 
-### Meta Cloud API (WhatsApp Business)
+| Model | Role | Cost/1K runs |
+|-------|------|-------------:|
+| Claude Sonnet 4 | Orchestrator | $9.00 |
+| Claude Sonnet 4 | Specialist | $16.00 |
+| Claude Haiku 3.5 | Extraction | $1.50 |
+| text-embedding-3-small | Embeddings | $0.01 |
+| **Total** | | **$26.50** |
 
-| Feature | Pricing | Ecqqo usage |
-|---------|---------|-----------|
+### 2. Infrastructure — $60–$120/mo base
+
+| Service | Tier | Cost/mo | Notes |
+|---------|------|--------:|-------|
+| Vercel | Pro | $20 | SSR hosting, edge functions, TanStack Start |
+| Convex | Pro | $25 | Reactive backend, 1M function calls/mo, vector search |
+| Fly.io | Pay-as-you-go | $15–$50 | 1 machine per user (shared-cpu-1x, 256MB) |
+| Clerk | Free → Pro | $0–$25 | Free: 10K MAU. Pro: custom domain + RBAC |
+| Resend | Free | $0 | 3,000 emails/mo free tier |
+| Domain + DNS | — | ~$1.25 | ~$15/yr via Cloudflare |
+| **Subtotal** | | **$60–$120** | Before AI/transaction costs |
+
+#### Fly.io Detail — Scales with Users
+
+Each WhatsApp connector runs as a dedicated Fly Machine (`shared-cpu-1x`, 256MB RAM) at ~$0.0000022/s.
+
+| Stage | Machines | Uptime/mo | Cost/mo |
+|-------|----------:|----------:|--------:|
+| Pilot (5) | 5 | ~720 hrs | ~$15 |
+| Growth (20) | 20 | ~720 hrs | ~$35 |
+| Scale (50) | 50 | ~720 hrs | $50–$80 |
+
+> Worst-case (always-on). Machines auto-stop on disconnect/idle, reducing real cost by 40–60%.
+
+### 3. Stripe Transaction Fees — 2.9% + $0.30/txn
+
+| Users | MRR | Stripe Fee | Net after Stripe |
+|------:|----:|-----------:|-----------------:|
+| 5 | $995 | $30.50 | $964.50 |
+| 20 | $3,980 | $121.40 | $3,858.60 |
+| 50 | $9,950 | $303.55 | $9,646.45 |
+
+> Fee = (2.9% × MRR) + ($0.30 × users).
+
+### 4. WhatsApp (Meta Cloud API) — $5–$20/mo
+
+| Feature | Pricing | Usage estimate |
+|---------|---------|----------------|
 | Receiving messages | Free | All inbound via webhook |
-| Business-initiated msgs | $0.005 - $0.08 per conversation | Approval notifications, reminders, digests |
-| **Estimated cost at pilot** | **$5 - $20/mo** | ~100-400 outbound conversations/mo |
+| Business-initiated msgs | $0.005–$0.08/conversation | Approvals, reminders, digests |
+| **Pilot estimate** | **$5–$20/mo** | ~100–400 outbound conversations/mo |
 
-## Total Cost Summary by Stage
+### 5. Google Workspace APIs — $0/mo
 
-| Stage | Infra | AI | Stripe | Meta WA | Google | TOTAL |
-|-------|------:|---:|-------:|--------:|-------:|------:|
-| Pilot (5) | $120 | $13 | $31 | $10 | $0 | **$174** |
-| Growth (20) | $200 | $53 | $121 | $30 | $0 | **$404** |
-| Scale (50) | $400 | $133 | $304 | $60 | $0 | **$897** |
+| API | Free Quota | Ecqqo Usage |
+|-----|-----------|-------------|
+| Google Calendar | 1M queries/day | ~500/user/day |
+| Gmail | 1B quota units/day | ~200/user/day |
+
+> Comfortably within free tier at all projected stages.
+
+---
 
 ## Cost Optimization Strategies
 
-1. **Fly.io machine auto-stop.** Connector machines should stop when the user disconnects WhatsApp or goes idle for >1 hour. This can reduce Fly.io costs by 40-60%.
+1. **Fly.io auto-stop** — Stop connector machines when user disconnects or idles >1 hr. Reduces Fly costs 40–60%.
 
-2. **Model routing by task complexity.** Use Haiku for simple extraction/classification tasks and reserve Sonnet for orchestration and specialist reasoning. This is already reflected in the cost model above.
+2. **Model routing** — Haiku for extraction/classification, Sonnet for reasoning. Already reflected above.
 
-3. **Prompt caching.** Anthropic's prompt caching reduces cost for repeated system prompts. With a stable orchestrator prompt, caching could cut orchestrator input costs by ~80%.
+3. **Prompt caching** — Anthropic prompt caching on stable system prompts could cut orchestrator input costs ~80%.
 
-4. **Batch embeddings.** Group memory embedding updates into batches rather than running one embedding call per fact. Marginal savings but reduces API call overhead.
+4. **Batch embeddings** — Group memory updates into batches to reduce API call overhead.
 
-5. **Convex function call optimization.** Convex Pro includes 1M function calls/mo. Monitor usage and optimize hot paths (sync polling, dashboard queries) to stay within the included allocation.
+5. **Convex function optimization** — Monitor hot paths (sync polling, dashboard queries) to stay within 1M calls/mo included in Pro.
 
-6. **Deferred capabilities reduce AI cost.** If meeting briefs (G8) and email digests (G6) are deferred post-pilot, per-user AI cost drops to ~$0.80-1.60/mo (orchestrator + calendar only).
+6. **Defer expensive features** — Without meeting briefs (G8) and email digests (G6), per-user AI cost drops to ~$0.80–$1.60/mo.

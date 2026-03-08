@@ -36,30 +36,44 @@ const connectSeqConfig = {
     { label: "Authentication", color: "teal", from: 7, to: 12 },
   ],
 }
+
+const sessionStateConfig = {
+  type: "state",
+  states: [
+    { id: "cw-s-start", shape: "initial", row: 0, col: 1 },
+    { id: "cw-s-created", icon: "fa-plus", title: "created", row: 1, col: 1, color: "warm" },
+    { id: "cw-s-qr", icon: "fa-qrcode", title: "qr_ready", subtitle: "Machine allocated", row: 2, col: 1, color: "teal" },
+    { id: "cw-s-scanned", icon: "fa-camera", title: "scanned", subtitle: "QR scanned", row: 3, col: 1, color: "teal" },
+    { id: "cw-s-retry", icon: "fa-rotate", title: "retry_pending", subtitle: "wacli error", row: 2, col: 2, color: "blue" },
+    { id: "cw-s-connected", icon: "fa-circle-check", title: "connected", row: 4, col: 0, color: "dark" },
+    { id: "cw-s-expired", icon: "fa-hourglass", title: "expired", subtitle: "60s timeout", row: 4, col: 1, color: "red" },
+    { id: "cw-s-failed", icon: "fa-circle-xmark", title: "failed", subtitle: "Max retries (>= 3)", row: 4, col: 2, color: "red" },
+    { id: "cw-s-end", shape: "final", row: 5, col: 1 },
+  ],
+  transitions: [
+    { from: "cw-s-start", to: "cw-s-created" },
+    { from: "cw-s-created", to: "cw-s-qr", label: "Machine allocated" },
+    { from: "cw-s-qr", to: "cw-s-scanned", label: "QR scanned" },
+    { from: "cw-s-qr", to: "cw-s-expired", label: "Timeout 60s" },
+    { from: "cw-s-qr", to: "cw-s-retry", label: "wacli error" },
+    { from: "cw-s-scanned", to: "cw-s-connected", label: "Auth completes" },
+    { from: "cw-s-retry", to: "cw-s-qr", label: "< 3 retries", dashed: true },
+    { from: "cw-s-retry", to: "cw-s-failed", label: "Max retries" },
+    { from: "cw-s-connected", to: "cw-s-end" },
+    { from: "cw-s-expired", to: "cw-s-end" },
+    { from: "cw-s-failed", to: "cw-s-end" },
+  ],
+  groups: [
+    { label: "QR Authentication", color: "teal", states: ["cw-s-qr", "cw-s-scanned"] },
+  ],
+}
 </script>
 
 <ArchDiagram :config="connectSeqConfig" />
 
 ## Session State Machine
 
-```mermaid
-stateDiagram-v2
-    [*] --> created
-    created --> qr_ready : Fly.io Machine allocated,<br>wacli started
-
-    qr_ready --> scanned : QR scanned by user
-    qr_ready --> expired : QR not scanned within 60s
-    qr_ready --> retry_pending : wacli error or transient failure
-
-    scanned --> connected : Auth completes
-
-    retry_pending --> qr_ready : Retry ok (< 3 retries)
-    retry_pending --> failed : Max retries exceeded (>= 3)
-
-    connected --> [*]
-    expired --> [*]
-    failed --> [*]
-```
+<ArchDiagram :config="sessionStateConfig" />
 
 ## State Transition Table
 

@@ -62,6 +62,44 @@ const approvalRoutingFlow = {
   ],
 }
 
+const agentRunStateConfig = {
+  type: "state",
+  states: [
+    { id: "ar-s-start", shape: "initial", row: 0, col: 2 },
+    { id: "ar-s-queued", icon: "fa-inbox", title: "queued", row: 1, col: 2, color: "warm" },
+    { id: "ar-s-planning", icon: "fa-brain", title: "planning", subtitle: "Context + specialist", row: 2, col: 2, color: "teal" },
+    { id: "ar-s-awaiting", icon: "fa-clock", title: "awaiting_approval", subtitle: "Approval required", row: 3, col: 1, color: "warm" },
+    { id: "ar-s-executing", icon: "fa-play", title: "executing", row: 3, col: 3, color: "teal" },
+    { id: "ar-s-rejected", icon: "fa-ban", title: "rejected", row: 4, col: 0, color: "red" },
+    { id: "ar-s-expired", icon: "fa-hourglass", title: "expired", subtitle: "24h TTL", row: 4, col: 1, color: "red" },
+    { id: "ar-s-retry", icon: "fa-rotate", title: "retry_executing", subtitle: "Transient error", row: 4, col: 3, color: "blue" },
+    { id: "ar-s-completed", icon: "fa-circle-check", title: "completed", row: 4, col: 2, color: "dark" },
+    { id: "ar-s-failed", icon: "fa-circle-xmark", title: "failed", subtitle: "Max retries exceeded", row: 5, col: 3, color: "red" },
+    { id: "ar-s-end", shape: "final", row: 6, col: 2 },
+  ],
+  transitions: [
+    { from: "ar-s-start", to: "ar-s-queued" },
+    { from: "ar-s-queued", to: "ar-s-planning", label: "Context loaded" },
+    { from: "ar-s-planning", to: "ar-s-executing", label: "Auto-approved" },
+    { from: "ar-s-planning", to: "ar-s-awaiting", label: "Needs approval" },
+    { from: "ar-s-awaiting", to: "ar-s-executing", label: "Approved" },
+    { from: "ar-s-awaiting", to: "ar-s-rejected", label: "Rejected" },
+    { from: "ar-s-awaiting", to: "ar-s-expired", label: "Timeout" },
+    { from: "ar-s-executing", to: "ar-s-completed", label: "Success" },
+    { from: "ar-s-executing", to: "ar-s-retry", label: "Transient error" },
+    { from: "ar-s-retry", to: "ar-s-executing", label: "< 3 retries", dashed: true },
+    { from: "ar-s-retry", to: "ar-s-failed", label: "Max retries" },
+    { from: "ar-s-completed", to: "ar-s-end" },
+    { from: "ar-s-rejected", to: "ar-s-end" },
+    { from: "ar-s-expired", to: "ar-s-end" },
+    { from: "ar-s-failed", to: "ar-s-end" },
+  ],
+  groups: [
+    { label: "Approval Gate", color: "warm", states: ["ar-s-awaiting", "ar-s-rejected", "ar-s-expired"] },
+    { label: "Execution", color: "teal", states: ["ar-s-executing", "ar-s-retry"] },
+  ],
+}
+
 const policyEngineFlow = {
   type: "flow",
   direction: "TD",
@@ -81,29 +119,7 @@ const policyEngineFlow = {
 
 ## Agent Run State Machine
 
-```mermaid
-stateDiagram-v2
-    [*] --> queued
-    queued --> planning : Context loaded,<br>specialist selected
-
-    planning --> executing : Auto-approved
-    planning --> awaiting_approval : Approval required
-
-    awaiting_approval --> executing : Approved
-    awaiting_approval --> rejected : Rejected
-    awaiting_approval --> expired : Timeout (24h TTL)
-
-    executing --> completed : Success
-    executing --> retry_executing : Transient error
-
-    retry_executing --> executing : Retry ok (< 3 retries)
-    retry_executing --> failed : Max retries exceeded
-
-    completed --> [*]
-    rejected --> [*]
-    expired --> [*]
-    failed --> [*]
-```
+<ArchDiagram :config="agentRunStateConfig" />
 
 ## Approval via WhatsApp
 

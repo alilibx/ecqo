@@ -311,6 +311,30 @@ const hmacReqSeqConfig = {
     { from: "hr-convex", to: "hr-worker", label: "Accept or Reject", dashed: true },
   ],
 }
+
+const leaseStateConfig = {
+  type: "state",
+  states: [
+    { id: "sec-s-start", shape: "initial", row: 0, col: 1 },
+    { id: "sec-s-acquire", icon: "fa-key", title: "Acquire Lease", subtitle: "Mutation", row: 1, col: 1, color: "warm" },
+    { id: "sec-s-reject", icon: "fa-ban", title: "Reject 409", subtitle: "Lease active", row: 1, col: 2, color: "red" },
+    { id: "sec-s-issue", icon: "fa-lock", title: "Issue Lease", subtitle: "TTL 5 min", row: 2, col: 1, color: "teal" },
+    { id: "sec-s-heartbeat", icon: "fa-heart-pulse", title: "Heartbeat", subtitle: "60s renew TTL", row: 3, col: 1, color: "dark" },
+    { id: "sec-s-crash", icon: "fa-plug", title: "Lease Expires", subtitle: "Crash / disconnect", row: 4, col: 1, color: "red" },
+    { id: "sec-s-new", icon: "fa-rotate", title: "New Worker", subtitle: "Acquires lease", row: 4, col: 2, color: "blue" },
+    { id: "sec-s-end1", shape: "final", row: 2, col: 2 },
+  ],
+  transitions: [
+    { from: "sec-s-start", to: "sec-s-acquire", label: "Start worker" },
+    { from: "sec-s-acquire", to: "sec-s-reject", label: "Lease active" },
+    { from: "sec-s-acquire", to: "sec-s-issue", label: "No active lease" },
+    { from: "sec-s-reject", to: "sec-s-end1" },
+    { from: "sec-s-issue", to: "sec-s-heartbeat" },
+    { from: "sec-s-heartbeat", to: "sec-s-crash", label: "Crash" },
+    { from: "sec-s-crash", to: "sec-s-new" },
+    { from: "sec-s-new", to: "sec-s-acquire", dashed: true },
+  ],
+}
 </script>
 
 <ArchDiagram :config="secArchConfig" />
@@ -402,31 +426,7 @@ The Fly.io connector worker communicates with Convex using signed requests to pr
 
 Each workspace has at most one active connector worker. The lease system prevents duplicate workers from running simultaneously.
 
-```mermaid
-stateDiagram-v2
-    [*] --> AcquireLease: Start worker
-
-    AcquireLease: Acquire lease (mutation)
-    AcquireLease --> Reject409: Lease active?
-    AcquireLease --> IssueLease: No active lease?
-
-    Reject409: Reject 409
-    Reject409 --> [*]
-
-    IssueLease: Issue lease (TTL 5min)
-
-    IssueLease --> Heartbeat
-
-    Heartbeat: Heartbeat 60s, renew TTL
-
-    Heartbeat --> CrashOrDisconnect: Crash / disconnect
-
-    CrashOrDisconnect: Lease expires (5min)
-
-    CrashOrDisconnect --> NewWorker: New worker acquires
-
-    NewWorker --> AcquireLease
-```
+<ArchDiagram :config="leaseStateConfig" />
 
 ## WhatsApp Webhook Security (Meta Cloud API)
 
