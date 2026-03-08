@@ -1,5 +1,5 @@
-# Ecqqo WhatsApp Connector Worker
-# One machine per user — ephemeral, pay $0 when stopped.
+# Ecqqo WhatsApp Connector — Multi-User Supervisor
+# Manages multiple WhatsApp sessions per machine via child_process.fork().
 
 app = "ecqqo-connector"
 primary_region = "ams"
@@ -11,18 +11,29 @@ primary_region = "ams"
 
 [env]
   AUTH_DIR = "/tmp/wa-auth"
+  CONNECTOR_MODE = "supervisor"
+  MAX_WORKERS = "20"
 
 # tmpfs mount for auth state — keys never persist to disk
 [mounts]
   source = "wa_auth"
   destination = "/tmp/wa-auth"
 
-# No HTTP service — this is a worker process, not a web server
-# Fly.io will keep it running as a Machine
+# HTTP service for supervisor API
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
 
-[processes]
-  worker = "/connector"
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "get"
+    path = "/health"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "1024mb"

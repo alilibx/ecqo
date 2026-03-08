@@ -230,6 +230,123 @@ export const ingestMessages = mutation({
   },
 });
 
+// ── Machine lifecycle mutations (called by supervisor) ──
+
+export const registerMachine = mutation({
+  args: {
+    machineId: v.string(),
+    region: v.string(),
+    maxWorkers: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("waMachines")
+      .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        region: args.region,
+        maxWorkers: args.maxWorkers,
+        status: "active",
+        workerCount: 0,
+        memoryUsageMB: 0,
+        lastHealthAt: Date.now(),
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("waMachines", {
+      machineId: args.machineId,
+      region: args.region,
+      workerCount: 0,
+      maxWorkers: args.maxWorkers,
+      memoryUsageMB: 0,
+      status: "active",
+      lastHealthAt: Date.now(),
+    });
+  },
+});
+
+export const updateMachineHealth = mutation({
+  args: {
+    machineId: v.string(),
+    region: v.string(),
+    workerCount: v.number(),
+    maxWorkers: v.number(),
+    memoryUsageMB: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("draining"),
+      v.literal("offline"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const machine = await ctx.db
+      .query("waMachines")
+      .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
+      .unique();
+
+    if (!machine) {
+      // Auto-register if not found
+      await ctx.db.insert("waMachines", {
+        ...args,
+        lastHealthAt: Date.now(),
+      });
+      return;
+    }
+
+    await ctx.db.patch(machine._id, {
+      workerCount: args.workerCount,
+      maxWorkers: args.maxWorkers,
+      memoryUsageMB: args.memoryUsageMB,
+      status: args.status,
+      lastHealthAt: Date.now(),
+    });
+  },
+});
+
+export const deregisterMachine = mutation({
+  args: { machineId: v.string() },
+  handler: async (ctx, args) => {
+    const machine = await ctx.db
+      .query("waMachines")
+      .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
+      .unique();
+
+    if (machine) {
+      await ctx.db.patch(machine._id, { status: "offline" });
+    }
+  },
+});
+
+export const getAvailableMachine = query({
+  args: {},
+  handler: async (ctx) => {
+    const machines = await ctx.db
+      .query("waMachines")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    if (!machines.length) return null;
+
+    // Return machine with lowest worker count that has capacity
+    return machines
+      .filter((m) => m.workerCount < m.maxWorkers)
+      .sort((a, b) => a.workerCount - b.workerCount)[0] ?? null;
+  },
+});
+
+export const assignSessionToMachine = mutation({
+  args: {
+    sessionId: v.id("waConnectSessions"),
+    machineId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sessionId, { machineId: args.machineId });
+  },
+});
+
 // ── Queries for dashboard / debugging ──
 
 export const getSession = query({

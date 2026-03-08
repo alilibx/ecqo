@@ -16,6 +16,12 @@ export class ConnectorConvexClient {
     this.client = new ConvexHttpClient(convexUrl);
   }
 
+  // ── Session lifecycle ──
+
+  setSessionId(id: Id<"waConnectSessions">) {
+    this.sessionId = id;
+  }
+
   async createSession(): Promise<Id<"waConnectSessions">> {
     this.sessionId = await this.client.mutation(
       api.connector.createSession,
@@ -107,5 +113,30 @@ export class ConnectorConvexClient {
 
   getSessionId() {
     return this.sessionId;
+  }
+
+  // ── Machine lifecycle (used by supervisor) ──
+
+  async registerMachine(info: {
+    machineId: string;
+    region: string;
+    maxWorkers: number;
+  }) {
+    await this.client.mutation(api.connector.registerMachine, info);
+  }
+
+  async updateMachineHealth(info: {
+    machineId: string;
+    region: string;
+    workerCount: number;
+    maxWorkers: number;
+    memoryUsageMB: number;
+    status: "active" | "draining" | "offline";
+  }) {
+    await this.client.mutation(api.connector.updateMachineHealth, info);
+  }
+
+  async deregisterMachine(machineId: string) {
+    await this.client.mutation(api.connector.deregisterMachine, { machineId });
   }
 }

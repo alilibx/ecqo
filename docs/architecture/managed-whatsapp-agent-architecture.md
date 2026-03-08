@@ -45,8 +45,13 @@ Locked architectural decisions:
 
 ### Deployment model
 - Dashboard and Convex deploy as primary control stack.
-- Connector workers run in isolated runtime units (one active lease per WhatsApp account).
-- Session artifacts are encrypted at rest and scoped to account identity.
+- Connector runs as a **supervisor + child process** architecture on Fly.io:
+  - One supervisor process per machine exposes an HTTP API and manages worker lifecycle.
+  - Each user's WhatsApp session runs as an isolated `child_process.fork()` worker.
+  - Multiple users (est. 20–50) share a single 1GB Fly.io Machine, scaling horizontally by adding machines.
+  - `waMachines` table in Convex tracks machine health, capacity, and worker count.
+  - Supervisor reports health periodically; Convex assigns new sessions to the least-loaded active machine.
+- Session artifacts are encrypted at rest and scoped to account identity (`/tmp/wa-auth/{sessionId}/`).
 - Worker-to-backend communication uses signed service requests and replay protection.
 
 <script setup>

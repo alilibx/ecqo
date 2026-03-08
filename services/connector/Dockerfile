@@ -1,7 +1,10 @@
 # ── Build stage ──
-FROM oven/bun:1-alpine AS build
+FROM node:22-slim AS build
 
 WORKDIR /app
+
+# Install bun for dependency resolution
+RUN npm install -g bun
 
 # Copy workspace root files
 COPY package.json bun.lock ./
@@ -22,15 +25,20 @@ COPY services/connector/src/ ./services/connector/src/
 COPY convex/_generated/ ./convex/_generated/
 COPY convex/connector.ts ./convex/
 
-# Compile to single binary
-RUN cd services/connector && bun build --compile --minify src/index.ts --outfile /app/connector
-
 # ── Runtime stage ──
-FROM gcr.io/distroless/cc-debian12
+FROM node:22-slim
 
-COPY --from=build /app/connector /connector
+WORKDIR /app
+
+# Copy everything from build stage
+COPY --from=build /app ./
 
 # Auth state on tmpfs (keys in memory only)
 ENV AUTH_DIR=/tmp/wa-auth
+ENV CONNECTOR_MODE=supervisor
 
-CMD ["/connector"]
+WORKDIR /app/services/connector
+
+EXPOSE 8080
+
+CMD ["node", "--import", "tsx", "src/index.ts"]

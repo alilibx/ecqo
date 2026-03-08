@@ -4,6 +4,10 @@
  * Handles: QR auth → connection → message sync → heartbeat.
  * All state is pushed to Convex — this process is stateless
  * except for the in-memory Baileys auth state.
+ *
+ * Supports two modes:
+ * - Standalone: creates its own session in Convex (local dev)
+ * - Worker: receives sessionId from supervisor via IPC
  */
 
 import makeWASocket, {
@@ -20,14 +24,23 @@ import pino from "pino";
 import { ConnectorConvexClient } from "./convex-client.js";
 import { normalizeMessage, computeIngestionHash } from "./normalize.js";
 import { HEARTBEAT_INTERVAL_MS } from "@ecqqo/shared";
+import type { ConnectSessionStatus } from "./ipc-protocol.js";
+import type { Id } from "../../../convex/_generated/dataModel.js";
 
 const baileysLogger = pino({ level: "error" });
 
-// Auth state directory — on Fly.io this should be a tmpfs mount
-// so keys are never persisted to disk across machine stops.
-const AUTH_DIR = process.env.AUTH_DIR ?? "/tmp/wa-auth";
+const BASE_AUTH_DIR = process.env.AUTH_DIR ?? "/tmp/wa-auth";
 
-export async function createWhatsAppSession(convexUrl: string) {
+export interface SessionOptions {
+  convexUrl: string;
+  /** Pre-created session ID (worker mode). If omitted, creates a new session. */
+  sessionId?: Id<"waConnectSessions">;
+  /** Callback for status updates (used by worker to relay to supervisor). */
+  onStatusChange?: (status: ConnectSessionStatus) => void;
+}
+
+export async function createWhatsAppSession(opts: SessionOptions) {
+  const { convexUrl, onStatusChange } = opts;
   const convex = new ConnectorConvexClient(convexUrl);
   let sock: WASocket | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -38,11 +51,24 @@ export async function createWhatsAppSession(convexUrl: string) {
   let accountReadyResolve: () => void;
   const accountReady = new Promise<void>((r) => (accountReadyResolve = r));
 
-  // Create session in Convex
-  const sessionId = await convex.createSession();
+  // Create or use existing session
+  let sessionId: Id<"waConnectSessions">;
+  if (opts.sessionId) {
+    sessionId = opts.sessionId;
+    convex.setSessionId(sessionId);
+  } else {
+    sessionId = await convex.createSession();
+  }
+
+  // Per-session auth directory for isolation
+  const authDir = `${BASE_AUTH_DIR}/${sessionId}`;
 
   // Load auth state (in-memory on Fly.io via tmpfs)
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+
+  function reportStatus(status: ConnectSessionStatus) {
+    onStatusChange?.(status);
+  }
 
   async function connect() {
     if (stopped) return;
@@ -72,6 +98,7 @@ export async function createWhatsAppSession(convexUrl: string) {
         if (qrRetries > MAX_QR_RETRIES) {
           console.log("⏰ QR expired — too many attempts");
           await convex.updateSessionStatus("expired");
+          reportStatus("expired");
           sock?.end(undefined);
           return;
         }
@@ -82,6 +109,7 @@ export async function createWhatsAppSession(convexUrl: string) {
         qrcode.generate(qr, { small: true });
 
         await convex.updateSessionStatus("qr_ready", { qrCode: qr });
+        reportStatus("qr_ready");
       }
 
       if (connection === "open") {
@@ -100,6 +128,7 @@ export async function createWhatsAppSession(convexUrl: string) {
         console.log(`   Phone: ${phoneNumber}`);
         console.log(`   Name: ${me?.name ?? "unknown"}`);
 
+        reportStatus("connected");
         accountReadyResolve!();
         startHeartbeat();
       }
@@ -115,6 +144,7 @@ export async function createWhatsAppSession(convexUrl: string) {
           console.log("🔒 Logged out — session ended");
           await convex.updateSessionStatus("disconnected");
           await convex.updateAccountStatus("disconnected");
+          reportStatus("disconnected");
         } else if (statusCode === 428) {
           // 428 = connection closed waiting for QR scan — normal during auth
           if (!stopped) {
@@ -124,6 +154,7 @@ export async function createWhatsAppSession(convexUrl: string) {
         } else {
           console.log(`❌ Connection closed (code: ${statusCode})`);
           await convex.updateSessionStatus("retry_pending");
+          reportStatus("retry_pending");
           console.log("🔄 Reconnecting in 5s...");
           setTimeout(connect, 5000);
         }
@@ -235,12 +266,14 @@ export async function createWhatsAppSession(convexUrl: string) {
   await connect();
 
   return {
+    sessionId,
     stop: async () => {
       stopped = true;
       stopHeartbeat();
       sock?.end(undefined);
       await convex.updateSessionStatus("disconnected");
       await convex.updateAccountStatus("disconnected");
+      reportStatus("disconnected");
     },
   };
 }

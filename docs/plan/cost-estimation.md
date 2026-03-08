@@ -87,17 +87,20 @@ The largest variable cost. Each "agent run" passes through 4 steps:
 | Domain + DNS | — | ~$1.25 | ~$15/yr via Cloudflare |
 | **Subtotal** | | **$60–$120** | Before AI/transaction costs |
 
-#### Fly.io Detail — Scales with Users
+#### Fly.io Detail — Multi-User Supervisor Model
 
-Each WhatsApp connector runs as a dedicated Fly Machine (`shared-cpu-1x`, 256MB RAM) at ~$0.0000022/s.
+WhatsApp connectors now use a **supervisor + child process** architecture: multiple users share a single Fly.io Machine (1GB RAM, `shared-cpu-1x`). Each machine runs ~20–50 user sessions as isolated child processes.
 
-| Stage | Machines | Uptime/mo | Cost/mo |
-|-------|----------:|----------:|--------:|
-| Pilot (5) | 5 | ~720 hrs | ~$15 |
-| Growth (20) | 20 | ~720 hrs | ~$35 |
-| Scale (50) | 50 | ~720 hrs | $50–$80 |
+| Stage | Users | Machines needed | Uptime/mo | Cost/mo |
+|-------|------:|----------------:|----------:|--------:|
+| Pilot (5) | 5 | 1 | ~720 hrs | ~$5 |
+| Growth (20) | 20 | 1 | ~720 hrs | ~$5 |
+| Scale (50) | 50 | 2–3 | ~720 hrs | ~$10–$15 |
+| Scale (100) | 100 | 3–5 | ~720 hrs | ~$15–$25 |
 
-> Worst-case (always-on). Machines auto-stop on disconnect/idle, reducing real cost by 40–60%.
+> Previous model (1 machine per user): 50 users = $50–$80/mo. New model: 50 users on 2–3 machines = ~$10–$15/mo. **~80% cost reduction.**
+
+Machine cost: `shared-cpu-1x` 1024MB = ~$5.07/mo always-on. Auto-stop on zero workers further reduces cost.
 
 ### 3. Stripe Transaction Fees — 2.9% + $0.30/txn
 

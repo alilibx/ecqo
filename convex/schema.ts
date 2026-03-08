@@ -29,6 +29,7 @@ export default defineSchema({
     connectedAt: v.optional(v.number()),
     disconnectedAt: v.optional(v.number()),
     lastHeartbeat: v.optional(v.number()),
+    machineId: v.optional(v.string()),
   }).index("by_sessionId", ["sessionId"]),
 
   waConnectSessions: defineTable({
@@ -48,7 +49,24 @@ export default defineSchema({
     updatedAt: v.number(),
     expiresAt: v.optional(v.number()),
     errorMessage: v.optional(v.string()),
+    machineId: v.optional(v.string()),
   }).index("by_status", ["status"]),
+
+  waMachines: defineTable({
+    machineId: v.string(),
+    region: v.string(),
+    workerCount: v.number(),
+    maxWorkers: v.number(),
+    memoryUsageMB: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("draining"),
+      v.literal("offline"),
+    ),
+    lastHealthAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_machineId", ["machineId"]),
 
   waMessages: defineTable({
     waAccountId: v.id("waAccounts"),

@@ -2,9 +2,26 @@
 
 ## Overview
 
-The WhatsApp connection flow links a user's personal WhatsApp account to Ecqqo so the agent can read and act on their conversations. This uses the **wacli** library (an unofficial WhatsApp Web client) running on a dedicated Fly.io Machine per user. The flow mirrors how WhatsApp Web works: the user scans a QR code from the Linked Devices screen on their phone, and the wacli instance authenticates as a linked device.
+The WhatsApp connection flow links a user's personal WhatsApp account to Ecqqo so the agent can read and act on their conversations. This uses **Baileys** (an unofficial WhatsApp Web client) running as an isolated child process on a shared Fly.io Machine.
 
-The entire flow is orchestrated through Convex, which manages session state, relays QR codes to the dashboard in real time, and records the connection outcome.
+### Multi-User Supervisor Architecture
+
+Instead of one Fly.io Machine per user, Ecqqo runs a **supervisor process** per machine that manages multiple user sessions as isolated child processes:
+
+```
+Fly.io Machine (1GB RAM)
+├── Supervisor (HTTP API on :8080)
+│   ├── Worker 1 (child_process.fork) → User A's Baileys session
+│   ├── Worker 2 (child_process.fork) → User B's Baileys session
+│   └── Worker N ...
+└── tmpfs /tmp/wa-auth/{sessionId}/ (per-user auth state)
+```
+
+- **Supervisor**: Node.js HTTP server managing worker lifecycle, health reporting to Convex
+- **Workers**: Forked processes running Baileys sessions, communicating via IPC
+- **Convex**: Control plane — `waMachines` table tracks capacity, `getAvailableMachine` query finds the least-loaded machine
+
+The flow mirrors how WhatsApp Web works: the user scans a QR code from the Linked Devices screen on their phone, and the Baileys instance authenticates as a linked device. The entire flow is orchestrated through Convex, which assigns sessions to machines, manages session state, relays QR codes to the dashboard in real time, and records the connection outcome.
 
 ## Sequence Diagram
 
@@ -100,12 +117,12 @@ The QR code is valid for approximately 60 seconds (WhatsApp's native timeout). I
 
 ### Worker Crash
 
-If the wacli worker process crashes or the Fly.io Machine becomes unreachable:
+If a worker child process crashes:
 
-- Convex detects the failure via a missed heartbeat (15s interval) or a signed `ERROR` event.
-- The session moves to `retry_pending`.
-- Up to 3 automatic retries are attempted, each allocating a fresh Fly.io Machine.
+- The supervisor detects the exit and automatically restarts the worker (up to 3 retries).
+- Worker status is reported to Convex via the supervisor's health reporting.
 - If all retries fail, the session transitions to `failed` and the user is notified.
+- Other workers on the same machine are unaffected (process-level isolation).
 
 ### Re-auth Required
 
