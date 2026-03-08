@@ -1,0 +1,25 @@
+name: Deploy Connector
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/connector/**"
+      - "shared/**"
+      - "convex/connector.ts"
+      - "convex/schema.ts"
+
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - run: flyctl deploy --config services/connector/fly.toml --dockerfile services/connector/Dockerfile .
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

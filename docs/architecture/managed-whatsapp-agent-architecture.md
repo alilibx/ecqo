@@ -53,6 +53,7 @@ Locked architectural decisions:
   - Supervisor reports health periodically; Convex assigns new sessions to the least-loaded active machine.
 - Session artifacts are encrypted at rest and scoped to account identity (`/tmp/wa-auth/{sessionId}/`).
 - Worker-to-backend communication uses signed service requests and replay protection.
+- **CI/CD**: GitHub Actions workflow (`.github/workflows/deploy-connector.yml`) auto-deploys the connector on push to `main` when files in `services/connector/`, `shared/`, or `convex/` change.
 
 <script setup>
 const componentConfig = {

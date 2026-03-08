@@ -139,6 +139,7 @@ export default withMermaid(
             { text: "Dependency Graph", link: "/plan/dependencies" },
             { text: "Cost Estimation", link: "/plan/cost-estimation" },
             { text: "Billing (Stripe)", link: "/plan/billing" },
+            { text: "Connector Deployment", link: "/plan/connector-deployment" },
           ],
         },
         {

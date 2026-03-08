@@ -144,3 +144,29 @@ WhatsApp may revoke a linked device session at any time (e.g., user removes link
 | `connected`      | Green checkmark + phone number  | WhatsApp linked and active                                  |
 | `disconnected`   | Yellow warning + "Reconnect"    | Previously connected but session revoked                    |
 | `failed`         | Red error + "Try Again"         | Connection failed after retries                             |
+
+## Supervisor API
+
+The supervisor process exposes an HTTP API on port 8080 for managing worker sessions on each Fly.io Machine.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Machine health stats (uptime, memory, active worker count, capacity) |
+| `GET` | `/sessions` | List all active workers on this machine |
+| `POST` | `/sessions` | Create a new session and spawn a worker for it |
+| `POST` | `/sessions/:id/start` | Spawn a worker for an existing session (e.g., after restore) |
+| `DELETE` | `/sessions/:id/stop` | Stop a running worker and clean up its process |
+| `GET` | `/sessions/:id` | Get detail for a single session (status, uptime, memory usage) |
+
+All endpoints are internal-only, accessed by Convex actions over the Fly.io private network (`fly-local-6pn` addresses) or via the machine's public URL for health checks.
+
+## Session Restoration
+
+On machine restart (deploy, crash recovery, or Fly.io maintenance), the supervisor automatically restores previously authenticated sessions:
+
+1. The supervisor scans `/tmp/wa-auth/` for existing auth directories on startup.
+2. For each directory found, it spawns a worker using the persisted auth state.
+3. The worker reconnects to WhatsApp using the stored credentials — no QR re-scan is needed.
+4. Session status is reported back to Convex so the control plane stays in sync.
+
+This means deploys and machine restarts are transparent to end users. As long as the auth state on disk is valid (WhatsApp has not revoked the linked device), sessions resume automatically within seconds of the supervisor starting.
