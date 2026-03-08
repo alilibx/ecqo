@@ -92,6 +92,75 @@ const billingFlowConfig = {
     { label: "Checkout Flow", color: "teal", from: 5, to: 11 },
   ],
 }
+
+const bl1FlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "bl1-stripe-post", icon: "fa-credit-card", title: "Stripe POST", row: 0, col: 0, shape: "rect", color: "warm" },
+    { id: "bl1-convex-http", icon: "fa-cloud", title: "Convex HTTP", subtitle: "/stripe/webhook", row: 1, col: 0, shape: "rect", color: "teal" },
+    { id: "bl1-verify-sig", icon: "fa-key", title: "Verify sig", row: 2, col: 0, shape: "diamond", color: "teal" },
+    { id: "bl1-process", icon: "fa-circle-check", title: "Process event", row: 3, col: 0, shape: "rect", color: "teal" },
+    { id: "bl1-reject", icon: "fa-circle-xmark", title: "401 + log", row: 3, col: 1, shape: "rect", color: "dark" },
+  ],
+  edges: [
+    { from: "bl1-stripe-post", to: "bl1-convex-http" },
+    { from: "bl1-convex-http", to: "bl1-verify-sig" },
+    { from: "bl1-verify-sig", to: "bl1-process", label: "Valid" },
+    { from: "bl1-verify-sig", to: "bl1-reject", label: "Invalid" },
+  ],
+  groups: [],
+}
+
+const bl2FlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "bl2-gated", icon: "fa-shield-halved", title: "Gated action", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "bl2-load-sub", icon: "fa-database", title: "Load sub", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "bl2-status", icon: "fa-question", title: "Status?", row: 2, col: 1, shape: "diamond", color: "teal" },
+    { id: "bl2-plan-limits", icon: "fa-list-check", title: "Plan limits?", row: 3, col: 0, shape: "diamond", color: "teal" },
+    { id: "bl2-trial-expired", icon: "fa-clock", title: "Trial expired?", row: 3, col: 1, shape: "diamond", color: "warm" },
+    { id: "bl2-grace", icon: "fa-hourglass", title: "In grace period?", row: 3, col: 2, shape: "diamond", color: "warm" },
+    { id: "bl2-allow1", icon: "fa-circle-check", title: "Allow", row: 4, col: 0, shape: "rect", color: "teal" },
+    { id: "bl2-allow2", icon: "fa-circle-check", title: "Allow", row: 4, col: 1, shape: "rect", color: "teal" },
+    { id: "bl2-allow3", icon: "fa-circle-check", title: "Allow", row: 4, col: 2, shape: "rect", color: "teal" },
+    { id: "bl2-block", icon: "fa-circle-xmark", title: "Block + notify", row: 5, col: 2, shape: "rect", color: "dark" },
+  ],
+  edges: [
+    { from: "bl2-gated", to: "bl2-load-sub" },
+    { from: "bl2-load-sub", to: "bl2-status" },
+    { from: "bl2-status", to: "bl2-plan-limits", label: "active" },
+    { from: "bl2-status", to: "bl2-trial-expired", label: "trialing" },
+    { from: "bl2-status", to: "bl2-grace", label: "past_due" },
+    { from: "bl2-plan-limits", to: "bl2-allow1", label: "Within" },
+    { from: "bl2-trial-expired", to: "bl2-allow2", label: "No" },
+    { from: "bl2-grace", to: "bl2-allow3", label: "Yes" },
+    { from: "bl2-grace", to: "bl2-block", label: "No" },
+  ],
+  groups: [],
+}
+
+const bl3FlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "bl3-toggle", icon: "fa-gear", title: "Currency toggle", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "bl3-select", icon: "fa-credit-card", title: "Select plan", row: 1, col: 0, shape: "rect", color: "teal" },
+    { id: "bl3-pref", icon: "fa-database", title: "Pref in localStorage", row: 2, col: 0, shape: "rect", color: "teal" },
+    { id: "bl3-checkout", icon: "fa-credit-card", title: "Checkout with Price ID", row: 3, col: 0, shape: "rect", color: "warm" },
+    { id: "bl3-usd", icon: "fa-dollar-sign", title: "USD prices", row: 4, col: 0, shape: "rect", color: "teal" },
+    { id: "bl3-aed", icon: "fa-money-bill", title: "AED prices", row: 4, col: 1, shape: "rect", color: "warm" },
+  ],
+  edges: [
+    { from: "bl3-toggle", to: "bl3-select" },
+    { from: "bl3-select", to: "bl3-pref" },
+    { from: "bl3-pref", to: "bl3-checkout" },
+    { from: "bl3-checkout", to: "bl3-usd" },
+    { from: "bl3-checkout", to: "bl3-aed" },
+  ],
+  groups: [],
+}
 </script>
 
 <ArchDiagram :config="billingConfig" />
@@ -156,13 +225,7 @@ indexes:
 
 ### Webhook Verification
 
-```mermaid
-flowchart TD
-    A["fa:fa-credit-card Stripe POST"] --> B["fa:fa-cloud Convex HTTP<br/>/stripe/webhook"]
-    B --> C{"Verify sig"}
-    C -- "Valid" --> D["fa:fa-circle-check Process event"]
-    C -- "Invalid" --> E["fa:fa-circle-xmark 401 + log"]
-```
+<ArchDiagram :config="bl1FlowConfig" />
 
 ## Plan Enforcement Logic
 
@@ -177,18 +240,7 @@ flowchart TD
 
 ### Enforcement Flow
 
-```mermaid
-flowchart TD
-    A["fa:fa-shield-halved Gated action"] --> B["fa:fa-database Load sub"]
-    B --> C{"Status?"}
-    C -- "active" --> D{"Plan limits?"}
-    C -- "trialing" --> E{"Trial expired?"}
-    C -- "past_due" --> F{"In grace period?"}
-    D -- "Within" --> G["fa:fa-circle-check Allow"]
-    E -- "No" --> H["fa:fa-circle-check Allow"]
-    F -- "Yes" --> I["fa:fa-circle-check Allow"]
-    F -- "No" --> J["fa:fa-circle-xmark Block + notify"]
-```
+<ArchDiagram :config="bl2FlowConfig" />
 
 ### Grace Period and Trial Handling
 
@@ -206,14 +258,7 @@ flowchart TD
 
 Ecqqo supports USD and AED billing. The user's currency preference persists through the subscription lifecycle.
 
-```mermaid
-flowchart TD
-    A["fa:fa-gear Currency toggle"] --> B["fa:fa-credit-card Select plan"]
-    B --> C["fa:fa-database Pref in localStorage"]
-    C --> D["fa:fa-credit-card Checkout with Price ID"]
-    D --> E["fa:fa-credit-card USD prices"]
-    D --> F["fa:fa-credit-card AED prices"]
-```
+<ArchDiagram :config="bl3FlowConfig" />
 
 | Plan | USD Price ID | AED Price ID |
 |------|-------------|-------------|

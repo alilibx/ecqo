@@ -21,6 +21,11 @@ const actorRefs = ref({});
 const seqData = ref({ lifelines: [], messages: [], notes: [], groups: [] });
 const seqBodyHeight = ref(200);
 
+/* ── Flow diagram state ── */
+const flowNodeRefs = ref({});
+const flowData = ref({ edges: [], groups: [] });
+const flowSvgSize = ref({ width: "100%", height: "100%" });
+
 /* ── Shared palette ── */
 const layerPalette = {
   teal: {
@@ -337,10 +342,207 @@ function computeSeqLayout() {
   seqData.value = { lifelines, messages, notes, groups: groupData };
 }
 
+/* ── Flow diagram ── */
+function setFlowNodeRef(id, el) {
+  if (el) flowNodeRefs.value[id] = el;
+}
+
+function getFlowNodeStyle(node) {
+  const p = layerPalette[node.color] || layerPalette.teal;
+  return {
+    "--n-bg": p.bg,
+    "--n-border": p.border,
+    "--n-accent": p.accent,
+    "--n-label": p.label,
+    "--n-icon-bg": p.iconBg,
+    "grid-row": (node.row || 0) + 1,
+    "grid-column": (node.col || 0) + 1,
+  };
+}
+
+const flowGridStyle = computed(() => {
+  if (diagramType.value !== "flow") return {};
+  const nodes = props.config.nodes || [];
+  let maxCol = 0;
+  for (const n of nodes) maxCol = Math.max(maxCol, n.col || 0);
+  const cols = maxCol + 1;
+  const style = {};
+  if (cols <= 3) {
+    style["grid-template-columns"] = `repeat(${cols}, 1fr)`;
+  } else if (cols <= 5) {
+    style["grid-template-columns"] = `repeat(${cols}, 1fr)`;
+    style["gap"] = "32px 16px";
+  } else if (cols <= 7) {
+    /* Medium-wide grids */
+    const colW = 120;
+    const gap = 14;
+    style["grid-template-columns"] = `repeat(${cols}, ${colW}px)`;
+    style["gap"] = `28px ${gap}px`;
+    style["min-width"] = `${cols * colW + (cols - 1) * gap}px`;
+  } else {
+    /* Very wide grids (8+ cols): use compact columns with tighter spacing */
+    const colW = 100;
+    const gap = 10;
+    style["grid-template-columns"] = `repeat(${cols}, ${colW}px)`;
+    style["gap"] = `24px ${gap}px`;
+    style["min-width"] = `${cols * colW + (cols - 1) * gap}px`;
+  }
+  return style;
+});
+
+function computeFlowLayout() {
+  if (!container.value) return;
+  const el = container.value;
+  const cr = el.getBoundingClientRect();
+
+  /* Size SVGs to match scrollable content, not just the visible viewport */
+  flowSvgSize.value = {
+    width: Math.max(el.scrollWidth, cr.width) + "px",
+    height: Math.max(el.scrollHeight, cr.height) + "px",
+  };
+  const nodes = props.config.nodes || [];
+  const edges = props.config.edges || [];
+  const groups = props.config.groups || [];
+  const dir = props.config.direction || "TD";
+  const R = 8;
+
+  const nodeById = {};
+  for (const n of nodes) nodeById[n.id] = n;
+
+  /* Measure node positions */
+  const nodePos = {};
+  for (const node of nodes) {
+    const el = flowNodeRefs.value[node.id];
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    nodePos[node.id] = {
+      cx: r.left + r.width / 2 - cr.left,
+      cy: r.top + r.height / 2 - cr.top,
+      top: r.top - cr.top,
+      bottom: r.bottom - cr.top,
+      left: r.left - cr.left,
+      right: r.right - cr.left,
+    };
+  }
+
+  /* Compute edges */
+  const edgeData = [];
+  for (const edge of edges) {
+    const from = nodePos[edge.from];
+    const to = nodePos[edge.to];
+    if (!from || !to) continue;
+
+    const fn = nodeById[edge.from];
+    const tn = nodeById[edge.to];
+    const rowDiff = (tn?.row || 0) - (fn?.row || 0);
+    const colDiff = (tn?.col || 0) - (fn?.col || 0);
+
+    let x1, y1, x2, y2, routeAxis;
+
+    if (dir === "TD" || dir === "TB") {
+      if (rowDiff !== 0) {
+        routeAxis = "v";
+        if (rowDiff > 0) { x1 = from.cx; y1 = from.bottom; x2 = to.cx; y2 = to.top; }
+        else { x1 = from.cx; y1 = from.top; x2 = to.cx; y2 = to.bottom; }
+      } else {
+        routeAxis = "h";
+        if (colDiff > 0) { x1 = from.right; y1 = from.cy; x2 = to.left; y2 = to.cy; }
+        else { x1 = from.left; y1 = from.cy; x2 = to.right; y2 = to.cy; }
+      }
+    } else {
+      if (colDiff !== 0) {
+        routeAxis = "h";
+        if (colDiff > 0) { x1 = from.right; y1 = from.cy; x2 = to.left; y2 = to.cy; }
+        else { x1 = from.left; y1 = from.cy; x2 = to.right; y2 = to.cy; }
+      } else {
+        routeAxis = "v";
+        if (rowDiff > 0) { x1 = from.cx; y1 = from.bottom; x2 = to.cx; y2 = to.top; }
+        else { x1 = from.cx; y1 = from.top; x2 = to.cx; y2 = to.bottom; }
+      }
+    }
+
+    /* Build SVG path */
+    let d;
+    const adx = Math.abs(x2 - x1);
+    const ady = Math.abs(y2 - y1);
+
+    if ((adx < 3 && routeAxis === "v") || (ady < 3 && routeAxis === "h")) {
+      d = `M ${x1} ${y1} L ${x2} ${y2}`;
+    } else if (routeAxis === "v") {
+      const midY = (y1 + y2) / 2;
+      const dxDir = x2 > x1 ? 1 : -1;
+      const dyDir = y2 > y1 ? 1 : -1;
+      const r = Math.min(R, adx / 2, Math.abs(midY - y1), Math.abs(y2 - midY));
+      d = [
+        `M ${x1} ${y1}`,
+        `L ${x1} ${midY - dyDir * r}`,
+        `Q ${x1} ${midY} ${x1 + dxDir * r} ${midY}`,
+        `L ${x2 - dxDir * r} ${midY}`,
+        `Q ${x2} ${midY} ${x2} ${midY + dyDir * r}`,
+        `L ${x2} ${y2}`,
+      ].join(" ");
+    } else {
+      const midX = (x1 + x2) / 2;
+      const dxDir = x2 > x1 ? 1 : -1;
+      const dyDir = y2 > y1 ? 1 : -1;
+      const r = Math.min(R, ady / 2, Math.abs(midX - x1), Math.abs(x2 - midX));
+      d = [
+        `M ${x1} ${y1}`,
+        `L ${midX - dxDir * r} ${y1}`,
+        `Q ${midX} ${y1} ${midX} ${y1 + dyDir * r}`,
+        `L ${midX} ${y2 - dyDir * r}`,
+        `Q ${midX} ${y2} ${midX + dxDir * r} ${y2}`,
+        `L ${x2} ${y2}`,
+      ].join(" ");
+    }
+
+    const lx = (x1 + x2) / 2;
+    const ly = (y1 + y2) / 2;
+
+    edgeData.push({
+      d,
+      label: edge.label,
+      lx, ly,
+      lw: edge.label ? edge.label.length * 6 + 16 : 0,
+      dashed: !!edge.dashed,
+    });
+  }
+
+  /* Compute groups */
+  const allNodes = props.config.nodes || [];
+  let maxColNum = 0;
+  for (const n of allNodes) maxColNum = Math.max(maxColNum, n.col || 0);
+  const isWideGrid = maxColNum >= 7;
+
+  const groupData = groups.map((g) => {
+    const gNodes = (g.nodes || []).map((id) => nodePos[id]).filter(Boolean);
+    if (!gNodes.length) return null;
+    const minX = Math.min(...gNodes.map((n) => n.left));
+    const maxX = Math.max(...gNodes.map((n) => n.right));
+    const minY = Math.min(...gNodes.map((n) => n.top));
+    const maxY = Math.max(...gNodes.map((n) => n.bottom));
+    const pad = isWideGrid ? 12 : 20;
+    const pal = layerPalette[g.color] || layerPalette.teal;
+    return {
+      x: minX - pad,
+      y: minY - pad - 20,
+      width: maxX - minX + pad * 2,
+      height: maxY - minY + pad * 2 + 20,
+      fill: pal.bg,
+      stroke: pal.border,
+      label: g.label,
+      labelColor: pal.label,
+    };
+  }).filter(Boolean);
+
+  flowData.value = { edges: edgeData, groups: groupData };
+}
+
 /* ── Lifecycle ── */
 function computeLayout() {
   if (diagramType.value === "layers") computePaths();
   else if (diagramType.value === "sequence") computeSeqLayout();
+  else if (diagramType.value === "flow") computeFlowLayout();
 }
 
 let ro;
@@ -444,8 +646,34 @@ onUnmounted(() => {
       <div class="seq-body" :style="{ height: seqBodyHeight + 'px' }"></div>
     </template>
 
+    <!-- ===== FLOW MODE ===== -->
+    <template v-else-if="diagramType === 'flow'">
+      <div class="flow-grid" :class="{ 'flow-grid-wide': (config.nodes || []).reduce((m, n) => Math.max(m, n.col || 0), 0) >= 7 }" :style="flowGridStyle">
+        <div
+          v-for="node in config.nodes"
+          :key="node.id"
+          :ref="(el) => setFlowNodeRef(node.id, el)"
+          class="flow-node"
+          :class="'flow-node-' + (node.shape || 'rect')"
+          :style="getFlowNodeStyle(node)"
+        >
+          <div class="flow-node-icon">
+            <iconify-icon
+              v-if="isIconify(node.icon)"
+              :icon="iconifyName(node.icon)"
+              width="16"
+              height="16"
+            />
+            <i v-else :class="'fa-solid ' + node.icon" />
+          </div>
+          <div class="flow-node-title">{{ node.title }}</div>
+          <div v-if="node.subtitle" class="flow-node-sub">{{ node.subtitle }}</div>
+        </div>
+      </div>
+    </template>
+
     <!-- ===== SVG LINES (behind layers, z-index 1) ===== -->
-    <svg class="arch-svg arch-svg-lines">
+    <svg class="arch-svg arch-svg-lines" :style="diagramType === 'flow' ? flowSvgSize : {}">
       <template v-if="diagramType === 'layers'">
         <defs>
           <marker
@@ -495,10 +723,39 @@ onUnmounted(() => {
         <!-- Note backgrounds -->
         <rect v-for="(n, i) in seqData.notes" :key="'n' + i" :x="n.x" :y="n.y" :width="n.width" :height="n.height" fill="#fef9f2" stroke="#e8e0d0" stroke-width="1" rx="6" class="seq-note-bg" />
       </template>
+      <template v-else-if="diagramType === 'flow'">
+        <defs>
+          <marker
+            :id="`flow-arrow-${uid}`"
+            markerWidth="8"
+            markerHeight="6"
+            refX="8"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 8 3, 0 6" fill="#0d7a6a" class="flow-arrow-head" />
+          </marker>
+        </defs>
+        <!-- Groups -->
+        <rect v-for="(g, i) in flowData.groups" :key="'fg' + i" :x="g.x" :y="g.y" :width="g.width" :height="g.height" :fill="g.fill" :stroke="g.stroke" stroke-width="1" rx="10" opacity="0.5" class="flow-group-bg" />
+        <!-- Edges -->
+        <path
+          v-for="(e, i) in flowData.edges"
+          :key="'fe' + i"
+          :d="e.d"
+          fill="none"
+          stroke="#0d7a6a"
+          stroke-width="1.5"
+          stroke-opacity="0.5"
+          :stroke-dasharray="e.dashed ? '6,3' : 'none'"
+          :marker-end="`url(#flow-arrow-${uid})`"
+          class="flow-edge-line"
+        />
+      </template>
     </svg>
 
     <!-- ===== SVG LABELS (above layers, z-index 3) ===== -->
-    <svg class="arch-svg arch-svg-labels">
+    <svg class="arch-svg arch-svg-labels" :style="diagramType === 'flow' ? flowSvgSize : {}">
       <template v-if="diagramType === 'layers'">
         <g v-for="(p, i) in paths" :key="i">
           <template v-if="p.label">
@@ -537,6 +794,17 @@ onUnmounted(() => {
           <tspan v-for="(line, j) in n.lines" :key="j" :x="n.cx" :dy="j === 0 ? '0' : '14'">{{ line }}</tspan>
         </text>
       </template>
+      <template v-else-if="diagramType === 'flow'">
+        <!-- Group labels -->
+        <text v-for="(g, i) in flowData.groups" :key="'fgl' + i" :x="g.x + 12" :y="g.y + 16" :fill="g.labelColor" class="flow-group-label">{{ g.label }}</text>
+        <!-- Edge labels -->
+        <template v-for="(e, i) in flowData.edges" :key="'fel' + i">
+          <g v-if="e.label">
+            <rect :x="e.lx - e.lw / 2" :y="e.ly - 10" :width="e.lw" height="20" rx="10" class="flow-edge-label-bg" />
+            <text :x="e.lx" :y="e.ly + 1" text-anchor="middle" dominant-baseline="middle" class="flow-edge-label">{{ e.label }}</text>
+          </g>
+        </template>
+      </template>
     </svg>
   </div>
 </template>
@@ -548,6 +816,12 @@ onUnmounted(() => {
   font-family: "DM Sans", "Inter", sans-serif;
   max-width: 820px;
   margin: 0 auto;
+  overflow-x: auto;
+}
+
+/* Expand container for wide flow grids so they get more room before scrolling */
+.arch-diagram:has(.flow-grid-wide) {
+  max-width: 1100px;
 }
 
 /* ── Layer ── */
@@ -676,7 +950,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .arch-svg-lines {
@@ -916,6 +1190,246 @@ onUnmounted(() => {
 }
 
 .dark .seq-group-label {
+  fill: #c5bdb0 !important;
+}
+
+/* ── Flow mode ── */
+.flow-grid {
+  display: grid;
+  gap: 40px 24px;
+  justify-items: center;
+  align-items: center;
+  padding: 8px 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.flow-node-rect {
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--n-border) 50%, transparent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.flow-node-rect:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.flow-node-diamond {
+  width: 140px;
+  aspect-ratio: 1;
+  padding: 0;
+}
+
+.flow-node-diamond::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70.7%;
+  height: 70.7%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 5px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--n-border) 50%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.flow-node-diamond:hover::before {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.flow-node-diamond > * {
+  position: relative;
+  z-index: 1;
+}
+
+.flow-node-diamond .flow-node-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.flow-node-pill {
+  background: #fff;
+  border: 1.5px solid color-mix(in srgb, var(--n-border) 60%, transparent);
+  border-radius: 999px;
+  padding: 10px 16px;
+  min-width: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.flow-node-pill:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.flow-node-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--n-icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--n-accent);
+  font-size: 13px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.flow-node-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #1a1612;
+  line-height: 1.3;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+.flow-node-sub {
+  font-size: 10px;
+  color: #8a7e6d;
+  line-height: 1.3;
+  margin-top: 2px;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Compact nodes for wide grids */
+.flow-grid-wide .flow-node-rect {
+  padding: 8px 8px;
+}
+
+.flow-grid-wide .flow-node-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.flow-grid-wide .flow-node-title {
+  font-size: 10.5px;
+}
+
+.flow-grid-wide .flow-node-sub {
+  font-size: 9px;
+}
+
+.flow-node-diamond .flow-node-title {
+  font-size: 10.5px;
+  max-width: 80px;
+  line-height: 1.25;
+}
+
+.flow-edge-label-bg {
+  fill: var(--vp-c-bg, #fff);
+  stroke: #e8e0d0;
+  stroke-width: 0.75;
+}
+
+.flow-edge-label {
+  font-size: 10px;
+  fill: #3d362d;
+  font-family: "JetBrains Mono", "DM Sans", monospace;
+  font-weight: 500;
+}
+
+.flow-group-label {
+  font-size: 10px;
+  font-family: "DM Sans", "Inter", sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Dark mode: Flow ── */
+.dark .flow-node-rect {
+  background: #232019;
+  border-color: #3a342a;
+}
+
+.dark .flow-node-rect:hover {
+  background: #2a261f;
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .flow-node-diamond::before {
+  background: #232019;
+  border-color: #3a342a;
+}
+
+.dark .flow-node-diamond:hover::before {
+  background: #2a261f;
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .flow-node-pill {
+  background: #232019;
+  border-color: #3a342a;
+}
+
+.dark .flow-node-pill:hover {
+  background: #2a261f;
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .flow-node-icon {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--n-accent);
+}
+
+.dark .flow-node-title {
+  color: #f0ebe2;
+}
+
+.dark .flow-node-sub {
+  color: #9a9189;
+}
+
+.dark .flow-edge-line {
+  stroke: #1aad96;
+  stroke-opacity: 0.4;
+}
+
+.dark .flow-arrow-head {
+  fill: #1aad96;
+  opacity: 0.5;
+}
+
+.dark .flow-edge-label-bg {
+  fill: var(--vp-c-bg, #1a1815);
+  stroke: #3a342a;
+}
+
+.dark .flow-edge-label {
+  fill: #c5bdb0;
+}
+
+.dark .flow-group-bg {
+  opacity: 0.3;
+}
+
+.dark .flow-group-label {
   fill: #c5bdb0 !important;
 }
 </style>

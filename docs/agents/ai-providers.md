@@ -8,35 +8,68 @@ The Vercel AI SDK provides a unified TypeScript interface for interacting with l
 
 ### Key Benefits
 
-```
-WITHOUT Vercel AI SDK                    WITH Vercel AI SDK
-========================                 ========================
+<div class="sdk-comparison">
+<table>
+  <thead>
+    <tr>
+      <th>Aspect</th>
+      <th class="col-without">Without Vercel AI SDK</th>
+      <th class="col-with">With Vercel AI SDK</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Interface</strong></td>
+      <td>Separate SDK per provider — OpenAI SDK, Anthropic SDK, Groq SDK</td>
+      <td>Single unified SDK — <code>generateText()</code>, <code>streamText()</code>, <code>generateObject()</code></td>
+    </tr>
+    <tr>
+      <td><strong>Tool calling</strong></td>
+      <td>Different format per provider, custom adapters needed</td>
+      <td>Unified tool definitions, one format everywhere</td>
+    </tr>
+    <tr>
+      <td><strong>Streaming</strong></td>
+      <td>Different protocols (SSE vs chunks vs websockets)</td>
+      <td>Unified streaming interface across all providers</td>
+    </tr>
+    <tr>
+      <td><strong>Error handling</strong></td>
+      <td>Different error shapes, status codes, retry logic per provider</td>
+      <td>Unified error handling and retry semantics</td>
+    </tr>
+    <tr>
+      <td><strong>Switch provider</strong></td>
+      <td>Rewrite integration code for new SDK</td>
+      <td>Change <strong>one line</strong> — no code rewrite</td>
+    </tr>
+    <tr class="result-row">
+      <td><strong>Result</strong></td>
+      <td class="result-bad">3x code, 3x bugs</td>
+      <td class="result-good">1x code, easy swap</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
-  Orchestrator                             Orchestrator
-      |                                        |
-      v                                        v
-  OpenAI SDK                             Vercel AI SDK
-   - chat.completions                     - generateText()
-   - specific params                      - streamText()
-   - custom tool fmt                      - generateObject()
-                                          - unified tools
-  Anthropic SDK                               |
-   - messages.create                     +----+----+
-   - different params                    |         |
-   - different tool fmt                OpenAI  Anthropic  ...
-
-  Groq SDK                             Switch provider = change
-   - yet another API                   ONE line. No code rewrite.
-   - yet another fmt
-
-Each provider has different:             Unified interface for:
- - API shapes                            - All API shapes
- - Tool calling formats                  - Tool calling
- - Streaming protocols                   - Streaming
- - Error handling patterns               - Error handling
-
-Result: 3x code, 3x bugs              Result: 1x code, easy swap
-```
+<style>
+.sdk-comparison { margin: 20px 0; overflow-x: auto; }
+.sdk-comparison table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sdk-comparison th, .sdk-comparison td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e8e0d0; }
+.sdk-comparison thead th { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sdk-comparison .col-without { background: #fff0ec; color: #b33a1f; }
+.sdk-comparison .col-with { background: #e8f5f2; color: #094f44; }
+.sdk-comparison tbody td:first-child { font-weight: 600; white-space: nowrap; color: #3d362d; }
+.sdk-comparison .result-row td { border-bottom: none; font-weight: 700; font-size: 15px; }
+.sdk-comparison .result-bad { color: #e04b2c; }
+.sdk-comparison .result-good { color: #0d7a6a; }
+.dark .sdk-comparison th, .dark .sdk-comparison td { border-color: #3a342a; }
+.dark .sdk-comparison .col-without { background: rgba(224,75,44,0.1); color: #ff8a65; }
+.dark .sdk-comparison .col-with { background: rgba(13,122,106,0.1); color: #1aad96; }
+.dark .sdk-comparison tbody td:first-child { color: #e8e2d8; }
+.dark .sdk-comparison .result-bad { color: #ff8a65; }
+.dark .sdk-comparison .result-good { color: #1aad96; }
+</style>
 
 ### Capabilities Used
 
@@ -52,6 +85,31 @@ Result: 3x code, 3x bugs              Result: 1x code, easy swap
 ### Supported Providers
 
 <script setup>
+const failoverConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ap-req", icon: "fa-message", title: "Incoming request", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ap-primary", icon: "fa-cloud", title: "PRIMARY", subtitle: "Anthropic Sonnet", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "ap-r1", icon: "fa-circle-check", title: "Return result", row: 2, col: 0, shape: "rect", color: "green" },
+    { id: "ap-fallback", icon: "fa-rotate", title: "FALLBACK", subtitle: "OpenAI GPT-4o", row: 2, col: 2, shape: "rect", color: "warm" },
+    { id: "ap-r2", icon: "fa-circle-check", title: "Return result", row: 3, col: 1, shape: "rect", color: "green" },
+    { id: "ap-budget", icon: "fa-rotate", title: "BUDGET", subtitle: "Groq Llama 3.3", row: 3, col: 3, shape: "rect", color: "warm" },
+    { id: "ap-r3", icon: "fa-triangle-exclamation", title: "Return (degraded)", row: 4, col: 2, shape: "rect", color: "yellow" },
+    { id: "ap-circuit", icon: "fa-circle-xmark", title: "CIRCUIT OPEN", subtitle: "Queue, retry 5m, notify operator", row: 4, col: 4, shape: "rect", color: "red" },
+  ],
+  edges: [
+    { from: "ap-req", to: "ap-primary" },
+    { from: "ap-primary", to: "ap-r1", label: "Success" },
+    { from: "ap-primary", to: "ap-fallback", label: "Fail (timeout/5xx)", dashed: true },
+    { from: "ap-fallback", to: "ap-r2", label: "Success" },
+    { from: "ap-fallback", to: "ap-budget", label: "Failure", dashed: true },
+    { from: "ap-budget", to: "ap-r3", label: "Success" },
+    { from: "ap-budget", to: "ap-circuit", label: "Failure", dashed: true },
+  ],
+  groups: [],
+}
+
 const providersConfig = {
   layers: [
     {
@@ -166,16 +224,7 @@ Different components of the agent runtime have different requirements for qualit
 
 The system implements a tiered failover strategy to maintain availability when a provider is down or degraded.
 
-```mermaid
-flowchart TD
-    REQ["fa:fa-message Incoming request"] --> P["fa:fa-cloud PRIMARY<br/>Anthropic Sonnet"]
-    P -->|Success| R1["fa:fa-circle-check Return result"]
-    P -->|"Fail (timeout/5xx)"| F["fa:fa-rotate FALLBACK<br/>OpenAI GPT-4o"]
-    F -->|Success| R2["fa:fa-circle-check Return result"]
-    F -->|Failure| B["fa:fa-rotate BUDGET<br/>Groq Llama 3.3"]
-    B -->|Success| R3["fa:fa-triangle-exclamation Return (degraded)"]
-    B -->|Failure| CO["fa:fa-circle-xmark CIRCUIT OPEN<br/>Queue, retry 5m<br/>notify operator"]
-```
+<ArchDiagram :config="failoverConfig" />
 
 ### Failover Rules
 

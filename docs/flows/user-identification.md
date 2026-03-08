@@ -14,14 +14,7 @@ This is fundamentally different from the wacli-based connection (where Ecqqo rea
 
 Before a user can interact with Ecqqo via WhatsApp, their phone number must be bound to their account. This happens during onboarding:
 
-```mermaid
-flowchart LR
-    A["fa:fa-user **Sign Up**<br/>Clerk: email, phone,<br/>workspace name"]
-    B["fa:fa-shield-halved **Verify**<br/>OTP sent via WhatsApp<br/>Convex validates + marks verified"]
-    C["fa:fa-link **Bind**<br/>waAccount created<br/>Phone bound to user/workspace"]
-
-    A --> B --> C
-```
+<ArchDiagram :config="registrationFlow" />
 
 ### Why OTP via WhatsApp?
 
@@ -32,21 +25,7 @@ The OTP is sent via Ecqqo's WhatsApp Business number to the user's phone. This s
 
 ## Complete Identification Pipeline
 
-```mermaid
-flowchart TD
-    A["fa:fa-bolt Meta Webhook"] --> B{"Validate<br/>HMAC signature"}
-    B -- FAIL --> R["fa:fa-circle-xmark Reject (401)"]
-    B -- PASS --> C["fa:fa-phone Extract sender phone"]
-    C --> D["fa:fa-filter Normalize to E.164"]
-    D --> E["fa:fa-database Query waAccounts"]
-
-    E -- FOUND --> F["fa:fa-user Load user context<br/>(workspace, role, memory)"]
-    F --> G{"Approval<br/>response?"}
-    G -- YES --> H["fa:fa-check Approval handler"]
-    G -- NO --> I["fa:fa-sitemap Agent orchestrator"]
-
-    E -- NOT FOUND --> J["fa:fa-comments Send onboarding msg<br/>(sign up at ecqqo.com)"]
-```
+<ArchDiagram :config="identPipelineFlow" />
 
 ## Edge Cases
 
@@ -106,6 +85,49 @@ The Meta Cloud API provides strong guarantees against phone number spoofing:
 4. **Binding verification** -- The OTP flow during registration proves the user controls the phone number at binding time. Combined with Meta's ongoing device verification, this provides continuous assurance.
 
 <script setup>
+const registrationFlow = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "reg-signup", icon: "fa-user", title: "Sign Up", subtitle: "Clerk: email, phone, workspace", row: 0, col: 0, color: "teal" },
+    { id: "reg-verify", icon: "fa-shield-halved", title: "Verify", subtitle: "OTP via WhatsApp", row: 0, col: 1, color: "warm" },
+    { id: "reg-bind", icon: "fa-link", title: "Bind", subtitle: "waAccount created", row: 0, col: 2, color: "dark" },
+  ],
+  edges: [
+    { from: "reg-signup", to: "reg-verify" },
+    { from: "reg-verify", to: "reg-bind" },
+  ],
+}
+
+const identPipelineFlow = {
+  type: "flow",
+  nodes: [
+    { id: "ip-webhook", icon: "fa-bolt", title: "Meta Webhook", row: 0, col: 1 },
+    { id: "ip-hmac", icon: "fa-lock", title: "Validate HMAC", row: 1, col: 1, shape: "diamond", color: "warm" },
+    { id: "ip-reject", icon: "fa-circle-xmark", title: "Reject (401)", row: 1, col: 2, color: "red" },
+    { id: "ip-phone", icon: "fa-phone", title: "Extract phone", row: 2, col: 1 },
+    { id: "ip-norm", icon: "fa-filter", title: "Normalize E.164", row: 3, col: 1 },
+    { id: "ip-query", icon: "fa-database", title: "Query waAccounts", row: 4, col: 1, shape: "diamond", color: "warm" },
+    { id: "ip-onboard", icon: "fa-comments", title: "Send onboarding", subtitle: "sign up at ecqqo.com", row: 4, col: 2, color: "warm" },
+    { id: "ip-context", icon: "fa-user", title: "Load user context", subtitle: "workspace, role, memory", row: 5, col: 1 },
+    { id: "ip-approval", icon: "fa-question", title: "Approval response?", row: 6, col: 1, shape: "diamond", color: "warm" },
+    { id: "ip-approve", icon: "fa-circle-check", title: "Approval handler", row: 6, col: 0, color: "teal" },
+    { id: "ip-agent", icon: "fa-sitemap", title: "Agent orchestrator", row: 6, col: 2, color: "dark" },
+  ],
+  edges: [
+    { from: "ip-webhook", to: "ip-hmac" },
+    { from: "ip-hmac", to: "ip-reject", label: "Fail" },
+    { from: "ip-hmac", to: "ip-phone", label: "Pass" },
+    { from: "ip-phone", to: "ip-norm" },
+    { from: "ip-norm", to: "ip-query" },
+    { from: "ip-query", to: "ip-onboard", label: "Not found" },
+    { from: "ip-query", to: "ip-context", label: "Found" },
+    { from: "ip-context", to: "ip-approval" },
+    { from: "ip-approval", to: "ip-approve", label: "Yes" },
+    { from: "ip-approval", to: "ip-agent", label: "No" },
+  ],
+}
+
 const securityLayersConfig = {
   layers: [
     {

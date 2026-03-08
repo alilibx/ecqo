@@ -157,6 +157,146 @@ const langsmithConfig = {
   ],
 }
 
+const dualPath1Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "dp1-wa", icon: "fa-comments", title: "WhatsApp", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "dp1-worker", icon: "fa-server", title: "Fly.io Worker", row: 0, col: 1, shape: "rect", color: "warm" },
+    { id: "dp1-convex", icon: "fa-cloud", title: "Convex", row: 0, col: 2, shape: "rect", color: "teal" },
+  ],
+  edges: [
+    { from: "dp1-wa", to: "dp1-worker", label: "WA Web (E2E)" },
+    { from: "dp1-worker", to: "dp1-wa", label: "WA Web (E2E)" },
+    { from: "dp1-worker", to: "dp1-convex", label: "HMAC-signed" },
+  ],
+}
+
+const dualPath2Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "dp2-meta", icon: "fa-globe", title: "Meta Platform", row: 0, col: 0, shape: "rect", color: "dark" },
+    { id: "dp2-convex", icon: "fa-cloud", title: "Convex", row: 0, col: 1, shape: "rect", color: "teal" },
+  ],
+  edges: [
+    { from: "dp2-meta", to: "dp2-convex", label: "Webhook (verified)" },
+    { from: "dp2-convex", to: "dp2-meta", label: "Bearer token" },
+  ],
+}
+
+const clerkJwtConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "cj-browser", icon: "fa-globe", title: "Browser", row: 0, col: 1, shape: "pill", color: "teal" },
+    { id: "cj-clerk", icon: "fa-key", title: "Clerk SDK", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "cj-jwt", icon: "fa-key", title: "JWT issued", row: 2, col: 1, shape: "rect", color: "warm" },
+    { id: "cj-fn", icon: "fa-code", title: "Convex fn called", row: 3, col: 1, shape: "rect", color: "teal" },
+    { id: "cj-identity", icon: "fa-user", title: "getUserIdentity()", row: 4, col: 1, shape: "rect", color: "teal" },
+    { id: "cj-reject401", icon: "fa-circle-xmark", title: "Reject 401", row: 5, col: 0, shape: "pill", color: "red" },
+    { id: "cj-extract", icon: "fa-user", title: "Extract userId, wsId, role", row: 5, col: 2, shape: "rect", color: "teal" },
+    { id: "cj-membership", icon: "fa-users", title: "Check WS membership", row: 6, col: 2, shape: "rect", color: "teal" },
+    { id: "cj-reject403", icon: "fa-circle-xmark", title: "Reject 403", row: 7, col: 1, shape: "pill", color: "red" },
+    { id: "cj-role", icon: "fa-shield-halved", title: "Check role perms", row: 7, col: 3, shape: "rect", color: "blue" },
+    { id: "cj-execute", icon: "fa-circle-check", title: "Execute (scoped)", row: 8, col: 3, shape: "pill", color: "teal" },
+  ],
+  edges: [
+    { from: "cj-browser", to: "cj-clerk" },
+    { from: "cj-clerk", to: "cj-jwt" },
+    { from: "cj-jwt", to: "cj-fn" },
+    { from: "cj-fn", to: "cj-identity" },
+    { from: "cj-identity", to: "cj-reject401", label: "null" },
+    { from: "cj-identity", to: "cj-extract", label: "Valid" },
+    { from: "cj-extract", to: "cj-membership" },
+    { from: "cj-membership", to: "cj-reject403", label: "Not member" },
+    { from: "cj-membership", to: "cj-role", label: "Member" },
+    { from: "cj-role", to: "cj-execute" },
+  ],
+}
+
+const webhookSecConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "wh-meta", icon: "fa-globe", title: "Meta POST", subtitle: "X-Hub-Signature-256", row: 0, col: 1, shape: "pill", color: "dark" },
+    { id: "wh-read", icon: "fa-code", title: "Read raw body", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "wh-hmac", icon: "fa-lock", title: "HMAC-SHA256", subtitle: "app secret", row: 2, col: 1, shape: "rect", color: "teal" },
+    { id: "wh-compare", icon: "fa-scale-balanced", title: "Compare", subtitle: "constant-time", row: 3, col: 1, shape: "diamond", color: "warm" },
+    { id: "wh-reject", icon: "fa-circle-xmark", title: "Reject 401", row: 4, col: 0, shape: "pill", color: "red" },
+    { id: "wh-parse", icon: "fa-code", title: "Parse payload", row: 4, col: 2, shape: "rect", color: "teal" },
+    { id: "wh-phone", icon: "fa-user", title: "Extract phone", row: 5, col: 2, shape: "rect", color: "teal" },
+    { id: "wh-lookup", icon: "fa-magnifying-glass", title: "Lookup workspace", row: 6, col: 2, shape: "rect", color: "teal" },
+    { id: "wh-rate", icon: "fa-clock", title: "Rate limit", row: 7, col: 2, shape: "diamond", color: "warm" },
+    { id: "wh-route", icon: "fa-arrow-right", title: "Route to handler", row: 8, col: 3, shape: "pill", color: "teal" },
+    { id: "wh-overflow", icon: "fa-triangle-exclamation", title: "Overflow", subtitle: "notify owner", row: 8, col: 1, shape: "pill", color: "red" },
+  ],
+  edges: [
+    { from: "wh-meta", to: "wh-read" },
+    { from: "wh-read", to: "wh-hmac" },
+    { from: "wh-hmac", to: "wh-compare" },
+    { from: "wh-compare", to: "wh-reject", label: "Mismatch" },
+    { from: "wh-compare", to: "wh-parse", label: "Match" },
+    { from: "wh-parse", to: "wh-phone" },
+    { from: "wh-phone", to: "wh-lookup" },
+    { from: "wh-lookup", to: "wh-rate" },
+    { from: "wh-rate", to: "wh-route", label: "Within limits" },
+    { from: "wh-rate", to: "wh-overflow", label: "Exceeded" },
+  ],
+}
+
+const killSwitchConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ks-op", icon: "fa-bolt", title: "Sensitive op", subtitle: "send/run/sync", row: 0, col: 1, shape: "pill", color: "teal" },
+    { id: "ks-read", icon: "fa-power-off", title: "Read killSwitches", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "ks-conn", icon: "fa-plug", title: "connector?", row: 2, col: 1, shape: "diamond", color: "warm" },
+    { id: "ks-reject1", icon: "fa-circle-xmark", title: "Reject", row: 2, col: 0, shape: "pill", color: "red" },
+    { id: "ks-agent", icon: "fa-robot", title: "agent?", row: 3, col: 1, shape: "diamond", color: "warm" },
+    { id: "ks-reject2", icon: "fa-circle-xmark", title: "Reject", row: 3, col: 0, shape: "pill", color: "red" },
+    { id: "ks-outbound", icon: "fa-paper-plane", title: "outbound?", row: 4, col: 1, shape: "diamond", color: "warm" },
+    { id: "ks-reject3", icon: "fa-circle-xmark", title: "Reject", row: 4, col: 0, shape: "pill", color: "red" },
+    { id: "ks-proceed", icon: "fa-circle-check", title: "Proceed", row: 5, col: 1, shape: "pill", color: "teal" },
+  ],
+  edges: [
+    { from: "ks-op", to: "ks-read" },
+    { from: "ks-read", to: "ks-conn" },
+    { from: "ks-conn", to: "ks-reject1", label: "Yes" },
+    { from: "ks-conn", to: "ks-agent", label: "No" },
+    { from: "ks-agent", to: "ks-reject2", label: "Yes" },
+    { from: "ks-agent", to: "ks-outbound", label: "No" },
+    { from: "ks-outbound", to: "ks-reject3", label: "Yes" },
+    { from: "ks-outbound", to: "ks-proceed", label: "No" },
+  ],
+}
+
+const traceFlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "tf-trace", icon: "fa-robot", title: "Agent Run Trace", subtitle: "run_id, ws_hash, specialist", row: 0, col: 0, shape: "pill", color: "teal" },
+    { id: "tf-s1", icon: "fa-microchip", title: "1. Context Assembly", subtitle: "memory, tokens", row: 1, col: 0, shape: "rect", color: "teal" },
+    { id: "tf-s2", icon: "fa-brain", title: "2. Orchestrator LLM", subtitle: "model, intent", row: 2, col: 0, shape: "rect", color: "warm" },
+    { id: "tf-s3", icon: "fa-brain", title: "3. Specialist LLM", subtitle: "tool proposed", row: 3, col: 0, shape: "rect", color: "warm" },
+    { id: "tf-s4", icon: "fa-scale-balanced", title: "4. Policy Eval", subtitle: "approval? risk", row: 4, col: 0, shape: "rect", color: "blue" },
+    { id: "tf-s5", icon: "fa-clock", title: "5. Approval Wait", subtitle: "time, decision", row: 5, col: 0, shape: "rect", color: "dark" },
+    { id: "tf-s6", icon: "fa-gear", title: "6. Tool Exec", subtitle: "latency, retries", row: 6, col: 0, shape: "rect", color: "teal" },
+    { id: "tf-s7", icon: "fa-message", title: "7. Response Delivery", subtitle: "channel, latency", row: 7, col: 0, shape: "rect", color: "teal" },
+    { id: "tf-total", icon: "fa-chart-line", title: "Total", subtitle: "latency, cost, tokens, outcome", row: 8, col: 0, shape: "pill", color: "dark" },
+  ],
+  edges: [
+    { from: "tf-trace", to: "tf-s1" },
+    { from: "tf-s1", to: "tf-s2" },
+    { from: "tf-s2", to: "tf-s3" },
+    { from: "tf-s3", to: "tf-s4" },
+    { from: "tf-s4", to: "tf-s5" },
+    { from: "tf-s5", to: "tf-s6" },
+    { from: "tf-s6", to: "tf-s7" },
+    { from: "tf-s7", to: "tf-total" },
+  ],
+}
+
 const hmacReqSeqConfig = {
   type: "sequence",
   actors: [
@@ -181,19 +321,11 @@ Ecqqo has two distinct paths for WhatsApp data:
 
 **Path 1: Connector (wacli) -- syncs user's personal WhatsApp**
 
-```mermaid
-flowchart LR
-    WA["fa:fa-comments WhatsApp"] <-->|"WA Web (E2E)"| Worker["fa:fa-server Fly.io Worker"]
-    Worker -->|"HMAC-signed"| Convex1["fa:fa-cloud Convex"]
-```
+<ArchDiagram :config="dualPath1Config" />
 
 **Path 2: Meta Cloud API -- Ecqqo's official WhatsApp Business number**
 
-```mermaid
-flowchart LR
-    Meta["fa:fa-globe Meta Platform"] -->|"Webhook (verified)"| Convex2["fa:fa-cloud Convex"]
-    Convex2 -->|"Bearer token"| Meta
-```
+<ArchDiagram :config="dualPath2Config" />
 
 ## Authentication and Authorization
 
@@ -201,18 +333,7 @@ flowchart LR
 
 Every request to the Convex backend carries a Clerk-issued JWT. Validation happens at the Convex function level before any data access.
 
-```mermaid
-flowchart TD
-    Browser["fa:fa-globe Browser"] --> ClerkSDK["fa:fa-key Clerk SDK"] --> JWTIssued["fa:fa-key JWT issued"]
-    JWTIssued --> ConvexFn["fa:fa-code Convex fn called"]
-    ConvexFn --> GetIdentity["fa:fa-user getUserIdentity()"]
-    GetIdentity -->|"null"| Reject401["fa:fa-circle-xmark Reject 401"]
-    GetIdentity -->|"Valid"| Extract["fa:fa-user Extract userId,<br/>wsId, role"]
-    Extract --> CheckMembership["fa:fa-users Check WS membership"]
-    CheckMembership -->|"Not member"| Reject403["fa:fa-circle-xmark Reject 403"]
-    CheckMembership -->|"Member"| CheckRole["fa:fa-shield-halved Check role perms"]
-    CheckRole --> Execute["fa:fa-circle-check Execute (scoped data)"]
-```
+<ArchDiagram :config="clerkJwtConfig" />
 
 ### Role Hierarchy
 
@@ -311,19 +432,7 @@ stateDiagram-v2
 
 Inbound webhooks from Meta's WhatsApp Business Platform are verified before processing.
 
-```mermaid
-flowchart TD
-    Meta["fa:fa-globe Meta POST<br/>X-Hub-Signature-256"] --> ReadBody["fa:fa-code Read raw body"]
-    ReadBody --> ComputeHMAC["fa:fa-lock HMAC-SHA256 (app secret)"]
-    ComputeHMAC --> Compare["fa:fa-scale-balanced Constant-time compare"]
-    Compare -->|"Mismatch"| Reject401["fa:fa-circle-xmark Reject 401"]
-    Compare -->|"Match"| Parse["fa:fa-code Parse payload"]
-    Parse --> ExtractPhone["fa:fa-user Extract phone"]
-    ExtractPhone --> LookupWS["fa:fa-magnifying-glass Lookup workspace"]
-    LookupWS --> RateLimit["fa:fa-clock Rate limit"]
-    RateLimit -->|"Within limits"| Route["fa:fa-arrow-right Route to handler"]
-    RateLimit -->|"Exceeded"| Overflow["fa:fa-triangle-exclamation Overflow, notify owner"]
-```
+<ArchDiagram :config="webhookSecConfig" />
 
 ### Phone Number Verification
 
@@ -385,18 +494,7 @@ The owner can instantly disable critical subsystems when something goes wrong. K
 
 ### Kill-Switch Check Flow
 
-```mermaid
-flowchart TD
-    Op["fa:fa-bolt Sensitive op<br/>(send/run/sync)"]
-    Op --> ReadKS["fa:fa-power-off Read killSwitches"]
-    ReadKS --> CheckConnector{"connector<br/>killed?"}
-    CheckConnector -->|"Yes"| RejectConn["fa:fa-circle-xmark Reject"]
-    CheckConnector -->|"No"| CheckAgent{"agent<br/>killed?"}
-    CheckAgent -->|"Yes"| RejectAgent["fa:fa-circle-xmark Reject"]
-    CheckAgent -->|"No"| CheckOutbound{"outbound<br/>killed?"}
-    CheckOutbound -->|"Yes"| RejectOutbound["fa:fa-circle-xmark Reject"]
-    CheckOutbound -->|"No"| Proceed["fa:fa-circle-check Proceed"]
-```
+<ArchDiagram :config="killSwitchConfig" />
 
 Kill-switch activation and deactivation are both recorded in the audit trail. The owner receives a WhatsApp notification (via the Meta Cloud API outbound path, which is independent of the connector) when a kill switch is auto-triggered.
 
@@ -444,19 +542,7 @@ All agent runs are traced via [LangSmith](https://smith.langchain.com) for end-t
 
 ### What Gets Traced
 
-```mermaid
-flowchart TD
-    Trace["fa:fa-robot <strong>Agent Run Trace</strong><br/>run_id, ws_hash, specialist"]
-
-    Trace --> S1["fa:fa-microchip 1. Context Assembly<br/>memory, tokens"]
-    S1 --> S2["fa:fa-brain 2. Orchestrator LLM<br/>model, intent"]
-    S2 --> S3["fa:fa-brain 3. Specialist LLM<br/>tool proposed"]
-    S3 --> S4["fa:fa-scale-balanced 4. Policy Eval<br/>approval? risk"]
-    S4 --> S5["fa:fa-clock 5. Approval Wait<br/>time, decision"]
-    S5 --> S6["fa:fa-gear 6. Tool Exec<br/>latency, retries"]
-    S6 --> S7["fa:fa-message 7. Response Delivery<br/>channel, latency"]
-    S7 --> Total["fa:fa-chart-line Total: latency, cost,<br/>tokens, outcome"]
-```
+<ArchDiagram :config="traceFlowConfig" />
 
 ### Integration Architecture
 

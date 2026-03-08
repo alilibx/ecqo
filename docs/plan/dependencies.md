@@ -1,213 +1,276 @@
+<script setup>
+// Diagram 1: Epic-Level Dependency DAG
+const dep1Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "dep1-a", icon: "fa-key", title: "A: Auth/RBAC", subtitle: "A1-A5", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "dep1-b", icon: "fa-plug", title: "B: Connector Lifecycle", subtitle: "B1-B7", row: 1, col: 0, shape: "rect", color: "blue" },
+    { id: "dep1-d", icon: "fa-robot", title: "D: Agent Runtime", subtitle: "D1-D6", row: 1, col: 1, shape: "rect", color: "purple" },
+    { id: "dep1-j", icon: "fa-credit-card", title: "J: Billing & Stripe", subtitle: "J1-J5", row: 1, col: 2, shape: "rect", color: "amber" },
+    { id: "dep1-c", icon: "fa-arrow-right", title: "C: Sync & Ingestion", subtitle: "C1-C7", row: 2, col: 0, shape: "rect", color: "blue" },
+    { id: "dep1-e", icon: "fa-microchip", title: "E: Memory System", subtitle: "E1-E6", row: 2, col: 1, shape: "rect", color: "purple" },
+    { id: "dep1-f", icon: "fa-gauge", title: "F: Dashboard", subtitle: "F1-F7", row: 2, col: 2, shape: "rect", color: "green" },
+    { id: "dep1-g", icon: "fa-link", title: "G: External Integrations", subtitle: "G1-G8", row: 3, col: 0, shape: "rect", color: "indigo" },
+    { id: "dep1-h", icon: "fa-shield-halved", title: "H: Security & Observability", subtitle: "H1-H7", row: 4, col: 1, shape: "rect", color: "red" },
+    { id: "dep1-i", icon: "fa-list-check", title: "I: QA & Release Readiness", subtitle: "I1-I6", row: 5, col: 1, shape: "rect", color: "gray" },
+  ],
+  edges: [
+    { from: "dep1-a", to: "dep1-b" },
+    { from: "dep1-a", to: "dep1-d" },
+    { from: "dep1-a", to: "dep1-j" },
+    { from: "dep1-b", to: "dep1-c" },
+    { from: "dep1-d", to: "dep1-e" },
+    { from: "dep1-c", to: "dep1-g" },
+    { from: "dep1-e", to: "dep1-g" },
+    { from: "dep1-d", to: "dep1-f" },
+    { from: "dep1-j", to: "dep1-f" },
+    { from: "dep1-g", to: "dep1-h" },
+    { from: "dep1-f", to: "dep1-h" },
+    { from: "dep1-h", to: "dep1-i" },
+  ],
+  groups: [],
+}
+
+// Diagram 2: Detailed Issue-Level Dependency Graph
+const dep2Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    // Epic A
+    { id: "dep2-a1", icon: "fa-key", title: "A1", subtitle: "Clerk auth", row: 0, col: 2, shape: "rect", color: "teal" },
+    { id: "dep2-a2", icon: "fa-users", title: "A2", subtitle: "Workspace roles", row: 1, col: 2, shape: "rect", color: "teal" },
+    { id: "dep2-a3", icon: "fa-shield-halved", title: "A3", subtitle: "RBAC enforcement", row: 2, col: 2, shape: "rect", color: "teal" },
+    { id: "dep2-a4", icon: "fa-shield-halved", title: "A4", subtitle: "Route guards", row: 2, col: 3, shape: "rect", color: "teal" },
+    { id: "dep2-a5", icon: "fa-list-check", title: "A5", subtitle: "Audit events", row: 3, col: 2, shape: "rect", color: "teal" },
+    // Epic B
+    { id: "dep2-b1", icon: "fa-database", title: "B1", subtitle: "waAccounts schema", row: 2, col: 0, shape: "rect", color: "blue" },
+    { id: "dep2-b2", icon: "fa-plug", title: "B2", subtitle: "Connect API", row: 3, col: 1, shape: "rect", color: "blue" },
+    { id: "dep2-b3", icon: "fa-server", title: "B3", subtitle: "Worker lease", row: 3, col: 0, shape: "rect", color: "blue" },
+    { id: "dep2-b4", icon: "fa-comments", title: "B4", subtitle: "QR ingest", row: 4, col: 0, shape: "rect", color: "blue" },
+    { id: "dep2-b5", icon: "fa-link", title: "B5", subtitle: "Reconnect", row: 5, col: 0, shape: "rect", color: "blue" },
+    { id: "dep2-b6", icon: "fa-clock", title: "B6", subtitle: "Heartbeat", row: 4, col: 1, shape: "rect", color: "blue" },
+    { id: "dep2-b7", icon: "fa-gauge", title: "B7", subtitle: "Dashboard QR UX", row: 5, col: 1, shape: "rect", color: "blue" },
+    // Epic C
+    { id: "dep2-c1", icon: "fa-database", title: "C1", subtitle: "Sync schemas", row: 3, col: -1, shape: "rect", color: "cyan" },
+    { id: "dep2-c2", icon: "fa-plug", title: "C2", subtitle: "Sync ingest API", row: 3, col: -2, shape: "rect", color: "cyan" },
+    { id: "dep2-c3", icon: "fa-circle-check", title: "C3", subtitle: "Idempotency", row: 4, col: -3, shape: "rect", color: "cyan" },
+    { id: "dep2-c4", icon: "fa-clock", title: "C4", subtitle: "Scheduler", row: 4, col: -2, shape: "rect", color: "cyan" },
+    { id: "dep2-c5", icon: "fa-scale-balanced", title: "C5", subtitle: "Metadata policy", row: 4, col: -1, shape: "rect", color: "cyan" },
+    { id: "dep2-c6", icon: "fa-inbox", title: "C6", subtitle: "DLQ", row: 4, col: -4, shape: "rect", color: "cyan" },
+    { id: "dep2-c7", icon: "fa-chart-line", title: "C7", subtitle: "Health", row: 5, col: -2, shape: "rect", color: "cyan" },
+    // Epic D
+    { id: "dep2-d1", icon: "fa-database", title: "D1", subtitle: "Agent schemas", row: 2, col: 4, shape: "rect", color: "purple" },
+    { id: "dep2-d2", icon: "fa-gear", title: "D2", subtitle: "State machine", row: 3, col: 4, shape: "rect", color: "purple" },
+    { id: "dep2-d3", icon: "fa-scale-balanced", title: "D3", subtitle: "Policy engine", row: 3, col: 5, shape: "rect", color: "purple" },
+    { id: "dep2-d4", icon: "fa-inbox", title: "D4", subtitle: "Approval queue", row: 4, col: 5, shape: "rect", color: "purple" },
+    { id: "dep2-d5", icon: "fa-arrow-right", title: "D5", subtitle: "Retry", row: 4, col: 3, shape: "rect", color: "purple" },
+    { id: "dep2-d6", icon: "fa-chart-line", title: "D6", subtitle: "Traces", row: 4, col: 4, shape: "rect", color: "purple" },
+    // Epic E
+    { id: "dep2-e1", icon: "fa-database", title: "E1", subtitle: "Memory schema", row: 3, col: 6, shape: "rect", color: "pink" },
+    { id: "dep2-e2", icon: "fa-clock", title: "E2", subtitle: "Episodic", row: 4, col: 7, shape: "rect", color: "pink" },
+    { id: "dep2-e3", icon: "fa-brain", title: "E3", subtitle: "Semantic", row: 5, col: 7, shape: "rect", color: "pink" },
+    { id: "dep2-e4", icon: "fa-magnifying-glass", title: "E4", subtitle: "Retrieval", row: 6, col: 7, shape: "rect", color: "pink" },
+    { id: "dep2-e5", icon: "fa-gauge", title: "E5", subtitle: "Pinned UI", row: 4, col: 6, shape: "rect", color: "pink" },
+    { id: "dep2-e6", icon: "fa-globe", title: "E6", subtitle: "EN/AR", row: 7, col: 6, shape: "rect", color: "pink" },
+    // Epic F
+    { id: "dep2-f1", icon: "fa-gauge", title: "F1", subtitle: "Dashboard shell", row: 3, col: 3, shape: "rect", color: "green" },
+    { id: "dep2-f2", icon: "fa-gauge", title: "F2", subtitle: "Dashboard page", row: 5, col: 4, shape: "rect", color: "green" },
+    { id: "dep2-f3", icon: "fa-gauge", title: "F3", subtitle: "Dashboard page", row: 5, col: -1, shape: "rect", color: "green" },
+    { id: "dep2-f4", icon: "fa-gauge", title: "F4", subtitle: "Dashboard page", row: 5, col: 3, shape: "rect", color: "green" },
+    { id: "dep2-f5", icon: "fa-microchip", title: "F5", subtitle: "Memory UI", row: 7, col: 7, shape: "rect", color: "green" },
+    { id: "dep2-f6", icon: "fa-link", title: "F6", subtitle: "Integrations", row: 7, col: 9, shape: "rect", color: "green" },
+    { id: "dep2-f7", icon: "fa-scale-balanced", title: "F7", subtitle: "Policy page", row: 4, col: 8, shape: "rect", color: "green" },
+    // Epic G
+    { id: "dep2-g1", icon: "fa-link", title: "G1", subtitle: "Calendar connect", row: 4, col: 9, shape: "rect", color: "indigo" },
+    { id: "dep2-g2", icon: "fa-magnifying-glass", title: "G2", subtitle: "Cal read", row: 5, col: 9, shape: "rect", color: "indigo" },
+    { id: "dep2-g3", icon: "fa-code", title: "G3", subtitle: "Cal write", row: 6, col: 9, shape: "rect", color: "indigo" },
+    { id: "dep2-g4", icon: "fa-clock", title: "G4", subtitle: "Reminders", row: 4, col: 10, shape: "rect", color: "indigo" },
+    { id: "dep2-g5", icon: "fa-link", title: "G5", subtitle: "Gmail connect", row: 4, col: 11, shape: "rect", color: "indigo" },
+    { id: "dep2-g6", icon: "fa-arrow-right", title: "G6", subtitle: "Gmail sync", row: 5, col: 11, shape: "rect", color: "indigo" },
+    { id: "dep2-g7", icon: "fa-globe", title: "G7", subtitle: "Travel", row: 7, col: 9, shape: "rect", color: "indigo" },
+    { id: "dep2-g8", icon: "fa-message", title: "G8", subtitle: "Meeting briefs", row: 7, col: 8, shape: "rect", color: "indigo" },
+    // Epic H
+    { id: "dep2-h1", icon: "fa-lock", title: "H1", subtitle: "Encryption", row: 5, col: 10, shape: "rect", color: "red" },
+    { id: "dep2-h2", icon: "fa-lock", title: "H2", subtitle: "Signed requests", row: 5, col: 2, shape: "rect", color: "red" },
+    { id: "dep2-h3", icon: "fa-list-check", title: "H3", subtitle: "Audit stream", row: 5, col: 5, shape: "rect", color: "red" },
+    { id: "dep2-h4", icon: "fa-chart-line", title: "H4", subtitle: "Observability", row: 5, col: 6, shape: "rect", color: "red" },
+    { id: "dep2-h5", icon: "fa-chart-line", title: "H5", subtitle: "Observability", row: 6, col: 4, shape: "rect", color: "red" },
+    // Epic J
+    { id: "dep2-j1", icon: "fa-credit-card", title: "J1", subtitle: "Stripe customer", row: 1, col: 0, shape: "rect", color: "amber" },
+    { id: "dep2-j2", icon: "fa-credit-card", title: "J2", subtitle: "Plans", row: 2, col: -1, shape: "rect", color: "amber" },
+    { id: "dep2-j3", icon: "fa-credit-card", title: "J3", subtitle: "Billing portal", row: 4, col: 2, shape: "rect", color: "amber" },
+    { id: "dep2-j4", icon: "fa-scale-balanced", title: "J4", subtitle: "Plan limits", row: 3, col: -1, shape: "rect", color: "amber" },
+    { id: "dep2-j5", icon: "fa-clock", title: "J5", subtitle: "Trial/grace", row: 3, col: -3, shape: "rect", color: "amber" },
+  ],
+  edges: [
+    // A dependencies
+    { from: "dep2-a1", to: "dep2-a2" },
+    { from: "dep2-a2", to: "dep2-a3" },
+    { from: "dep2-a2", to: "dep2-a4" },
+    { from: "dep2-a2", to: "dep2-b1" },
+    { from: "dep2-a2", to: "dep2-d1" },
+    { from: "dep2-a3", to: "dep2-a5" },
+    { from: "dep2-a3", to: "dep2-g5" },
+    { from: "dep2-a5", to: "dep2-h3" },
+    // A4 -> F
+    { from: "dep2-a4", to: "dep2-f1" },
+    { from: "dep2-f1", to: "dep2-f2" },
+    { from: "dep2-f1", to: "dep2-f3" },
+    { from: "dep2-f1", to: "dep2-f4" },
+    { from: "dep2-f1", to: "dep2-f5" },
+    { from: "dep2-f1", to: "dep2-j3" },
+    // B dependencies
+    { from: "dep2-a3", to: "dep2-b2" },
+    { from: "dep2-b1", to: "dep2-b3" },
+    { from: "dep2-b3", to: "dep2-b4" },
+    { from: "dep2-b3", to: "dep2-b6" },
+    { from: "dep2-b4", to: "dep2-b5" },
+    { from: "dep2-b4", to: "dep2-h2" },
+    { from: "dep2-b4", to: "dep2-b7" },
+    { from: "dep2-b6", to: "dep2-c7" },
+    // C dependencies
+    { from: "dep2-b1", to: "dep2-c1" },
+    { from: "dep2-a3", to: "dep2-c2" },
+    { from: "dep2-c1", to: "dep2-c5" },
+    { from: "dep2-c5", to: "dep2-f3" },
+    { from: "dep2-c2", to: "dep2-c3" },
+    { from: "dep2-c2", to: "dep2-c4" },
+    { from: "dep2-c2", to: "dep2-c6" },
+    { from: "dep2-c4", to: "dep2-c7" },
+    // D dependencies
+    { from: "dep2-d1", to: "dep2-d2" },
+    { from: "dep2-d1", to: "dep2-d3" },
+    { from: "dep2-d2", to: "dep2-d5" },
+    { from: "dep2-d2", to: "dep2-d6" },
+    { from: "dep2-d3", to: "dep2-d4" },
+    { from: "dep2-d4", to: "dep2-f2" },
+    { from: "dep2-d4", to: "dep2-h3" },
+    { from: "dep2-d3", to: "dep2-g4" },
+    { from: "dep2-d3", to: "dep2-f7" },
+    { from: "dep2-d6", to: "dep2-f4" },
+    { from: "dep2-d6", to: "dep2-h4" },
+    { from: "dep2-d6", to: "dep2-h5" },
+    // E dependencies
+    { from: "dep2-d1", to: "dep2-e1" },
+    { from: "dep2-e1", to: "dep2-e2" },
+    { from: "dep2-e2", to: "dep2-e3" },
+    { from: "dep2-e3", to: "dep2-e4" },
+    { from: "dep2-e4", to: "dep2-e6" },
+    { from: "dep2-e4", to: "dep2-f5" },
+    { from: "dep2-e4", to: "dep2-g8" },
+    { from: "dep2-e1", to: "dep2-e5" },
+    { from: "dep2-f4", to: "dep2-e5" },
+    // G dependencies
+    { from: "dep2-a3", to: "dep2-g1" },
+    { from: "dep2-g1", to: "dep2-g2" },
+    { from: "dep2-g1", to: "dep2-h1" },
+    { from: "dep2-g2", to: "dep2-g3" },
+    { from: "dep2-g3", to: "dep2-g7" },
+    { from: "dep2-g2", to: "dep2-f6" },
+    { from: "dep2-g5", to: "dep2-g6" },
+    { from: "dep2-g6", to: "dep2-g8" },
+    // J dependencies
+    { from: "dep2-a1", to: "dep2-j1" },
+    { from: "dep2-j1", to: "dep2-j2" },
+    { from: "dep2-j2", to: "dep2-j3" },
+    { from: "dep2-j2", to: "dep2-j4" },
+    { from: "dep2-j2", to: "dep2-j5" },
+    { from: "dep2-a2", to: "dep2-j4" },
+  ],
+  groups: [
+    { label: "Epic A: Auth/RBAC", color: "teal", nodes: ["dep2-a1", "dep2-a2", "dep2-a3", "dep2-a4", "dep2-a5"] },
+    { label: "Epic B: Connector Lifecycle", color: "blue", nodes: ["dep2-b1", "dep2-b2", "dep2-b3", "dep2-b4", "dep2-b5", "dep2-b6", "dep2-b7"] },
+    { label: "Epic C: Sync & Ingestion", color: "cyan", nodes: ["dep2-c1", "dep2-c2", "dep2-c3", "dep2-c4", "dep2-c5", "dep2-c6", "dep2-c7"] },
+    { label: "Epic D: Agent Runtime", color: "purple", nodes: ["dep2-d1", "dep2-d2", "dep2-d3", "dep2-d4", "dep2-d5", "dep2-d6"] },
+    { label: "Epic E: Memory System", color: "pink", nodes: ["dep2-e1", "dep2-e2", "dep2-e3", "dep2-e4", "dep2-e5", "dep2-e6"] },
+    { label: "Epic F: Dashboard", color: "green", nodes: ["dep2-f1", "dep2-f2", "dep2-f3", "dep2-f4", "dep2-f5", "dep2-f6", "dep2-f7"] },
+    { label: "Epic G: External Integrations", color: "indigo", nodes: ["dep2-g1", "dep2-g2", "dep2-g3", "dep2-g4", "dep2-g5", "dep2-g6", "dep2-g7", "dep2-g8"] },
+    { label: "Epic H: Security & Observability", color: "red", nodes: ["dep2-h1", "dep2-h2", "dep2-h3", "dep2-h4", "dep2-h5"] },
+    { label: "Epic J: Billing & Stripe", color: "amber", nodes: ["dep2-j1", "dep2-j2", "dep2-j3", "dep2-j4", "dep2-j5"] },
+  ],
+}
+
+// Diagram 3: Critical Path Option 1
+const dep3Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "dep3-a1", icon: "fa-key", title: "A1", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "dep3-a2", icon: "fa-users", title: "A2", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "dep3-a3", icon: "fa-shield-halved", title: "A3", row: 0, col: 2, shape: "rect", color: "teal" },
+    { id: "dep3-d1", icon: "fa-database", title: "D1", row: 0, col: 3, shape: "rect", color: "purple" },
+    { id: "dep3-d2", icon: "fa-gear", title: "D2", row: 0, col: 4, shape: "rect", color: "purple" },
+    { id: "dep3-e1", icon: "fa-database", title: "E1", row: 0, col: 5, shape: "rect", color: "pink" },
+    { id: "dep3-e2", icon: "fa-clock", title: "E2", row: 0, col: 6, shape: "rect", color: "pink" },
+    { id: "dep3-e3", icon: "fa-brain", title: "E3", row: 0, col: 7, shape: "rect", color: "pink" },
+    { id: "dep3-e4", icon: "fa-magnifying-glass", title: "E4", row: 0, col: 8, shape: "rect", color: "pink" },
+    { id: "dep3-e6", icon: "fa-globe", title: "E6", row: 0, col: 9, shape: "rect", color: "pink" },
+    { id: "dep3-g8", icon: "fa-message", title: "G8", row: 0, col: 10, shape: "rect", color: "indigo" },
+    { id: "dep3-i5", icon: "fa-list-check", title: "I5", row: 0, col: 11, shape: "rect", color: "gray" },
+    { id: "dep3-i6", icon: "fa-flag", title: "I6", row: 0, col: 12, shape: "rect", color: "gray" },
+  ],
+  edges: [
+    { from: "dep3-a1", to: "dep3-a2" },
+    { from: "dep3-a2", to: "dep3-a3" },
+    { from: "dep3-a3", to: "dep3-d1" },
+    { from: "dep3-d1", to: "dep3-d2" },
+    { from: "dep3-d2", to: "dep3-e1" },
+    { from: "dep3-e1", to: "dep3-e2" },
+    { from: "dep3-e2", to: "dep3-e3" },
+    { from: "dep3-e3", to: "dep3-e4" },
+    { from: "dep3-e4", to: "dep3-e6" },
+    { from: "dep3-e6", to: "dep3-g8" },
+    { from: "dep3-g8", to: "dep3-i5" },
+    { from: "dep3-i5", to: "dep3-i6" },
+  ],
+  groups: [],
+}
+
+// Diagram 4: Critical Path Option 2
+const dep4Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "dep4-a1", icon: "fa-key", title: "A1", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "dep4-a2", icon: "fa-users", title: "A2", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "dep4-b1", icon: "fa-database", title: "B1", row: 0, col: 2, shape: "rect", color: "blue" },
+    { id: "dep4-b3", icon: "fa-server", title: "B3", row: 0, col: 3, shape: "rect", color: "blue" },
+    { id: "dep4-b4", icon: "fa-comments", title: "B4", row: 0, col: 4, shape: "rect", color: "blue" },
+    { id: "dep4-b5", icon: "fa-link", title: "B5", row: 0, col: 5, shape: "rect", color: "blue" },
+    { id: "dep4-h2", icon: "fa-lock", title: "H2", row: 0, col: 6, shape: "rect", color: "red" },
+    { id: "dep4-h6", icon: "fa-chart-line", title: "H6", row: 0, col: 7, shape: "rect", color: "red" },
+    { id: "dep4-h7", icon: "fa-shield-halved", title: "H7", row: 0, col: 8, shape: "rect", color: "red" },
+    { id: "dep4-i2", icon: "fa-list-check", title: "I2", row: 0, col: 9, shape: "rect", color: "gray" },
+    { id: "dep4-i6", icon: "fa-flag", title: "I6", row: 0, col: 10, shape: "rect", color: "gray" },
+  ],
+  edges: [
+    { from: "dep4-a1", to: "dep4-a2" },
+    { from: "dep4-a2", to: "dep4-b1" },
+    { from: "dep4-b1", to: "dep4-b3" },
+    { from: "dep4-b3", to: "dep4-b4" },
+    { from: "dep4-b4", to: "dep4-b5" },
+    { from: "dep4-b5", to: "dep4-h2" },
+    { from: "dep4-h2", to: "dep4-h6" },
+    { from: "dep4-h6", to: "dep4-h7" },
+    { from: "dep4-h7", to: "dep4-i2" },
+    { from: "dep4-i2", to: "dep4-i6" },
+  ],
+  groups: [],
+}
+</script>
+
 # Dependency Graph
 
 This document maps the dependency relationships across all 10 epics and 64 issues, identifies the critical path, and highlights parallelization opportunities for a solo developer.
 
 ## Epic-Level Dependency DAG
 
-```mermaid
-flowchart TD
-    A["fa:fa-key A: Auth/RBAC<br/>(A1-A5)"]
-    B["fa:fa-plug B: Connector Lifecycle<br/>(B1-B7)"]
-    C["fa:fa-arrow-right C: Sync & Ingestion<br/>(C1-C7)"]
-    D["fa:fa-robot D: Agent Runtime<br/>(D1-D6)"]
-    E["fa:fa-microchip E: Memory System<br/>(E1-E6)"]
-    F["fa:fa-gauge F: Dashboard<br/>(F1-F7)"]
-    G["fa:fa-link G: External Integrations<br/>(G1-G8)"]
-    H["fa:fa-shield-halved H: Security & Observability<br/>(H1-H7)"]
-    I["fa:fa-list-check I: QA & Release Readiness<br/>(I1-I6)"]
-    J["fa:fa-credit-card J: Billing & Stripe<br/>(J1-J5)"]
-
-    A --> B
-    A --> D
-    A --> J
-    B --> C
-    D --> E
-    C --> G
-    E --> G
-    D --> F
-    J --> F
-    G --> H
-    F --> H
-    H --> I
-```
+<ArchDiagram :config="dep1Config" />
 
 ## Detailed Issue-Level Dependency Graph
 
-```mermaid
-flowchart TD
-    subgraph A["fa:fa-key Epic A: Auth/RBAC"]
-        direction LR
-        A1["fa:fa-key A1: Clerk auth"]
-        A2["fa:fa-users A2: Workspace roles"]
-        A3["fa:fa-shield-halved A3: RBAC enforcement"]
-        A4["fa:fa-shield-halved A4: Route guards"]
-        A5["fa:fa-list-check A5: Audit events"]
-    end
-
-    subgraph B["fa:fa-plug Epic B: Connector Lifecycle"]
-        direction LR
-        B1["fa:fa-database B1: waAccounts schema"]
-        B2["fa:fa-plug B2: Connect API"]
-        B3["fa:fa-server B3: Worker lease"]
-        B4["fa:fa-comments B4: QR ingest"]
-        B5["fa:fa-link B5: Reconnect"]
-        B6["fa:fa-clock B6: Heartbeat"]
-        B7["fa:fa-gauge B7: Dashboard QR UX"]
-    end
-
-    subgraph C["fa:fa-arrow-right Epic C: Sync & Ingestion"]
-        direction LR
-        C1["fa:fa-database C1: Sync schemas"]
-        C2["fa:fa-plug C2: Sync ingest API"]
-        C3["fa:fa-circle-check C3: Idempotency"]
-        C4["fa:fa-clock C4: Scheduler"]
-        C5["fa:fa-scale-balanced C5: Metadata policy"]
-        C6["fa:fa-inbox C6: DLQ"]
-        C7["fa:fa-chart-line C7: Health"]
-    end
-
-    subgraph D["fa:fa-robot Epic D: Agent Runtime"]
-        direction LR
-        D1["fa:fa-database D1: Agent schemas"]
-        D2["fa:fa-gear D2: State machine"]
-        D3["fa:fa-scale-balanced D3: Policy engine"]
-        D4["fa:fa-inbox D4: Approval queue"]
-        D5["fa:fa-arrow-right D5: Retry"]
-        D6["fa:fa-chart-line D6: Traces"]
-    end
-
-    subgraph E["fa:fa-microchip Epic E: Memory System"]
-        direction LR
-        E1["fa:fa-database E1: Memory schema"]
-        E2["fa:fa-clock E2: Episodic"]
-        E3["fa:fa-brain E3: Semantic"]
-        E4["fa:fa-magnifying-glass E4: Retrieval"]
-        E5["fa:fa-gauge E5: Pinned UI"]
-        E6["fa:fa-globe E6: EN/AR"]
-    end
-
-    subgraph F["fa:fa-gauge Epic F: Dashboard"]
-        direction LR
-        F1["fa:fa-gauge F1: Dashboard shell"]
-        F2["fa:fa-gauge F2: Dashboard page"]
-        F3["fa:fa-gauge F3: Dashboard page"]
-        F4["fa:fa-gauge F4: Dashboard page"]
-        F5["fa:fa-microchip F5: Memory UI"]
-        F6["fa:fa-link F6: Integrations"]
-        F7["fa:fa-scale-balanced F7: Policy page"]
-    end
-
-    subgraph G["fa:fa-link Epic G: External Integrations"]
-        direction LR
-        G1["fa:fa-link G1: Calendar connect"]
-        G2["fa:fa-magnifying-glass G2: Cal read"]
-        G3["fa:fa-code G3: Cal write"]
-        G4["fa:fa-clock G4: Reminders"]
-        G5["fa:fa-link G5: Gmail connect"]
-        G6["fa:fa-arrow-right G6: Gmail sync"]
-        G7["fa:fa-globe G7: Travel"]
-        G8["fa:fa-message G8: Meeting briefs"]
-    end
-
-    subgraph H["fa:fa-shield-halved Epic H: Security & Observability"]
-        direction LR
-        H1["fa:fa-lock H1: Encryption"]
-        H2["fa:fa-lock H2: Signed requests"]
-        H3["fa:fa-list-check H3: Audit stream"]
-        H4["fa:fa-chart-line H4: Observability"]
-        H5["fa:fa-chart-line H5: Observability"]
-    end
-
-    subgraph J["fa:fa-credit-card Epic J: Billing & Stripe"]
-        direction LR
-        J1["fa:fa-credit-card J1: Stripe customer"]
-        J2["fa:fa-credit-card J2: Plans"]
-        J3["fa:fa-credit-card J3: Billing portal"]
-        J4["fa:fa-scale-balanced J4: Plan limits"]
-        J5["fa:fa-clock J5: Trial/grace"]
-    end
-
-    %% A dependencies
-    A1 --> A2
-    A2 --> A3
-    A2 --> A4
-    A2 --> B1
-    A2 --> D1
-    A3 --> A5
-    A3 --> G5
-    A5 --> H3
-
-    %% A4 -> F
-    A4 --> F1
-    F1 --> F2
-    F1 --> F3
-    F1 --> F4
-    F1 --> F5
-    F1 --> J3
-
-    %% B dependencies
-    A3 --> B2
-    B1 --> B3
-    B3 --> B4
-    B3 --> B6
-    B4 --> B5
-    B4 --> H2
-    B4 --> B7
-    B6 --> C7
-
-    %% C dependencies
-    B1 --> C1
-    A3 --> C2
-    C1 --> C5
-    C5 --> F3
-    C2 --> C3
-    C2 --> C4
-    C2 --> C6
-    C4 --> C7
-
-    %% D dependencies
-    D1 --> D2
-    D1 --> D3
-    D2 --> D5
-    D2 --> D6
-    D3 --> D4
-    D4 --> F2
-    D4 --> H3
-    D3 --> G4
-    D3 --> F7
-    D6 --> F4
-    D6 --> H4
-    D6 --> H5
-
-    %% E dependencies
-    D1 --> E1
-    E1 --> E2
-    E2 --> E3
-    E3 --> E4
-    E4 --> E6
-    E4 --> F5
-    E4 --> G8
-    E1 --> E5
-    F4 --> E5
-
-    %% G dependencies
-    A3 --> G1
-    G1 --> G2
-    G1 --> H1
-    G2 --> G3
-    G3 --> G7
-    G2 --> F6
-    G5 --> G6
-    G6 --> G8
-
-    %% J dependencies
-    A1 --> J1
-    J1 --> J2
-    J2 --> J3
-    J2 --> J4
-    J2 --> J5
-    A2 --> J4
-```
+<ArchDiagram :config="dep2Config" />
 
 ## Critical Path
 
@@ -216,18 +279,12 @@ The longest dependency chain determines the minimum possible project duration. T
 **Critical Path Option 1 (Agent + Memory + Meeting Briefs):**
 Total: 12 issues, ~62 SP (longest chain)
 
-```mermaid
-flowchart LR
-    A1["fa:fa-key A1"] --> A2["fa:fa-users A2"] --> A3["fa:fa-shield-halved A3"] --> D1["fa:fa-database D1"] --> D2["fa:fa-gear D2"] --> E1["fa:fa-database E1"] --> E2["fa:fa-clock E2"] --> E3["fa:fa-brain E3"] --> E4["fa:fa-magnifying-glass E4"] --> E6["fa:fa-globe E6"] --> G8["fa:fa-message G8"] --> I5["fa:fa-list-check I5"] --> I6["fa:fa-flag I6"]
-```
+<ArchDiagram :config="dep3Config" />
 
 **Critical Path Option 2 (Connector + Security + QA):**
 Total: 10 issues, ~46 SP (shorter but high-risk)
 
-```mermaid
-flowchart LR
-    A1["fa:fa-key A1"] --> A2["fa:fa-users A2"] --> B1["fa:fa-database B1"] --> B3["fa:fa-server B3"] --> B4["fa:fa-comments B4"] --> B5["fa:fa-link B5"] --> H2["fa:fa-lock H2"] --> H6["fa:fa-chart-line H6"] --> H7["fa:fa-shield-halved H7"] --> I2["fa:fa-list-check I2"] --> I6["fa:fa-flag I6"]
-```
+<ArchDiagram :config="dep4Config" />
 
 **Critical path is Option 1.** The chain from auth through agent runtime, memory, and advanced integrations (meeting briefs) is the longest. Any delay on D2, E3, or E4 pushes the entire project.
 

@@ -6,50 +6,252 @@ This document describes Ecqqo's AI agent system: the orchestrator, specialist ag
 
 ### Inbound Pipeline
 
-```mermaid
-flowchart LR
-    A["fa:fa-message Inbound Message<br/>(webhook / wacli)"] --> B["fa:fa-gear Preprocessing"]
-    B --> C["fa:fa-database Context Assembly"]
-
-    B -.- B1["fa:fa-language Lang detect"]
-    B -.- B2["fa:fa-shield-halved Sanitize"]
-    B -.- B3["fa:fa-magnifying-glass Extract metadata"]
-
-    C -.- C1["fa:fa-comments Recent msgs (10)"]
-    C -.- C2["fa:fa-thumbtack Pinned memories"]
-    C -.- C3["fa:fa-magnifying-glass Vector hits"]
-    C -.- C4["fa:fa-scale-balanced User policies"]
-    C -.- C5["fa:fa-clock Active reminders"]
-    C -.- C6["fa:fa-calendar Calendar context"]
-```
+<ArchDiagram :config="ao1Config" />
 
 ### Orchestrator
 
-```mermaid
-flowchart LR
-    ID["fa:fa-magnifying-glass Intent Detection"] --> SR["fa:fa-sitemap Specialist<br/>Routing"] --> RF["fa:fa-align-left Response<br/>Formatting"]
-
-    ID -.- I1["fa:fa-calendar scheduling"]
-    ID -.- I2["fa:fa-calendar calendar_query"]
-    ID -.- I3["fa:fa-envelope email"]
-    ID -.- I4["fa:fa-clock reminder"]
-    ID -.- I5["fa:fa-paper-plane travel"]
-    ID -.- I6["fa:fa-microchip brief"]
-    ID -.- I7["fa:fa-comments chitchat"]
-    ID -.- I8["fa:fa-circle-question unclear"]
-
-    SR -.- S1["fa:fa-sitemap Route to 1+<br/>specialists"]
-
-    RF -.- R1["fa:fa-language Lang match (EN/AR)"]
-    RF -.- R2["fa:fa-align-left WA formatting"]
-    RF -.- R3["fa:fa-comments Concise tone"]
-```
+<ArchDiagram :config="ao2Config" />
 
 Orchestrator model: Claude Sonnet / GPT-4o (runs as Convex Actions).
 
 ### Specialist Agents
 
 <script setup>
+// Flow Diagram 1: Inbound Pipeline
+const ao1Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "ao1-msg", icon: "fa-message", title: "Inbound Message", subtitle: "webhook / wacli", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "ao1-pre", icon: "fa-gear", title: "Preprocessing", subtitle: "Lang · Sanitize · Metadata", row: 0, col: 1, shape: "rect", color: "warm" },
+    { id: "ao1-ctx", icon: "fa-database", title: "Context Assembly", subtitle: "Msgs · Memories · Policies", row: 0, col: 2, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ao1-msg", to: "ao1-pre" },
+    { from: "ao1-pre", to: "ao1-ctx" },
+  ],
+}
+
+// Flow Diagram 2: Orchestrator
+const ao2Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "ao2-id", icon: "fa-magnifying-glass", title: "Intent Detection", subtitle: "scheduling · email · reminder · ...", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "ao2-sr", icon: "fa-sitemap", title: "Specialist Routing", subtitle: "Route to 1+ specialists", row: 0, col: 1, shape: "rect", color: "warm" },
+    { id: "ao2-rf", icon: "fa-align-left", title: "Response Formatting", subtitle: "Lang match · WA fmt · Concise", row: 0, col: 2, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ao2-id", to: "ao2-sr" },
+    { from: "ao2-sr", to: "ao2-rf" },
+  ],
+}
+
+// Flow Diagram 3: Approval Workflow
+const ao3Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao3-dr", icon: "fa-code", title: "Dry-run Payload", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ao3-sa", icon: "fa-paper-plane", title: "Send Approval", subtitle: "via WhatsApp", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "ao3-wd", icon: "fa-clock", title: "Wait for Decision", subtitle: "30m timeout", row: 2, col: 1, shape: "rect", color: "dark" },
+    { id: "ao3-ex", icon: "fa-circle-check", title: "Execute Tool", row: 3, col: 0, shape: "rect", color: "teal" },
+    { id: "ao3-no", icon: "fa-circle-xmark", title: "Notify User", row: 3, col: 2, shape: "rect", color: "red" },
+  ],
+  edges: [
+    { from: "ao3-dr", to: "ao3-sa" },
+    { from: "ao3-sa", to: "ao3-wd" },
+    { from: "ao3-wd", to: "ao3-ex", label: "Approved" },
+    { from: "ao3-wd", to: "ao3-no", label: "Rejected" },
+  ],
+}
+
+// Flow Diagram 4: Response Delivery
+const ao4Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "ao4-fmt", icon: "fa-align-left", title: "Format for WA", subtitle: "bold, lists, brevity", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "ao4-send", icon: "fa-paper-plane", title: "Send via Meta API", subtitle: "POST /messages", row: 0, col: 1, shape: "rect", color: "warm" },
+  ],
+  edges: [
+    { from: "ao4-fmt", to: "ao4-send" },
+  ],
+}
+
+// Flow Diagram 5: Specialist Routing Example
+const ao5Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao5-o", icon: "fa-sitemap", title: "Orchestrator", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ao5-sa", icon: "fa-robot", title: "Scheduler", subtitle: "create event", row: 1, col: 0, shape: "rect", color: "warm" },
+    { id: "ao5-ba", icon: "fa-robot", title: "Brief", subtitle: "pre-meeting", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "ao5-fr", icon: "fa-align-left", title: "Format Response", row: 1, col: 2, shape: "rect", color: "dark" },
+    { id: "ao5-cr", icon: "fa-calendar", title: "calendar_read", subtitle: "check avail", row: 2, col: 0, shape: "rect", color: "teal" },
+    { id: "ao5-cw", icon: "fa-lock", title: "calendar_write", subtitle: "create · APPROVAL", row: 3, col: 0, shape: "rect", color: "red" },
+    { id: "ao5-mq", icon: "fa-magnifying-glass", title: "memory_query", subtitle: "Ahmed context", row: 2, col: 1, shape: "rect", color: "teal" },
+    { id: "ao5-rs", icon: "fa-clock", title: "reminder_set", subtitle: "brief 30m before", row: 3, col: 1, shape: "rect", color: "warm" },
+  ],
+  edges: [
+    { from: "ao5-o", to: "ao5-sa" },
+    { from: "ao5-o", to: "ao5-ba" },
+    { from: "ao5-o", to: "ao5-fr" },
+    { from: "ao5-sa", to: "ao5-cr" },
+    { from: "ao5-sa", to: "ao5-cw" },
+    { from: "ao5-ba", to: "ao5-mq" },
+    { from: "ao5-ba", to: "ao5-rs" },
+  ],
+}
+
+// Flow Diagram 6: Policy Check
+const ao6Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao6-tc", icon: "fa-wrench", title: "Tool Call", subtitle: "requested", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ao6-aa", icon: "fa-circle-question", title: "Auto-approved?", row: 1, col: 1, shape: "diamond", color: "warm" },
+    { id: "ao6-ex1", icon: "fa-play", title: "Execute Now", row: 2, col: 0, shape: "rect", color: "teal" },
+    { id: "ao6-wh", icon: "fa-clock", title: "Working hours?", row: 2, col: 2, shape: "diamond", color: "warm" },
+    { id: "ao6-ex2", icon: "fa-play", title: "Execute Now", row: 3, col: 1, shape: "rect", color: "teal" },
+    { id: "ao6-ap", icon: "fa-pause", title: "Create Approval", subtitle: "notify · pause run", row: 3, col: 3, shape: "rect", color: "red" },
+  ],
+  edges: [
+    { from: "ao6-tc", to: "ao6-aa" },
+    { from: "ao6-aa", to: "ao6-ex1", label: "Yes" },
+    { from: "ao6-aa", to: "ao6-wh", label: "No" },
+    { from: "ao6-wh", to: "ao6-ex2", label: "Yes" },
+    { from: "ao6-wh", to: "ao6-ap", label: "No" },
+  ],
+}
+
+// Flow Diagram 7: Tool Execution Flow
+const ao7Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao7-sa", icon: "fa-robot", title: "Specialist", subtitle: "requests tool call", row: 0, col: 2, shape: "rect", color: "teal" },
+    { id: "ao7-te", icon: "fa-play", title: "Tool Executor", row: 1, col: 2, shape: "rect", color: "warm" },
+    { id: "ao7-se", icon: "fa-circle-question", title: "Side effect?", row: 2, col: 2, shape: "diamond", color: "warm" },
+    { id: "ao7-ex1", icon: "fa-play", title: "Execute", subtitle: "return result", row: 3, col: 0, shape: "rect", color: "teal" },
+    { id: "ao7-ar", icon: "fa-circle-question", title: "Approval?", row: 3, col: 3, shape: "diamond", color: "warm" },
+    { id: "ao7-ex2", icon: "fa-play", title: "Execute", subtitle: "return result", row: 4, col: 2, shape: "rect", color: "teal" },
+    { id: "ao7-dr", icon: "fa-code", title: "Dry-run Payload", row: 4, col: 4, shape: "rect", color: "dark" },
+    { id: "ao7-tc", icon: "fa-wrench", title: "Create toolCall", row: 5, col: 4, shape: "rect", color: "dark" },
+    { id: "ao7-cr", icon: "fa-circle-check", title: "Create Approval", row: 6, col: 4, shape: "rect", color: "dark" },
+    { id: "ao7-no", icon: "fa-paper-plane", title: "Notify Operator", row: 7, col: 4, shape: "rect", color: "warm" },
+    { id: "ao7-pa", icon: "fa-pause", title: "Pause", subtitle: "await decision", row: 8, col: 4, shape: "rect", color: "dark" },
+    { id: "ao7-ex3", icon: "fa-circle-check", title: "Execute Tool", row: 9, col: 3, shape: "rect", color: "teal" },
+    { id: "ao7-rj", icon: "fa-circle-xmark", title: "Reject + Notify", row: 9, col: 5, shape: "rect", color: "red" },
+  ],
+  edges: [
+    { from: "ao7-sa", to: "ao7-te" },
+    { from: "ao7-te", to: "ao7-se" },
+    { from: "ao7-se", to: "ao7-ex1", label: "No" },
+    { from: "ao7-se", to: "ao7-ar", label: "Yes" },
+    { from: "ao7-ar", to: "ao7-ex2", label: "No" },
+    { from: "ao7-ar", to: "ao7-dr", label: "Yes" },
+    { from: "ao7-dr", to: "ao7-tc" },
+    { from: "ao7-tc", to: "ao7-cr" },
+    { from: "ao7-cr", to: "ao7-no" },
+    { from: "ao7-no", to: "ao7-pa" },
+    { from: "ao7-pa", to: "ao7-ex3", label: "Approved" },
+    { from: "ao7-pa", to: "ao7-rj", label: "Rejected" },
+  ],
+}
+
+// Flow Diagram 8: System Prompt Structure
+const ao8Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao8-role", icon: "fa-user", title: "1. ROLE", subtitle: "WA assistant for principal", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-cap", icon: "fa-wrench", title: "2. CAPABILITIES", subtitle: "Boundaries + limits", row: 1, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-pol", icon: "fa-scale-balanced", title: "3. POLICIES", subtitle: "Hours, auto-approve", row: 2, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-lang", icon: "fa-language", title: "4. LANGUAGE", subtitle: "Match EN/AR, Gulf dialect", row: 3, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-fmt", icon: "fa-align-left", title: "5. FORMATTING", subtitle: "WA bold/italic, ≤500ch", row: 4, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-tools", icon: "fa-code", title: "6. TOOLS", subtitle: "JSON schemas, constraints", row: 5, col: 0, shape: "rect", color: "teal" },
+    { id: "ao8-pin", icon: "fa-thumbtack", title: "PINNED MEMORIES", subtitle: "Prefs, contacts, rules", row: 0, col: 2, shape: "rect", color: "blue" },
+    { id: "ao8-rel", icon: "fa-magnifying-glass", title: "RELEVANT MEMORIES", subtitle: "Semantic search hits", row: 1, col: 2, shape: "rect", color: "blue" },
+    { id: "ao8-cal", icon: "fa-calendar", title: "TODAY'S CALENDAR", subtitle: "Scheduled events", row: 2, col: 2, shape: "rect", color: "blue" },
+    { id: "ao8-conv", icon: "fa-comments", title: "RECENT CONVERSATION", subtitle: "Last 10 messages", row: 3, col: 2, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ao8-role", to: "ao8-cap" },
+    { from: "ao8-cap", to: "ao8-pol" },
+    { from: "ao8-pol", to: "ao8-lang" },
+    { from: "ao8-lang", to: "ao8-fmt" },
+    { from: "ao8-fmt", to: "ao8-tools" },
+    { from: "ao8-tools", to: "ao8-pin" },
+    { from: "ao8-pin", to: "ao8-rel" },
+    { from: "ao8-rel", to: "ao8-cal" },
+    { from: "ao8-cal", to: "ao8-conv" },
+  ],
+  groups: [
+    { label: "SYSTEM PROMPT", color: "teal", nodes: ["ao8-role", "ao8-cap", "ao8-pol", "ao8-lang", "ao8-fmt", "ao8-tools"] },
+    { label: "CONTEXT WINDOW", color: "blue", nodes: ["ao8-pin", "ao8-rel", "ao8-cal", "ao8-conv"] },
+  ],
+}
+
+// Flow Diagram 9: Language Handling
+const ao9Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao9-in", icon: "fa-message", title: "Inbound Message", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ao9-dl", icon: "fa-language", title: "Detect Language", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "ao9-en", icon: "fa-align-left", title: "English Response", subtitle: "Warm tone, standard fmt", row: 2, col: 0, shape: "rect", color: "blue" },
+    { id: "ao9-ar", icon: "fa-align-left", title: "Arabic Response", subtitle: "Gulf dialect, RTL fmt", row: 2, col: 2, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ao9-in", to: "ao9-dl" },
+    { from: "ao9-dl", to: "ao9-en", label: "en" },
+    { from: "ao9-dl", to: "ao9-ar", label: "ar" },
+  ],
+}
+
+// Flow Diagram 10: Prompt Composition Pipeline
+const ao10Config = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "ao10-bp", icon: "fa-code", title: "Base Prompt", subtitle: "per agent, static", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "ao10-pi", icon: "fa-scale-balanced", title: "Policy Injection", subtitle: "per principal", row: 0, col: 1, shape: "rect", color: "warm" },
+    { id: "ao10-ci", icon: "fa-database", title: "Context Injection", subtitle: "per request", row: 0, col: 2, shape: "rect", color: "blue" },
+    { id: "ao10-fp", icon: "fa-brain", title: "Final Prompt", subtitle: "to LLM via AI SDK", row: 0, col: 3, shape: "rect", color: "dark" },
+  ],
+  edges: [
+    { from: "ao10-bp", to: "ao10-pi" },
+    { from: "ao10-pi", to: "ao10-ci" },
+    { from: "ao10-ci", to: "ao10-fp" },
+  ],
+}
+
+// Flow Diagram 11: Observability (LangSmith)
+const ao11Config = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ao11-ar", icon: "fa-robot", title: "Agent Run", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ao11-sdk", icon: "fa-code", title: "Vercel AI SDK", subtitle: "traceable() wrapped", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "ao11-llm", icon: "fa-brain", title: "LLM Provider", row: 2, col: 0, shape: "rect", color: "dark" },
+    { id: "ao11-ls", icon: "fa-chart-line", title: "LangSmith", subtitle: "Async, non-blocking", row: 2, col: 2, shape: "rect", color: "blue" },
+    { id: "ao11-te", icon: "fa-magnifying-glass", title: "Trace Explorer", row: 3, col: 1, shape: "rect", color: "blue" },
+    { id: "ao11-da", icon: "fa-gauge", title: "Latency/Cost Dash", row: 3, col: 2, shape: "rect", color: "blue" },
+    { id: "ao11-pe", icon: "fa-play", title: "Prompt Evals", row: 3, col: 3, shape: "rect", color: "blue" },
+    { id: "ao11-pd", icon: "fa-database", title: "Prod Datasets", row: 4, col: 2, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ao11-ar", to: "ao11-sdk" },
+    { from: "ao11-sdk", to: "ao11-llm" },
+    { from: "ao11-sdk", to: "ao11-ls", dashed: true },
+    { from: "ao11-ls", to: "ao11-te" },
+    { from: "ao11-ls", to: "ao11-da" },
+    { from: "ao11-ls", to: "ao11-pe" },
+    { from: "ao11-ls", to: "ao11-pd" },
+  ],
+}
+
 const agentsConfig = {
   layers: [
     {
@@ -236,12 +438,7 @@ const memoryConfig = {
 
 ### Approval Workflow
 
-```mermaid
-flowchart TD
-    DR["fa:fa-code Dry-run payload"] --> SA["fa:fa-paper-plane Send approval<br/>via WhatsApp"] --> WD["fa:fa-clock Wait for decision<br/>(30m timeout)"]
-    WD -->|Approved| EX["fa:fa-circle-check Execute tool"]
-    WD -->|Rejected| NO["fa:fa-circle-xmark Notify user"]
-```
+<ArchDiagram :config="ao3Config" />
 
 ### Memory System
 
@@ -249,10 +446,7 @@ flowchart TD
 
 ### Response Delivery
 
-```mermaid
-flowchart LR
-    F["fa:fa-align-left Format for WA<br/>(bold, lists, brevity)"] --> S["fa:fa-paper-plane Send via Meta API<br/>(POST /messages)"]
-```
+<ArchDiagram :config="ao4Config" />
 
 ## Orchestrator Responsibilities
 
@@ -281,18 +475,7 @@ Based on the detected intent, the orchestrator selects one or more specialist ag
 
 Example: *"Set up a call with Ahmed tomorrow at 3pm and send me a brief about him 30 minutes before"*
 
-```mermaid
-flowchart TD
-    O["fa:fa-sitemap Orchestrator"] --> SA["fa:fa-robot Scheduler<br/>(create event)"]
-    O --> BA["fa:fa-robot Brief<br/>(pre-meeting)"]
-    O --> FR["fa:fa-align-left Format response"]
-
-    SA --> CR["fa:fa-calendar calendar_read<br/>(check avail)"]
-    SA --> CW["fa:fa-lock calendar_write<br/>(create) APPROVAL"]
-
-    BA --> MQ["fa:fa-magnifying-glass memory_query<br/>(Ahmed context)"]
-    BA --> RS["fa:fa-clock reminder_set<br/>(brief 30m before)"]
-```
+<ArchDiagram :config="ao5Config" />
 
 ### 3. Context Assembly
 
@@ -313,14 +496,7 @@ Total context budget: ~4500 tokens, leaving room for the system prompt and respo
 
 Before executing any tool, the orchestrator checks the principal's policies:
 
-```mermaid
-flowchart TD
-    TC["fa:fa-wrench Tool call requested"] --> AA{"Auto-approved?"}
-    AA -->|Yes| EX1["fa:fa-play Execute now"]
-    AA -->|No| WH{"Within working<br/>hours?"}
-    WH -->|Yes| EX2["fa:fa-play Execute now"]
-    WH -->|No| AP["fa:fa-pause Create approval<br/>notify operator<br/>pause run"]
-```
+<ArchDiagram :config="ao6Config" />
 
 ### 5. Approval Workflow
 
@@ -499,21 +675,7 @@ The orchestrator formats the final response for WhatsApp delivery:
 
 ### Tool Execution Flow
 
-```mermaid
-flowchart TD
-    SA["fa:fa-robot Specialist requests<br/>tool call"] --> TE["fa:fa-play Tool Executor"]
-    TE --> SE{"Side effect?"}
-    SE -->|No| EX1["fa:fa-play Execute, return"]
-    SE -->|Yes| AR{"Approval needed?"}
-    AR -->|No| EX2["fa:fa-play Execute, return"]
-    AR -->|Yes| DR["fa:fa-code Gen dry-run payload"]
-    DR --> TC["fa:fa-wrench Create toolCall"]
-    TC --> CR["fa:fa-circle-check Create approval req"]
-    CR --> NO["fa:fa-paper-plane Notify operator"]
-    NO --> PA["fa:fa-pause Pause, await decision"]
-    PA -->|Approved| EX3["fa:fa-circle-check Execute tool"]
-    PA -->|Rejected| RJ["fa:fa-circle-xmark Reject + notify"]
-```
+<ArchDiagram :config="ao7Config" />
 
 ---
 
@@ -523,50 +685,19 @@ flowchart TD
 
 Each agent (orchestrator and specialists) receives a structured system prompt composed of these sections:
 
-```mermaid
-flowchart TD
-    subgraph SP["fa:fa-gear SYSTEM PROMPT"]
-        direction TB
-        R["fa:fa-user 1. ROLE<br/>WA assistant for principal"]
-        C["fa:fa-wrench 2. CAPABILITIES<br/>Boundaries + limits"]
-        P["fa:fa-scale-balanced 3. POLICIES<br/>Hours, auto-approve"]
-        L["fa:fa-language 4. LANGUAGE<br/>Match EN/AR, Gulf dialect"]
-        F["fa:fa-align-left 5. FORMATTING<br/>WA bold/italic, ≤500ch"]
-        T["fa:fa-code 6. TOOLS<br/>JSON schemas, constraints"]
-        R --> C --> P --> L --> F --> T
-    end
-
-    subgraph CW["fa:fa-database CONTEXT WINDOW"]
-        direction TB
-        PM["fa:fa-thumbtack PINNED MEMORIES<br/>Prefs, contacts, rules"]
-        RM["fa:fa-magnifying-glass RELEVANT MEMORIES<br/>Semantic search hits"]
-        TC2["fa:fa-calendar TODAY'S CALENDAR<br/>Scheduled events"]
-        RC["fa:fa-comments RECENT CONVERSATION<br/>Last 10 messages"]
-        PM --> RM --> TC2 --> RC
-    end
-
-    SP --> CW
-```
+<ArchDiagram :config="ao8Config" />
 
 ### Language Handling (EN/AR)
 
 The agent detects the language of the inbound message and responds accordingly:
 
-```mermaid
-flowchart TD
-    IN["fa:fa-message Inbound message"] --> DL["fa:fa-language Detect language"]
-    DL -->|"en"| EN["fa:fa-align-left English response<br/>Warm tone, standard fmt"]
-    DL -->|"ar"| AR["fa:fa-align-left Arabic response<br/>Gulf dialect, RTL fmt"]
-```
+<ArchDiagram :config="ao9Config" />
 
 Language detection uses a lightweight classifier (no LLM call). The detected language is stored on the message record and passed to the agent as context. The agent's system prompt includes bilingual instructions.
 
 ### Prompt Composition Pipeline
 
-```mermaid
-flowchart LR
-    BP["fa:fa-code Base prompt<br/>(per agent, static)"] --> PI["fa:fa-scale-balanced Policy injection<br/>(per principal)"] --> CI["fa:fa-database Context injection<br/>(per request)"] --> FP["fa:fa-brain Final prompt<br/>to LLM via AI SDK"]
-```
+<ArchDiagram :config="ao10Config" />
 
 1. **Base prompt** is static per agent type (orchestrator, scheduler, calendar, etc.) and defines the role, capabilities, and formatting rules.
 2. **Policy injection** adds the principal's specific preferences, approval rules, and working hours.
@@ -580,15 +711,6 @@ The composed prompt is passed to `generateText()` or `streamText()` from the Ver
 
 Every agent run is traced via LangSmith for production observability. See [Security Posture > Agent Observability](/security/posture#agent-observability-langsmith) for the full integration architecture, PII redaction policy, and alerting thresholds.
 
-```mermaid
-flowchart TD
-    AR["fa:fa-robot Agent Run"] -->|"traceable() wrapped"| SDK["fa:fa-code Vercel AI SDK"]
-    SDK --> LLM["fa:fa-brain LLM Provider"]
-    SDK -->|"Async, non-blocking"| LS["fa:fa-chart-line LangSmith"]
-    LS --> TE["fa:fa-magnifying-glass Trace explorer"]
-    LS --> DA["fa:fa-gauge Latency/cost dash"]
-    LS --> PE["fa:fa-play Prompt evals"]
-    LS --> PD["fa:fa-database Prod datasets"]
-```
+<ArchDiagram :config="ao11Config" />
 
 Key: tracing is async and non-blocking. LangSmith outage does not affect agent execution.

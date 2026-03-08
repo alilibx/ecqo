@@ -5,11 +5,13 @@ import { onMounted, watch } from "vue";
 import { useRoute } from "vitepress";
 import type { Theme } from "vitepress";
 import ArchDiagram from "./components/ArchDiagram.vue";
+import GanttChart from "./components/GanttChart.vue";
 
 const theme: Theme = {
   extends: DefaultTheme,
   enhanceApp({ app }) {
     app.component("ArchDiagram", ArchDiagram);
+    app.component("GanttChart", GanttChart);
   },
   setup() {
     const route = useRoute();

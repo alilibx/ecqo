@@ -37,6 +37,44 @@ const agentRunSeqConfig = {
     { label: "Execution", color: "teal", from: 9, to: 11 },
   ],
 }
+
+const approvalRoutingFlow = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ar1-a", icon: "fa-comments", title: "Inbound WA Message", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "ar1-b", icon: "fa-user", title: "Identify sender", subtitle: "phone lookup", row: 1, col: 1, shape: "rect", color: "warm" },
+    { id: "ar1-c", icon: "fa-question", title: "Pending approvals?", row: 2, col: 1, shape: "diamond", color: "dark" },
+    { id: "ar1-d", icon: "fa-robot", title: "Regular agent flow", row: 3, col: 0, shape: "rect", color: "teal" },
+    { id: "ar1-e", icon: "fa-question", title: "Parse response", row: 3, col: 1, shape: "diamond", color: "dark" },
+    { id: "ar1-f", icon: "fa-circle-check", title: "Execute action", subtitle: "Notify requester", row: 4, col: 0, shape: "rect", color: "teal" },
+    { id: "ar1-g", icon: "fa-circle-xmark", title: "Cancel agentRun", subtitle: "Notify requester", row: 4, col: 1, shape: "rect", color: "red" },
+    { id: "ar1-h", icon: "fa-circle-question", title: "Ask to clarify", subtitle: "approve or reject?", row: 4, col: 2, shape: "rect", color: "warm" },
+  ],
+  edges: [
+    { from: "ar1-a", to: "ar1-b" },
+    { from: "ar1-b", to: "ar1-c" },
+    { from: "ar1-c", to: "ar1-d", label: "No" },
+    { from: "ar1-c", to: "ar1-e", label: "Yes" },
+    { from: "ar1-e", to: "ar1-f", label: "Approve" },
+    { from: "ar1-e", to: "ar1-g", label: "Reject" },
+    { from: "ar1-e", to: "ar1-h", label: "Unclear" },
+  ],
+}
+
+const policyEngineFlow = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ar2-p1", icon: "fa-gear", title: "Workspace Overrides", subtitle: "Owner-configured rules", row: 0, col: 1, shape: "rect", color: "warm" },
+    { id: "ar2-p2", icon: "fa-scale-balanced", title: "Risk Classification", subtitle: "None/Low: auto | Med+: approval", row: 1, col: 1, shape: "rect", color: "dark" },
+    { id: "ar2-p3", icon: "fa-user", title: "Approver Selection", subtitle: "Med: operator | High+: owner", row: 2, col: 1, shape: "rect", color: "blue" },
+  ],
+  edges: [
+    { from: "ar2-p1", to: "ar2-p2", label: "No override" },
+    { from: "ar2-p2", to: "ar2-p3", label: "Needs approval" },
+  ],
+}
 </script>
 
 <ArchDiagram :config="agentRunSeqConfig" />
@@ -94,16 +132,7 @@ When the agent determines an action requires approval, a structured WhatsApp mes
 
 When the approver replies, the response flows back through the same Meta Cloud API webhook. The system must distinguish approval responses from regular messages:
 
-```mermaid
-flowchart TD
-    A["fa:fa-comments Inbound WA Message"] --> B["fa:fa-user Identify sender<br/>(phone lookup)"]
-    B --> C{"Pending approval<br/>requests?"}
-    C -- NO --> D["fa:fa-robot Regular agent flow"]
-    C -- YES --> E{"Parse response"}
-    E -- APPROVE --> F["fa:fa-circle-check Execute action<br/>Notify requester"]
-    E -- REJECT --> G["fa:fa-circle-xmark Cancel agentRun<br/>Notify requester"]
-    E -- UNCLEAR --> H["fa:fa-circle-question Ask to clarify:<br/>approve or reject?"]
-```
+<ArchDiagram :config="approvalRoutingFlow" />
 
 ### Context-Aware Routing
 
@@ -118,15 +147,7 @@ If an approver has multiple pending approval requests, the system uses context t
 
 The policy engine determines whether an action can auto-execute or needs approval. Rules are evaluated in priority order:
 
-```mermaid
-flowchart TD
-    P1["fa:fa-gear **P1: Workspace Overrides**<br/>Owner-configured rules<br/>(paranoid, read-only trust, etc.)"]
-    P2["fa:fa-scale-balanced **P2: Risk Classification**<br/>None/Low: auto-execute<br/>Med/High/Critical: approval"]
-    P3["fa:fa-user **P3: Approver Selection**<br/>Med: operator/principal<br/>High: principal/owner<br/>Critical: owner only"]
-
-    P1 -- "No override" --> P2
-    P2 -- "Needs approval" --> P3
-```
+<ArchDiagram :config="policyEngineFlow" />
 
 ### Spend Limits
 

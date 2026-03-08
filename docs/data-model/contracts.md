@@ -88,6 +88,48 @@ const hmacSeqConfig = {
     { over: "hm-convex", note: "5. Lookup secret\n6. Recompute HMAC\n7. Constant-time compare\n8. Reject if mismatch" },
   ],
 }
+
+const dc1FlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "dc1-a", icon: "fa-comments", title: "Meta Cloud API", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-b", icon: "fa-lock", title: "Verify HMAC", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-b1", icon: "fa-circle-xmark", title: "401 Reject", row: 2, col: 0, shape: "rect", color: "red" },
+    { id: "dc1-c", icon: "fa-code", title: "Parse messages", row: 2, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-d", icon: "fa-magnifying-glass", title: "Dedup by msgId", row: 3, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-d1", icon: "fa-arrow-right", title: "Skip", row: 4, col: 0, shape: "rect", color: "warm" },
+    { id: "dc1-e", icon: "fa-user", title: "Match phone", row: 4, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-e1", icon: "fa-database", title: "Store (no waAcct)", row: 5, col: 0, shape: "rect", color: "warm" },
+    { id: "dc1-f", icon: "fa-database", title: "Insert message", row: 5, col: 1, shape: "rect", color: "teal" },
+    { id: "dc1-g", icon: "fa-robot", title: "Schedule agent run", row: 6, col: 1, shape: "rect", color: "teal" },
+  ],
+  edges: [
+    { from: "dc1-a", to: "dc1-b" },
+    { from: "dc1-b", to: "dc1-b1", label: "invalid" },
+    { from: "dc1-b", to: "dc1-c", label: "valid" },
+    { from: "dc1-c", to: "dc1-d" },
+    { from: "dc1-d", to: "dc1-d1", label: "exists" },
+    { from: "dc1-d", to: "dc1-e", label: "new" },
+    { from: "dc1-e", to: "dc1-e1", label: "unmatched" },
+    { from: "dc1-e", to: "dc1-f", label: "matched" },
+    { from: "dc1-f", to: "dc1-g" },
+  ],
+}
+
+const dc2FlowConfig = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "dc2-v1", icon: "fa-code", title: "Event v1", subtitle: "field_a", row: 0, col: 0, shape: "rect", color: "teal" },
+    { id: "dc2-v2", icon: "fa-code", title: "Event v2", subtitle: "field_a, field_b", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "dc2-v3", icon: "fa-code", title: "Event v3", subtitle: "field_a, field_b, field_c", row: 0, col: 2, shape: "rect", color: "teal" },
+  ],
+  edges: [
+    { from: "dc2-v1", to: "dc2-v2" },
+    { from: "dc2-v2", to: "dc2-v3" },
+  ],
+}
 </script>
 
 <ArchDiagram :config="apiSurfaceConfig" />
@@ -401,18 +443,7 @@ The handler:
 
 **Processing Flow:**
 
-```mermaid
-flowchart TD
-    A["fa:fa-comments Meta Cloud API"] --> B["fa:fa-lock Verify HMAC"]
-    B -->|invalid| B1["fa:fa-circle-xmark 401 Reject"]
-    B -->|valid| C["fa:fa-code Parse messages"]
-    C --> D["fa:fa-magnifying-glass Dedup by msgId"]
-    D -->|exists| D1["fa:fa-arrow-right Skip"]
-    D -->|new| E["fa:fa-user Match phone"]
-    E -->|unmatched| E1["fa:fa-database Store (no waAcct)"]
-    E -->|matched| F["fa:fa-database Insert message"]
-    F --> G["fa:fa-robot Schedule agent run"]
-```
+<ArchDiagram :config="dc1FlowConfig" />
 
 **Response:** Always returns 200 OK immediately (Meta requires fast acknowledgment). Processing happens asynchronously via scheduled Convex functions.
 
@@ -914,11 +945,7 @@ All event payloads (connector events, webhook payloads) include a schema version
 
 ### Versioning Policy
 
-```mermaid
-flowchart LR
-    V1["fa:fa-code Event v1<br/>field_a"] --> V2["fa:fa-code Event v2<br/>field_a, field_b"]
-    V2 --> V3["fa:fa-code Event v3<br/>field_a, field_b, field_c"]
-```
+<ArchDiagram :config="dc2FlowConfig" />
 
 **Rules:**
 1. New fields are always optional (additive changes only).

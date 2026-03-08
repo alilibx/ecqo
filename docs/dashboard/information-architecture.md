@@ -1,100 +1,102 @@
+<script setup>
+const iaNavConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "ia-dashboard", icon: "fa-gauge", title: "Dashboard", subtitle: "Clerk auth, RBAC", row: 0, col: 4, shape: "rect", color: "teal" },
+
+    { id: "ia-home", icon: "fa-house", title: "Home / Overview", row: 1, col: 0, shape: "rect", color: "teal" },
+    { id: "ia-connect", icon: "fa-link", title: "Connect", row: 1, col: 1, shape: "rect", color: "teal" },
+    { id: "ia-inbox", icon: "fa-inbox", title: "Inbox (Approvals)", row: 1, col: 2, shape: "rect", color: "teal" },
+    { id: "ia-conversations", icon: "fa-comments", title: "Conversations", row: 1, col: 3, shape: "rect", color: "teal" },
+    { id: "ia-runs", icon: "fa-list-check", title: "Runs", row: 1, col: 4, shape: "rect", color: "teal" },
+    { id: "ia-memory", icon: "fa-microchip", title: "Memory", row: 1, col: 5, shape: "rect", color: "teal" },
+    { id: "ia-integrations", icon: "fa-plug", title: "Integrations", row: 1, col: 6, shape: "rect", color: "teal" },
+    { id: "ia-policy", icon: "fa-scale-balanced", title: "Policy", row: 1, col: 7, shape: "rect", color: "teal" },
+    { id: "ia-settings", icon: "fa-gear", title: "Settings", row: 1, col: 8, shape: "rect", color: "teal" },
+
+    { id: "ia-h1", icon: "fa-chart-line", title: "Status cards", subtitle: "WA, sync, approvals", row: 2, col: 0, shape: "rect", color: "green" },
+    { id: "ia-h2", icon: "fa-bolt", title: "Quick actions", row: 3, col: 0, shape: "rect", color: "green" },
+    { id: "ia-h3", icon: "fa-list-check", title: "Activity feed (24h)", row: 4, col: 0, shape: "rect", color: "green" },
+
+    { id: "ia-c1", icon: "fa-comments", title: "QR code display", row: 2, col: 1, shape: "rect", color: "blue" },
+    { id: "ia-c2", icon: "fa-circle-check", title: "Connection status", row: 3, col: 1, shape: "rect", color: "blue" },
+    { id: "ia-c3", icon: "fa-link", title: "Reconnect / disconnect", row: 4, col: 1, shape: "rect", color: "blue" },
+    { id: "ia-c4", icon: "fa-clock", title: "Uptime + heartbeat", row: 5, col: 1, shape: "rect", color: "blue" },
+
+    { id: "ia-i1", icon: "fa-inbox", title: "Approval queue", subtitle: "+ dry-run previews", row: 2, col: 2, shape: "rect", color: "amber" },
+    { id: "ia-i2", icon: "fa-circle-check", title: "Approve / reject", row: 3, col: 2, shape: "rect", color: "amber" },
+    { id: "ia-i3", icon: "fa-magnifying-glass", title: "Filters", subtitle: "pending, approved, rejected", row: 4, col: 2, shape: "rect", color: "amber" },
+    { id: "ia-i4", icon: "fa-list-check", title: "Batch approve", subtitle: "owner only", row: 5, col: 2, shape: "rect", color: "amber" },
+    { id: "ia-i5", icon: "fa-comments", title: "WA deep-link", row: 6, col: 2, shape: "rect", color: "amber" },
+
+    { id: "ia-cv1", icon: "fa-comments", title: "Chat list", subtitle: "+ allowlist toggles", row: 2, col: 3, shape: "rect", color: "purple" },
+    { id: "ia-cv2", icon: "fa-message", title: "Thread viewer", row: 3, col: 3, shape: "rect", color: "purple" },
+    { id: "ia-cv3", icon: "fa-user", title: "Contact + sync status", row: 4, col: 3, shape: "rect", color: "purple" },
+    { id: "ia-cv4", icon: "fa-magnifying-glass", title: "Search metadata", row: 5, col: 3, shape: "rect", color: "purple" },
+
+    { id: "ia-r1", icon: "fa-magnifying-glass", title: "Run explorer", row: 2, col: 4, shape: "rect", color: "orange" },
+    { id: "ia-r2", icon: "fa-clock", title: "State timeline", row: 3, col: 4, shape: "rect", color: "orange" },
+    { id: "ia-r3", icon: "fa-gear", title: "Step details", subtitle: "tools, reasoning", row: 4, col: 4, shape: "rect", color: "orange" },
+    { id: "ia-r4", icon: "fa-arrow-right", title: "Retry info", row: 5, col: 4, shape: "rect", color: "orange" },
+    { id: "ia-r5", icon: "fa-chart-line", title: "Duration + cost", row: 6, col: 4, shape: "rect", color: "orange" },
+
+    { id: "ia-m1", icon: "fa-microchip", title: "Memory browser", subtitle: "core/active/episodic", row: 2, col: 5, shape: "rect", color: "cyan" },
+    { id: "ia-m2", icon: "fa-magnifying-glass", title: "Semantic + keyword", row: 3, col: 5, shape: "rect", color: "cyan" },
+    { id: "ia-m3", icon: "fa-gear", title: "Pin/unpin controls", row: 4, col: 5, shape: "rect", color: "cyan" },
+    { id: "ia-m4", icon: "fa-chart-line", title: "Confidence scores", row: 5, col: 5, shape: "rect", color: "cyan" },
+    { id: "ia-m5", icon: "fa-clock", title: "TTL + expiry", row: 6, col: 5, shape: "rect", color: "cyan" },
+
+    { id: "ia-ig1", icon: "fa-link", title: "Google Calendar", row: 2, col: 6, shape: "rect", color: "indigo" },
+    { id: "ia-ig2", icon: "fa-message", title: "Gmail", row: 3, col: 6, shape: "rect", color: "indigo" },
+    { id: "ia-ig3", icon: "fa-comments", title: "WhatsApp connector", row: 4, col: 6, shape: "rect", color: "indigo" },
+    { id: "ia-ig4", icon: "fa-credit-card", title: "Stripe billing", row: 5, col: 6, shape: "rect", color: "indigo" },
+    { id: "ia-ig5", icon: "fa-plug", title: "Connect / disconnect", row: 6, col: 6, shape: "rect", color: "indigo" },
+
+    { id: "ia-p1", icon: "fa-scale-balanced", title: "Approval rules", row: 2, col: 7, shape: "rect", color: "red" },
+    { id: "ia-p2", icon: "fa-clock", title: "Quiet hours", row: 3, col: 7, shape: "rect", color: "red" },
+    { id: "ia-p3", icon: "fa-shield-halved", title: "Guardrails", row: 4, col: 7, shape: "rect", color: "red" },
+    { id: "ia-p4", icon: "fa-gear", title: "Defaults", subtitle: "lang, tz", row: 5, col: 7, shape: "rect", color: "red" },
+
+    { id: "ia-s1", icon: "fa-gear", title: "Workspace config", row: 2, col: 8, shape: "rect", color: "gray" },
+    { id: "ia-s2", icon: "fa-users", title: "Members + roles", row: 3, col: 8, shape: "rect", color: "gray" },
+    { id: "ia-s3", icon: "fa-credit-card", title: "Billing portal", row: 4, col: 8, shape: "rect", color: "gray" },
+    { id: "ia-s4", icon: "fa-globe", title: "Language (EN/AR)", row: 5, col: 8, shape: "rect", color: "gray" },
+    { id: "ia-s5", icon: "fa-gear", title: "Theme (light/dark)", row: 6, col: 8, shape: "rect", color: "gray" },
+    { id: "ia-s6", icon: "fa-triangle-exclamation", title: "Danger zone", row: 7, col: 8, shape: "rect", color: "gray" },
+  ],
+  edges: [
+    { from: "ia-dashboard", to: "ia-home" },
+    { from: "ia-dashboard", to: "ia-connect" },
+    { from: "ia-dashboard", to: "ia-inbox" },
+    { from: "ia-dashboard", to: "ia-conversations" },
+    { from: "ia-dashboard", to: "ia-runs" },
+    { from: "ia-dashboard", to: "ia-memory" },
+    { from: "ia-dashboard", to: "ia-integrations" },
+    { from: "ia-dashboard", to: "ia-policy" },
+    { from: "ia-dashboard", to: "ia-settings" },
+  ],
+  groups: [
+    { label: "Home / Overview", color: "green", nodes: ["ia-h1", "ia-h2", "ia-h3"] },
+    { label: "Connect", color: "blue", nodes: ["ia-c1", "ia-c2", "ia-c3", "ia-c4"] },
+    { label: "Inbox (Approvals)", color: "amber", nodes: ["ia-i1", "ia-i2", "ia-i3", "ia-i4", "ia-i5"] },
+    { label: "Conversations", color: "purple", nodes: ["ia-cv1", "ia-cv2", "ia-cv3", "ia-cv4"] },
+    { label: "Runs", color: "orange", nodes: ["ia-r1", "ia-r2", "ia-r3", "ia-r4", "ia-r5"] },
+    { label: "Memory", color: "cyan", nodes: ["ia-m1", "ia-m2", "ia-m3", "ia-m4", "ia-m5"] },
+    { label: "Integrations", color: "indigo", nodes: ["ia-ig1", "ia-ig2", "ia-ig3", "ia-ig4", "ia-ig5"] },
+    { label: "Policy", color: "red", nodes: ["ia-p1", "ia-p2", "ia-p3", "ia-p4"] },
+    { label: "Settings", color: "gray", nodes: ["ia-s1", "ia-s2", "ia-s3", "ia-s4", "ia-s5", "ia-s6"] },
+  ],
+}
+</script>
+
 # Dashboard Information Architecture
 
 The Ecqqo dashboard is a role-gated, real-time control surface built with TanStack Start + React 19. It gives principals (the high-net-worth operators who use the assistant) and their support staff visibility into every action the agent takes, with approval controls at every exit point.
 
 ## Navigation Structure
 
-```mermaid
-flowchart TD
-    Dashboard["fa:fa-gauge Dashboard<br/>(Clerk auth, RBAC)"]
-
-    Dashboard --> Home
-    Dashboard --> Connect
-    Dashboard --> Inbox
-    Dashboard --> Conversations
-    Dashboard --> Runs
-    Dashboard --> Memory
-    Dashboard --> Integrations
-    Dashboard --> Policy
-    Dashboard --> Settings
-
-    subgraph Home["fa:fa-house Home / Overview"]
-        direction LR
-        H1["fa:fa-chart-line Status cards<br/>WA, sync, approvals"]
-        H2["fa:fa-bolt Quick actions"]
-        H3["fa:fa-list-check Activity feed (24h)"]
-    end
-
-    subgraph Connect["fa:fa-link Connect"]
-        direction LR
-        C1["fa:fa-comments QR code display"]
-        C2["fa:fa-circle-check Connection status"]
-        C3["fa:fa-link Reconnect / disconnect"]
-        C4["fa:fa-clock Uptime + heartbeat"]
-    end
-
-    subgraph Inbox["fa:fa-inbox Inbox (Approvals)"]
-        direction LR
-        I1["fa:fa-inbox Approval queue<br/>+ dry-run previews"]
-        I2["fa:fa-circle-check Approve / reject"]
-        I3["fa:fa-magnifying-glass Filters: pending,<br/>approved, rejected"]
-        I4["fa:fa-list-check Batch approve<br/>(owner only)"]
-        I5["fa:fa-comments WA deep-link"]
-    end
-
-    subgraph Conversations["fa:fa-comments Conversations"]
-        direction LR
-        CV1["fa:fa-comments Chat list<br/>+ allowlist toggles"]
-        CV2["fa:fa-message Thread viewer"]
-        CV3["fa:fa-user Contact + sync status"]
-        CV4["fa:fa-magnifying-glass Search metadata"]
-    end
-
-    subgraph Runs["fa:fa-list-check Runs"]
-        direction LR
-        R1["fa:fa-magnifying-glass Run explorer"]
-        R2["fa:fa-clock State timeline"]
-        R3["fa:fa-gear Step details<br/>tools, reasoning"]
-        R4["fa:fa-arrow-right Retry info"]
-        R5["fa:fa-chart-line Duration + cost"]
-    end
-
-    subgraph Memory["fa:fa-microchip Memory"]
-        direction LR
-        M1["fa:fa-microchip Memory browser<br/>core/active/episodic"]
-        M2["fa:fa-magnifying-glass Semantic + keyword"]
-        M3["fa:fa-gear Pin/unpin controls"]
-        M4["fa:fa-chart-line Confidence scores"]
-        M5["fa:fa-clock TTL + expiry"]
-    end
-
-    subgraph Integrations["fa:fa-plug Integrations"]
-        direction LR
-        IG1["fa:fa-link Google Calendar"]
-        IG2["fa:fa-message Gmail"]
-        IG3["fa:fa-comments WhatsApp connector"]
-        IG4["fa:fa-credit-card Stripe billing"]
-        IG5["fa:fa-plug Connect / disconnect"]
-    end
-
-    subgraph Policy["fa:fa-scale-balanced Policy"]
-        direction LR
-        P1["fa:fa-scale-balanced Approval rules"]
-        P2["fa:fa-clock Quiet hours"]
-        P3["fa:fa-shield-halved Guardrails"]
-        P4["fa:fa-gear Defaults (lang, tz)"]
-    end
-
-    subgraph Settings["fa:fa-gear Settings"]
-        direction LR
-        S1["fa:fa-gear Workspace config"]
-        S2["fa:fa-users Members + roles"]
-        S3["fa:fa-credit-card Billing portal"]
-        S4["fa:fa-globe Language (EN/AR)"]
-        S5["fa:fa-gear Theme (light/dark)"]
-        S6["fa:fa-triangle-exclamation Danger zone"]
-    end
-```
+<ArchDiagram :config="iaNavConfig" />
 
 ## Role-Page Access Matrix
 

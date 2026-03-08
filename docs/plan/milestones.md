@@ -5,33 +5,69 @@ Developer count: **1** (solo). First engineering hire planned ~3 months post-pil
 
 ## Timeline Overview
 
-```
-Week        | Mar 7-13  | Mar 14-20 | Mar 21-27 | Mar 28-Apr 3 | Apr 4-10  | Apr 11-15
-------------|-----------|-----------|-----------|--------------|-----------|----------
-M0 Arch     |###########|           |           |              |           |
-  A1-A5     |===========|           |           |              |           |
-  B1,D1     |======     |           |           |              |           |
-            |           |           |           |              |           |
-M1 WA+Sync  |      =====|===========|========   |              |           |
-  B2-B4     |      =====|=====      |           |              |           |
-  B5-B7     |           |     ======|====       |              |           |
-  C1-C3     |      =====|======     |           |              |           |
-  C4-C7     |           |     ======|========   |              |           |
-  H1-H2     |           |      ====|====       |              |           |
-            |           |           |           |              |           |
-M2 Agent    |           |           |     ======|==============|====       |
-  D2-D6     |           |           |     ======|======        |           |
-  E1-E6     |           |           |           |   ===========|===        |
-  F1-F5     |           |           |        ===|===========   |           |
-  G1-G4     |           |           |           |     =========|===        |
-  J1-J5     |           |           |       ====|========      |           |
-            |           |           |           |              |           |
-M3 Harden   |           |           |           |         =====|===========|=====
-  G5-G8     |           |           |           |         =====|=====      |
-  F6-F7     |           |           |           |          ====|===        |
-  H3-H7     |           |           |           |              |  =========|===
-  I1-I6     |           |           |           |              |     ======|=====
-```
+<script setup>
+const ganttWeeks = [
+  { label: 'Mar 7–13', start: 0 },
+  { label: 'Mar 14–20', start: 16.67 },
+  { label: 'Mar 21–27', start: 33.33 },
+  { label: 'Mar 28–Apr 3', start: 50 },
+  { label: 'Apr 4–10', start: 66.67 },
+  { label: 'Apr 11–15', start: 83.33 },
+]
+
+const ganttMilestones = [
+  {
+    id: 'm0', label: 'M0 Arch', fullName: 'M0: Architecture Freeze',
+    dates: 'Mar 7 – 13', color: '#0d7a6a', expanded: true,
+    desc: 'Lock down auth, schemas, and architectural contracts before writing application code.',
+    tasks: [
+      { id: 'a1-a5', name: 'A1–A5', area: 'Auth + RBAC', desc: 'Clerk integrated, workspace roles enforced, audit events flowing', dates: 'Mar 7–13', start: 0, width: 16.7 },
+      { id: 'b1d1', name: 'B1, D1', area: 'Core schemas', desc: 'waAccounts, waConnectSessions, agentRuns, runSteps, toolCalls, approvalRequests tables', dates: 'Mar 7–10', start: 0, width: 10 },
+    ],
+    start: 0, width: 16.7,
+  },
+  {
+    id: 'm1', label: 'M1 WA+Sync', fullName: 'M1: WhatsApp Connect + Sync',
+    dates: 'Mar 10 – 27', color: '#2563eb', expanded: true,
+    desc: 'Stand up the managed connector plane and prove end-to-end message ingestion.',
+    tasks: [
+      { id: 'b2-b4', name: 'B2–B4', area: 'Connector lifecycle', desc: 'Connect-session API, worker lease model, QR flow', dates: 'Mar 10–20', start: 8, width: 22 },
+      { id: 'b5-b7', name: 'B5–B7', area: 'Connector lifecycle', desc: 'Heartbeat, reconnect handling, dashboard UX', dates: 'Mar 17–25', start: 25, width: 17 },
+      { id: 'c1-c3', name: 'C1–C3', area: 'Sync pipeline', desc: 'Schemas, ingest API, idempotency', dates: 'Mar 10–20', start: 8, width: 22 },
+      { id: 'c4-c7', name: 'C4–C7', area: 'Sync pipeline', desc: 'Periodic scheduler, metadata-first policy, DLQ, health signals', dates: 'Mar 17–27', start: 25, width: 22 },
+      { id: 'h1-h2', name: 'H1–H2', area: 'Security baseline', desc: 'Encrypted session artifacts, signed request verification, anti-replay', dates: 'Mar 15–24', start: 22, width: 18 },
+    ],
+    start: 8, width: 39,
+  },
+  {
+    id: 'm2', label: 'M2 Agent', fullName: 'M2: Agent Runtime + Memory + Dashboard',
+    dates: 'Mar 22 – Apr 7', color: '#d4a017', expanded: true,
+    desc: 'Bring the intelligence plane online and give operators a working console.',
+    tasks: [
+      { id: 'd2-d6', name: 'D2–D6', area: 'Orchestration', desc: 'Run state machine, policy engine, approval queue, retry, trace publication', dates: 'Mar 22 – Apr 1', start: 38, width: 22 },
+      { id: 'e1-e6', name: 'E1–E6', area: 'Memory', desc: '4-tier memory schema, episodic summaries, semantic extraction, EN/AR normalization', dates: 'Mar 28 – Apr 7', start: 53, width: 25 },
+      { id: 'f1-f5', name: 'F1–F5', area: 'Dashboard', desc: 'Shell + IA, Inbox approvals, Conversations timeline, Runs explorer, Memory explorer', dates: 'Mar 24 – Apr 5', start: 42, width: 30 },
+      { id: 'g1-g4', name: 'G1–G4', area: 'Integrations', desc: 'Google Calendar connect + read/write, reminder scheduler', dates: 'Mar 28 – Apr 7', start: 53, width: 25 },
+      { id: 'j1-j5', name: 'J1–J5', area: 'Billing', desc: 'Stripe integration, subscription plans, billing portal, plan limits, trial/grace', dates: 'Mar 24 – Apr 2', start: 42, width: 23 },
+    ],
+    start: 38, width: 40,
+  },
+  {
+    id: 'm3', label: 'M3 Harden', fullName: 'M3: Capability Completion + Pilot Hardening',
+    dates: 'Apr 2 – 15', color: '#e04b2c', expanded: true,
+    desc: 'Ship remaining capabilities and prove the system is safe for real users.',
+    tasks: [
+      { id: 'g5-g8', name: 'G5–G8', area: 'Extended integrations', desc: 'Gmail connect, email digest, travel extraction, meeting briefs', dates: 'Apr 2–10', start: 63, width: 17 },
+      { id: 'f6-f7', name: 'F6–F7', area: 'Dashboard polish', desc: 'Integrations status page, Policy settings page', dates: 'Apr 3–9', start: 66, width: 12 },
+      { id: 'h3-h7', name: 'H3–H7', area: 'Security + ops', desc: 'Audit stream, trace redaction, LangSmith observability, kill-switch, runbooks', dates: 'Apr 7–15', start: 73, width: 27 },
+      { id: 'i1-i6', name: 'I1–I6', area: 'QA + release', desc: 'Unit suite, integration suite, E2E suite, chaos tests, EN/AR eval, pilot gate', dates: 'Apr 8–15', start: 76, width: 24 },
+    ],
+    start: 63, width: 37,
+  },
+]
+</script>
+
+<GanttChart :milestones="ganttMilestones" :weeks="ganttWeeks" start-date="2026-03-07" end-date="2026-04-18" />
 
 ## Milestone Definitions
 

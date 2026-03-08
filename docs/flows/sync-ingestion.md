@@ -33,6 +33,82 @@ const syncSeqConfig = {
     { label: "Sync Loop (until caught up)", color: "teal", from: 4, to: 5 },
   ],
 }
+
+const dlqFlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "si1-batch", icon: "fa-envelope", title: "Message Batch", row: 0, col: 1, shape: "rect", color: "teal" },
+    { id: "si1-process", icon: "fa-gears", title: "Process batch", row: 1, col: 1, shape: "diamond", color: "warm" },
+    { id: "si1-success", icon: "fa-circle-check", title: "Cursor advanced", subtitle: "Batch acked", row: 2, col: 0, shape: "rect", color: "teal" },
+    { id: "si1-classify", icon: "fa-magnifying-glass", title: "Classify error", row: 2, col: 2, shape: "diamond", color: "warm" },
+    { id: "si1-backoff", icon: "fa-rotate", title: "Exp. backoff", subtitle: "5s / 25s / 125s / 625s", row: 3, col: 1, shape: "rect", color: "blue" },
+    { id: "si1-dlq1", icon: "fa-inbox", title: "DLQ", subtitle: "Manual review/replay", row: 4, col: 1, shape: "rect", color: "red" },
+    { id: "si1-dlq2", icon: "fa-inbox", title: "DLQ (no retry)", subtitle: "Bad schema or signature", row: 3, col: 2, shape: "rect", color: "red" },
+    { id: "si1-drop", icon: "fa-circle-xmark", title: "Dropped", subtitle: "Not allowlisted / suspended", row: 3, col: 3, shape: "rect", color: "dark" },
+  ],
+  edges: [
+    { from: "si1-batch", to: "si1-process" },
+    { from: "si1-process", to: "si1-success", label: "Success" },
+    { from: "si1-process", to: "si1-classify", label: "Failure" },
+    { from: "si1-classify", to: "si1-backoff", label: "Transient" },
+    { from: "si1-backoff", to: "si1-dlq1", label: "Max retries" },
+    { from: "si1-classify", to: "si1-dlq2", label: "Validation" },
+    { from: "si1-classify", to: "si1-drop", label: "Policy" },
+  ],
+}
+
+const cursorFlowConfig = {
+  type: "flow",
+  direction: "LR",
+  nodes: [
+    { id: "si2-msg1", icon: "fa-envelope", title: "msg1", row: 0, col: 0, shape: "rect", color: "dark" },
+    { id: "si2-msg2", icon: "fa-envelope", title: "msg2", row: 0, col: 1, shape: "rect", color: "dark" },
+    { id: "si2-msg3", icon: "fa-envelope", title: "msg3", subtitle: "lastCursor", row: 0, col: 2, shape: "rect", color: "dark" },
+    { id: "si2-msg4", icon: "fa-envelope", title: "msg4", row: 0, col: 3, shape: "rect", color: "teal" },
+    { id: "si2-msg5", icon: "fa-envelope", title: "msg5", row: 0, col: 4, shape: "rect", color: "teal" },
+    { id: "si2-msg6", icon: "fa-envelope", title: "msg6", row: 0, col: 5, shape: "rect", color: "teal" },
+    { id: "si2-msg7", icon: "fa-envelope", title: "msg7", subtitle: "currentHead", row: 0, col: 6, shape: "rect", color: "teal" },
+  ],
+  edges: [
+    { from: "si2-msg1", to: "si2-msg2" },
+    { from: "si2-msg2", to: "si2-msg3" },
+    { from: "si2-msg3", to: "si2-msg4" },
+    { from: "si2-msg4", to: "si2-msg5" },
+    { from: "si2-msg5", to: "si2-msg6" },
+    { from: "si2-msg6", to: "si2-msg7" },
+  ],
+  groups: [
+    { label: "Synced (stored in Convex)", color: "dark", nodes: ["si2-msg1", "si2-msg2", "si2-msg3"] },
+    { label: "To sync (pending)", color: "teal", nodes: ["si2-msg4", "si2-msg5", "si2-msg6", "si2-msg7"] },
+  ],
+}
+
+const healthFlowConfig = {
+  type: "flow",
+  direction: "TD",
+  nodes: [
+    { id: "si3-state", icon: "fa-question", title: "syncJob.state?", row: 0, col: 1, shape: "diamond", color: "warm" },
+    { id: "si3-sync", icon: "fa-arrows-rotate", title: "syncing", row: 1, col: 0, shape: "pill", color: "blue" },
+    { id: "si3-recent", icon: "fa-clock", title: "< 10 min ago?", row: 1, col: 2, shape: "diamond", color: "warm" },
+    { id: "si3-failures", icon: "fa-hashtag", title: "failureCount?", row: 2, col: 1, shape: "diamond", color: "warm" },
+    { id: "si3-healthy", icon: "fa-circle-check", title: "healthy", row: 3, col: 0, shape: "pill", color: "teal" },
+    { id: "si3-degraded", icon: "fa-triangle-exclamation", title: "degraded", row: 3, col: 2, shape: "pill", color: "warm" },
+    { id: "si3-connected", icon: "fa-plug", title: "Worker connected?", row: 2, col: 3, shape: "diamond", color: "warm" },
+    { id: "si3-stale", icon: "fa-clock", title: "stale", subtitle: "auto-retrigger", row: 3, col: 3, shape: "pill", color: "warm" },
+    { id: "si3-error", icon: "fa-circle-xmark", title: "error", subtitle: "manual", row: 3, col: 4, shape: "pill", color: "red" },
+  ],
+  edges: [
+    { from: "si3-state", to: "si3-sync", label: "running" },
+    { from: "si3-state", to: "si3-recent", label: "not running" },
+    { from: "si3-recent", to: "si3-failures", label: "Yes" },
+    { from: "si3-failures", to: "si3-healthy", label: "== 0" },
+    { from: "si3-failures", to: "si3-degraded", label: "> 0" },
+    { from: "si3-recent", to: "si3-connected", label: "No (> 15 min)" },
+    { from: "si3-connected", to: "si3-stale", label: "Yes" },
+    { from: "si3-connected", to: "si3-error", label: "No" },
+  ],
+}
 </script>
 
 <ArchDiagram :config="syncSeqConfig" />
@@ -83,19 +159,7 @@ Users manage their allowlist from the dashboard. Each chat can be individually t
 
 When a message batch fails to process, it follows this retry path:
 
-```mermaid
-flowchart TD
-    A["fa:fa-envelope Message Batch"] --> B{"Process batch"}
-    B -- SUCCESS --> S["fa:fa-circle-check Cursor advanced<br/>Batch acked"]
-    B -- FAILURE --> C{"Classify error"}
-
-    C -- "Transient" --> D["fa:fa-rotate Exponential backoff<br/>5s / 25s / 125s / 625s<br/>then max retries"]
-    D --> DLQ1["fa:fa-inbox DLQ<br/>Manual review/replay"]
-
-    C -- "Validation" --> DLQ2["fa:fa-inbox DLQ (no retry)<br/>Bad schema or signature"]
-
-    C -- "Policy" --> DROP["fa:fa-circle-xmark Dropped (logged)<br/>Not allowlisted / suspended"]
-```
+<ArchDiagram :config="dlqFlowConfig" />
 
 Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitter (+/- 20%) is added to prevent thundering herd when multiple accounts retry simultaneously.
 
@@ -103,18 +167,7 @@ Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitt
 
 Each `waAccount` maintains a **sync cursor** -- an opaque token representing the last successfully processed position in the message stream.
 
-```mermaid
-flowchart LR
-    msg1 --> msg2 --> msg3 --> msg4 --> msg5 --> msg6 --> msg7
-
-    msg3 -. "lastCursor<br/>(stored in Convex)" .-> msg3
-    msg7 -. "currentHead<br/>(latest on device)" .-> msg7
-
-    style msg4 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
-    style msg5 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
-    style msg6 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
-    style msg7 fill:#e8f5f2,stroke:#0d7a6a,stroke-width:2px
-```
+<ArchDiagram :config="cursorFlowConfig" />
 
 Sync fetches `msg4` through `msg7`. On success, `lastCursor` advances to `msg7`.
 
@@ -140,20 +193,4 @@ The dashboard displays a real-time sync health indicator per connected WhatsApp 
 | `stale`      | Orange dot   | Last successful sync > 15 min ago                      | Yes, re-trigger |
 | `error`      | Red dot      | Last sync failed, all retries exhausted                | No, manual      |
 
-```mermaid
-flowchart TD
-    A{"syncJob.state?"} -- running --> SYNC["fa:fa-arrows-rotate syncing"]
-    A -- not running --> B{"Last sync<br/>< 10 min ago?"}
-    B -- YES --> C{"failureCount?"}
-    C -- "== 0" --> HEALTHY["fa:fa-circle-check healthy"]
-    C -- "> 0" --> DEGRADED["fa:fa-triangle-exclamation degraded"]
-    B -- "NO (> 15 min)" --> D{"Worker connected?"}
-    D -- YES --> STALE["fa:fa-clock stale (auto-retrigger)"]
-    D -- NO --> ERROR["fa:fa-circle-xmark error (manual)"]
-
-    style HEALTHY fill:#e8f5f2,stroke:#0d7a6a
-    style DEGRADED fill:#fef9f2,stroke:#d4a017
-    style STALE fill:#fff0ec,stroke:#e04b2c
-    style ERROR fill:#fff0ec,stroke:#e04b2c
-    style SYNC fill:#e8f0fe,stroke:#2563eb
-```
+<ArchDiagram :config="healthFlowConfig" />
