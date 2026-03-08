@@ -164,9 +164,18 @@ All endpoints are internal-only, accessed by Convex actions over the Fly.io priv
 
 On machine restart (deploy, crash recovery, or Fly.io maintenance), the supervisor automatically restores previously authenticated sessions:
 
-1. The supervisor scans `/tmp/wa-auth/` for existing auth directories on startup.
-2. For each directory found, it spawns a worker using the persisted auth state.
-3. The worker reconnects to WhatsApp using the stored credentials — no QR re-scan is needed.
-4. Session status is reported back to Convex so the control plane stays in sync.
+1. The supervisor queries **Tigris S3** for sessions with stored auth state (`auth/{sessionId}/`).
+2. If Tigris is unavailable or empty, it falls back to scanning the local `/tmp/wa-auth/` directory.
+3. For each restorable session, auth files are downloaded from Tigris to local tmpfs.
+4. A worker is spawned and reconnects to WhatsApp using the stored credentials — no QR re-scan needed.
+5. Session status is reported back to Convex so the control plane stays in sync.
 
-This means deploys and machine restarts are transparent to end users. As long as the auth state on disk is valid (WhatsApp has not revoked the linked device), sessions resume automatically within seconds of the supervisor starting.
+### Auth state durability
+
+Auth files are synced to Tigris (Fly.io's S3-compatible storage) at three points:
+
+- **Session start**: downloaded from Tigris to local tmpfs before Baileys initializes.
+- **Credential updates**: synced to Tigris in the background on every `creds.update` event.
+- **Session stop**: final full sync to Tigris before the worker exits.
+
+This makes sessions **machine-portable** — they can be restored on any machine in the fleet, not just the one that originally created them. Deploys, machine replacements, and horizontal scaling are transparent to end users. As long as the auth state in Tigris is valid (WhatsApp has not revoked the linked device), sessions resume automatically within seconds.

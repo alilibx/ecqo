@@ -51,7 +51,11 @@ Locked architectural decisions:
   - Multiple users (est. 20–50) share a single 1GB Fly.io Machine, scaling horizontally by adding machines.
   - `waMachines` table in Convex tracks machine health, capacity, and worker count.
   - Supervisor reports health periodically; Convex assigns new sessions to the least-loaded active machine.
-- Session artifacts are encrypted at rest and scoped to account identity (`/tmp/wa-auth/{sessionId}/`).
+- Session auth state uses a three-tier storage model:
+  1. **In-memory**: Baileys holds active session keys during runtime.
+  2. **Local tmpfs** (`/tmp/wa-auth/{sessionId}/`): fast I/O for Baileys' `useMultiFileAuthState`.
+  3. **Tigris S3** (`auth/{sessionId}/`): durable backing store synced on start, creds.update, and stop.
+- This makes sessions **machine-portable** — any machine can restore any session from Tigris, enabling horizontal scaling and zero-downtime deploys.
 - Worker-to-backend communication uses signed service requests and replay protection.
 - **CI/CD**: GitHub Actions workflow (`.github/workflows/deploy-connector.yml`) auto-deploys the connector on push to `main` when files in `services/connector/`, `shared/`, or `convex/` change.
 
