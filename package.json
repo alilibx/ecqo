@@ -3,9 +3,14 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "services/*",
+    "shared"
+  ],
   "scripts": {
     "dev": "vite dev",
     "dev:backend": "convex dev",
+    "dev:connector": "bun run --filter @ecqqo/connector dev",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "docs:dev": "vitepress dev docs",

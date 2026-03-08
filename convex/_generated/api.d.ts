@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as connector from "../connector.js";
 import type * as emails from "../emails.js";
 import type * as waitlist from "../waitlist.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  connector: typeof connector;
   emails: typeof emails;
   waitlist: typeof waitlist;
 }>;

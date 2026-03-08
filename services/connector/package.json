@@ -1,0 +1,23 @@
+{
+  "name": "@ecqqo/connector",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx --watch --env-file=.env src/index.ts",
+    "start": "node --import tsx --env-file=.env src/index.ts"
+  },
+  "dependencies": {
+    "@ecqqo/shared": "workspace:*",
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "convex": "^1.32.0",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}

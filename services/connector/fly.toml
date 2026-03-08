@@ -1,0 +1,28 @@
+# Ecqqo WhatsApp Connector Worker
+# One machine per user — ephemeral, pay $0 when stopped.
+
+app = "ecqqo-connector"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+  # Build context is the repo root (needed for shared/ and convex/)
+  # Deploy with: fly deploy --config services/connector/fly.toml --dockerfile services/connector/Dockerfile .
+
+[env]
+  AUTH_DIR = "/tmp/wa-auth"
+
+# tmpfs mount for auth state — keys never persist to disk
+[mounts]
+  source = "wa_auth"
+  destination = "/tmp/wa-auth"
+
+# No HTTP service — this is a worker process, not a web server
+# Fly.io will keep it running as a Machine
+
+[processes]
+  worker = "/connector"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

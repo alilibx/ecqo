@@ -44,3 +44,20 @@ Use bun as the package manager and script runner.
 ## Design system
 
 Fonts: Archivo Black (headings), DM Sans (body), JetBrains Mono (labels/nav). Colors: `--signal` (#e04b2c) for primary CTA, `--accent` (#0d7a6a) for teal accents. Light warm palette (`--bg: #faf7f0`).
+
+## Monorepo
+
+This project is a monorepo. All packages, services, and documentation live in one repository. Keep this in mind when reading files, resolving imports, and planning changes — changes may span multiple workspace directories (`app/`, `convex/`, `services/`, `docs/`, `shared/`).
+
+## Documentation workflow (MANDATORY)
+
+The `docs/` folder contains a VitePress documentation site that serves as the project's single source of truth for architecture, flows, plans, and decisions.
+
+### Before starting any task
+- **Always** read the relevant documentation in `docs/` before executing any task, Linear issue, or feature. Use sub-agents to search and retrieve information from VitePress docs to understand current architecture, decisions, and constraints.
+- Check `docs/architecture/`, `docs/flows/`, `docs/plan/`, and `docs/security/` for context on the area you're working in.
+
+### After completing any task
+- **Always** update the relevant documentation in `docs/` to reflect changes made. If a new feature was added, a flow changed, or an architectural decision was made, the docs must be updated in the same pass.
+- Use sub-agents to update VitePress docs in parallel with code changes when possible.
+- Documentation commands: `bun run docs:dev` (preview), `bun run docs:build` (build).
