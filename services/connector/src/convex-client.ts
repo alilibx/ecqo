@@ -139,4 +139,14 @@ export class ConnectorConvexClient {
   async deregisterMachine(machineId: string) {
     await this.client.mutation(api.connector.deregisterMachine, { machineId });
   }
+
+  async assignSessionToMachine(
+    sessionId: Id<"waConnectSessions">,
+    machineId: string,
+  ) {
+    await this.client.mutation(api.connector.assignSessionToMachine, {
+      sessionId,
+      machineId,
+    });
+  }
 }

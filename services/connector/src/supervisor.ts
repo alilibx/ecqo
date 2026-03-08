@@ -9,6 +9,7 @@
 import { fork, type ChildProcess } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { ConnectorConvexClient } from "./convex-client.js";
@@ -218,6 +219,7 @@ const server = createServer(async (req, res) => {
       }
 
       const sessionId = await convex.createSession();
+      await convex.assignSessionToMachine(sessionId, MACHINE_ID);
       const info = spawnWorker(sessionId);
       workers.set(sessionId, info);
 
@@ -242,6 +244,7 @@ const server = createServer(async (req, res) => {
         return json(res, 503, { error: check.reason });
       }
 
+      await convex.assignSessionToMachine(sessionId as any, MACHINE_ID);
       const info = spawnWorker(sessionId);
       workers.set(sessionId, info);
 
@@ -314,6 +317,53 @@ async function reportHealth() {
   }
 }
 
+// ── Session restoration ──
+
+const AUTH_DIR = process.env.AUTH_DIR ?? "/tmp/wa-auth";
+
+async function restoreSessions() {
+  try {
+    const entries = readdirSync(AUTH_DIR, { withFileTypes: true });
+    // Filter out filesystem artifacts (lost+found) — session IDs are alphanumeric Convex IDs
+    const sessionDirs = entries.filter(
+      (e) => e.isDirectory() && /^[a-z0-9]+$/.test(e.name),
+    );
+
+    if (!sessionDirs.length) {
+      console.log("   No sessions to restore");
+      return;
+    }
+
+    console.log(`   Found ${sessionDirs.length} session(s) to restore`);
+
+    for (const dir of sessionDirs) {
+      const sessionId = dir.name;
+
+      const check = canAcceptWorker();
+      if (!check.ok) {
+        console.log(`   Skipping restore of ${sessionId}: ${check.reason}`);
+        break;
+      }
+
+      console.log(`   Restoring session ${sessionId}`);
+      try {
+        await convex.assignSessionToMachine(sessionId as any, MACHINE_ID);
+      } catch {
+        // Session may no longer exist in Convex — skip
+        console.log(`   Skipping ${sessionId} — not found in Convex`);
+        continue;
+      }
+      const info = spawnWorker(sessionId);
+      workers.set(sessionId, info);
+    }
+
+    console.log(`   Restored ${workers.size} session(s)`);
+  } catch (err) {
+    // AUTH_DIR might not exist yet on first boot
+    console.log("   No auth directory found, skipping restore");
+  }
+}
+
 // ── Lifecycle ──
 
 export async function startSupervisor() {
@@ -340,6 +390,9 @@ export async function startSupervisor() {
   } catch (err) {
     console.error("   Failed to register machine:", err);
   }
+
+  // Restore sessions from auth state on disk (survives machine restarts)
+  await restoreSessions();
 
   // Start health reporting
   healthTimer = setInterval(reportHealth, HEALTH_REPORT_INTERVAL_MS);
