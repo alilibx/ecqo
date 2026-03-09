@@ -220,6 +220,13 @@ export async function createWhatsAppSession(opts: SessionOptions) {
         );
       } catch (err) {
         console.error("Failed to ingest messages:", err);
+        // Enqueue to dead-letter queue for retry
+        try {
+          await convex.enqueueDeadLetter(normalized, String(err));
+          console.log(`📭 Enqueued ${normalized.length} messages to DLQ`);
+        } catch (dlqErr) {
+          console.error("Failed to enqueue to DLQ:", dlqErr);
+        }
       }
     });
 
@@ -256,6 +263,13 @@ export async function createWhatsAppSession(opts: SessionOptions) {
               `   Batch ${Math.floor(i / 100) + 1} failed:`,
               err,
             );
+            // Enqueue failed batch to DLQ
+            try {
+              await convex.enqueueDeadLetter(batch, String(err));
+              console.log(`   📭 Batch ${Math.floor(i / 100) + 1} enqueued to DLQ`);
+            } catch (dlqErr) {
+              console.error("   Failed to enqueue to DLQ:", dlqErr);
+            }
           }
         }
       },

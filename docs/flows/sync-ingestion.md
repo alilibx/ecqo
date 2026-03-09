@@ -167,11 +167,21 @@ Users manage their allowlist from the dashboard. Each chat can be individually t
 
 ## Dead-Letter Queue and Retry Strategy
 
-When a message batch fails to process, it follows this retry path:
+**Implemented in `convex/deadLetter.ts`, `convex/schema.ts` (`waDeadLetters` table), and `convex/crons.ts`.**
+
+When a message batch fails to process, errors are classified and the batch follows this retry path:
 
 <ArchDiagram :config="dlqFlowConfig" />
 
-Retry strategy uses **exponential backoff** with base 5s and multiplier 5x. Jitter (+/- 20%) is added to prevent thundering herd when multiple accounts retry simultaneously.
+### Error Classification and Retry Limits
+
+| Error Type   | Max Retries | Example                                   |
+|--------------|-------------|--------------------------------------------|
+| Transient    | 5           | Network timeout, rate limit, temporary 5xx |
+| Validation   | 0 (dead)    | Bad schema, invalid signature              |
+| Unknown      | 3           | Unclassified errors                        |
+
+Retry strategy uses **exponential backoff**: `5s * 5^attempt` with jitter. A Convex cron processes the retry queue every 30 seconds. Batches that exhaust retries land in the `waDeadLetters` table for manual review. Dashboard queries expose DLQ stats (pending, retrying, dead counts). Manual retry is available for dead-lettered batches.
 
 ## Cursor Progression and Reconciliation
 

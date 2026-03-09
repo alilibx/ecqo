@@ -1,16 +1,19 @@
 /**
- * Tigris (S3-compatible) auth state sync.
+ * Tigris (S3-compatible) auth state sync with encryption at rest.
  *
  * Baileys stores ~800+ small JSON files per session in a local directory.
  * This module syncs that directory to/from Tigris so sessions can be
  * restored on any machine (not tied to a specific Fly volume).
  *
+ * All files are encrypted with AES-256-GCM before upload using
+ * CONNECTOR_ENCRYPTION_KEY. Files are decrypted on download.
+ *
  * Strategy:
- *   Session start:  Tigris → download auth files to /tmp/wa-auth/{sessionId}/
+ *   Session start:  Tigris → download + decrypt auth files to /tmp/wa-auth/{sessionId}/
  *   During session: Baileys reads/writes to local tmpfs (fast)
- *   On creds.update: sync changed files → Tigris (background)
+ *   On creds.update: encrypt + sync changed files → Tigris (background)
  *   Session stop:   final full sync → Tigris
- *   New machine:    pull from Tigris → local tmpfs → reconnect without QR
+ *   New machine:    pull from Tigris → decrypt → local tmpfs → reconnect without QR
  */
 
 import {
@@ -22,6 +25,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
+import { encrypt, decrypt, isEncrypted } from "@ecqqo/shared";
 
 // Tigris sets these automatically via `fly storage create`
 const BUCKET = process.env.BUCKET_NAME ?? "ecqqo-connector-auth";
@@ -39,16 +43,22 @@ function getClient(): S3Client {
   return s3;
 }
 
+function getEncryptionKey(): string | null {
+  return process.env.CONNECTOR_ENCRYPTION_KEY ?? null;
+}
+
 function s3Key(sessionId: string, filename: string): string {
   return `auth/${sessionId}/${filename}`;
 }
 
 /**
  * Download all auth files for a session from Tigris to local disk.
+ * Decrypts files if encryption key is configured.
  * Returns true if files were found and downloaded, false if no auth exists.
  */
 export async function downloadAuthState(sessionId: string, authDir: string): Promise<boolean> {
   const client = getClient();
+  const encKey = getEncryptionKey();
   const prefix = `auth/${sessionId}/`;
 
   const listRes = await client.send(
@@ -86,45 +96,73 @@ export async function downloadAuthState(sessionId: string, authDir: string): Pro
       }),
     );
 
-    const body = await getRes.Body?.transformToString();
-    if (body !== undefined) {
-      writeFileSync(filePath, body);
-      downloaded++;
+    const bodyBytes = await getRes.Body?.transformToByteArray();
+    if (!bodyBytes) continue;
+
+    const buf = Buffer.from(bodyBytes);
+
+    // Decrypt if encryption key is available and data looks encrypted
+    let content: string;
+    if (encKey && isEncrypted(buf)) {
+      try {
+        content = decrypt(buf, encKey, `${sessionId}/${filename}`);
+      } catch (err) {
+        console.error(`[auth-sync] Failed to decrypt ${filename}, trying as plaintext:`, err);
+        content = buf.toString("utf-8");
+      }
+    } else {
+      content = buf.toString("utf-8");
     }
+
+    writeFileSync(filePath, content);
+    downloaded++;
   }
 
-  console.log(`[auth-sync] Downloaded ${downloaded} auth files for ${sessionId}`);
+  console.log(`[auth-sync] Downloaded ${downloaded} auth files for ${sessionId}${encKey ? " (encrypted)" : ""}`);
   return downloaded > 0;
 }
 
 /**
  * Upload all auth files from local disk to Tigris.
+ * Encrypts files if encryption key is configured.
  * Used for full sync on session stop.
  */
 export async function uploadAuthState(sessionId: string, authDir: string): Promise<void> {
   if (!existsSync(authDir)) return;
 
   const client = getClient();
+  const encKey = getEncryptionKey();
   const files = listFilesRecursive(authDir);
 
   let uploaded = 0;
   for (const filePath of files) {
     const relative = path.relative(authDir, filePath);
     const key = s3Key(sessionId, relative);
-    const content = readFileSync(filePath, "utf-8");
+    const plaintext = readFileSync(filePath, "utf-8");
+
+    let body: Buffer | string;
+    let contentType: string;
+
+    if (encKey) {
+      body = encrypt(plaintext, encKey, `${sessionId}/${relative}`);
+      contentType = "application/octet-stream";
+    } else {
+      body = plaintext;
+      contentType = "application/json";
+    }
 
     await client.send(
       new PutObjectCommand({
         Bucket: BUCKET,
         Key: key,
-        Body: content,
-        ContentType: "application/json",
+        Body: body,
+        ContentType: contentType,
       }),
     );
     uploaded++;
   }
 
-  console.log(`[auth-sync] Uploaded ${uploaded} auth files for ${sessionId}`);
+  console.log(`[auth-sync] Uploaded ${uploaded} auth files for ${sessionId}${encKey ? " (encrypted)" : ""}`);
 }
 
 /**
@@ -136,19 +174,31 @@ export async function uploadAuthFile(
   filename: string,
 ): Promise<void> {
   const client = getClient();
+  const encKey = getEncryptionKey();
   const filePath = path.join(authDir, filename);
 
   if (!existsSync(filePath)) return;
 
-  const content = readFileSync(filePath, "utf-8");
+  const plaintext = readFileSync(filePath, "utf-8");
   const key = s3Key(sessionId, filename);
+
+  let body: Buffer | string;
+  let contentType: string;
+
+  if (encKey) {
+    body = encrypt(plaintext, encKey, `${sessionId}/${filename}`);
+    contentType = "application/octet-stream";
+  } else {
+    body = plaintext;
+    contentType = "application/json";
+  }
 
   await client.send(
     new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,
-      Body: content,
-      ContentType: "application/json",
+      Body: body,
+      ContentType: contentType,
     }),
   );
 }

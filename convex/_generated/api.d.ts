@@ -10,10 +10,13 @@
 
 import type * as connector from "../connector.js";
 import type * as crons from "../crons.js";
+import type * as deadLetter from "../deadLetter.js";
 import type * as emails from "../emails.js";
 import type * as http from "../http.js";
 import type * as machineSync from "../machineSync.js";
+import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
+import type * as workspaces from "../workspaces.js";
 
 import type {
   ApiFromModules,
@@ -24,10 +27,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   connector: typeof connector;
   crons: typeof crons;
+  deadLetter: typeof deadLetter;
   emails: typeof emails;
   http: typeof http;
   machineSync: typeof machineSync;
+  users: typeof users;
   waitlist: typeof waitlist;
+  workspaces: typeof workspaces;
 }>;
 
 /**

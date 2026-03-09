@@ -375,7 +375,7 @@ All data is scoped to a workspace. Cross-workspace data access is structurally i
 |------------------------|-----------------------------------------------------|
 | Data in transit        | TLS 1.3 (Vercel, Convex, Fly.io all enforce HTTPS) |
 | Data at rest (Convex)  | AES-256 (managed by Convex Cloud)                   |
-| Session artifacts      | AES-256 encrypted before storage on Fly.io volumes  |
+| Session artifacts (S3) | AES-256-GCM encrypted before upload to Tigris S3 (per-file IV, key from `CONNECTOR_ENCRYPTION_KEY` via SHA-256 KDF). Backward compatible: plaintext files are detected and read without decryption. Impl: `shared/encryption.ts`, `services/connector/src/auth-sync.ts` |
 | OAuth tokens           | Encrypted at rest in Convex, never exposed to client|
 | WhatsApp E2E           | Signal Protocol (managed by WhatsApp, opaque to us) |
 
@@ -419,6 +419,10 @@ This minimizes data exposure. The agent can only read and act on conversations t
 The Fly.io connector worker communicates with Convex using signed requests to prevent spoofing and replay attacks.
 
 ### HMAC-SHA256 Request Signing
+
+**Implemented in `services/connector/src/` and `convex/connector.ts`.**
+
+The connector signs every Convex mutation with HMAC-SHA256. Verification uses the Web Crypto API inside Convex. Anti-replay is enforced with a 5-minute timestamp window and a per-request nonce. The signing secret is configured via the `CONNECTOR_SIGNING_SECRET` environment variable. Graceful degradation: when the secret is not set (local dev), unsigned requests are accepted.
 
 <ArchDiagram :config="hmacReqSeqConfig" />
 
@@ -586,7 +590,7 @@ Input/output content sent to LangSmith uses the same redaction pipeline as the a
 [x] Workspace isolation (all queries scoped by workspaceId)
 [x] Role-based access control enforced server-side
 [x] HMAC-SHA256 signing for connector-to-Convex communication
-[x] Anti-replay protection (5-minute timestamp window)
+[x] Anti-replay protection (5-minute timestamp window + nonce)
 [x] Worker lease system (one worker per workspace)
 [x] Meta webhook signature verification
 [x] Rate limiting on inbound message processing

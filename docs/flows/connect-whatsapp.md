@@ -172,6 +172,8 @@ On machine restart (deploy, crash recovery, or Fly.io maintenance), the supervis
 
 ### Auth state durability
 
+Auth state files are **encrypted at rest** using AES-256-GCM before upload to Tigris S3. Each file gets a unique IV; the encryption key is derived from `CONNECTOR_ENCRYPTION_KEY` via SHA-256 KDF. On download, files are decrypted transparently. Backward compatibility is maintained: plaintext files (written before encryption was enabled) are detected and read without decryption. See `shared/encryption.ts` and `services/connector/src/auth-sync.ts`.
+
 Auth files are synced to Tigris (Fly.io's S3-compatible storage) at three points:
 
 - **Session start**: downloaded from Tigris to local tmpfs before Baileys initializes.

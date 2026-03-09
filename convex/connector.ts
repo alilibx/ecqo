@@ -1,13 +1,86 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// ── Signature verification ──
+
+const sigValidator = v.optional(
+  v.object({
+    signature: v.string(),
+    timestamp: v.number(),
+    nonce: v.string(),
+  }),
+);
+
+/**
+ * Async HMAC verification using Web Crypto API (available in Convex runtime).
+ */
+async function verifySignatureAsync(
+  args: Record<string, unknown>,
+): Promise<void> {
+  const secret = process.env.CONNECTOR_SIGNING_SECRET;
+  if (!secret) return; // Dev mode — no verification
+
+  const sig = args._sig as
+    | { signature: string; timestamp: number; nonce: string }
+    | undefined;
+
+  if (!sig) {
+    throw new Error("Missing request signature");
+  }
+
+  // Check timestamp freshness
+  const maxAgeMs = 5 * 60_000;
+  const now = Date.now();
+  const age = Math.abs(now - sig.timestamp);
+  if (age > maxAgeMs) {
+    throw new Error(`Request expired (age: ${age}ms)`);
+  }
+
+  // Build payload without _sig
+  const payload: Record<string, unknown> = {};
+  for (const [k, val] of Object.entries(args)) {
+    if (k !== "_sig") payload[k] = val;
+  }
+
+  const body = JSON.stringify(payload);
+  const message = `${body}.${sig.timestamp}.${sig.nonce}`;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const expectedBuf = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(message),
+  );
+
+  const expectedHex = Array.from(new Uint8Array(expectedBuf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (expectedHex !== sig.signature) {
+    throw new Error("Invalid request signature");
+  }
+}
+
 // ── Mutations called by the connector via ConvexHttpClient ──
 
 export const createSession = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    workspaceId: v.optional(v.id("workspaces")),
+    _sig: sigValidator,
+  },
+  handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const now = Date.now();
     const sessionId = await ctx.db.insert("waConnectSessions", {
+      workspaceId: args.workspaceId,
       status: "created",
       retryCount: 0,
       createdAt: now,
@@ -33,8 +106,10 @@ export const updateSessionStatus = mutation({
     ),
     qrCode: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     await ctx.db.patch(args.sessionId, {
       status: args.status,
       updatedAt: Date.now(),
@@ -52,8 +127,11 @@ export const createAccount = mutation({
     phoneNumber: v.string(),
     pushName: v.optional(v.string()),
     platform: v.optional(v.string()),
+    workspaceId: v.optional(v.id("workspaces")),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     // Check if account already exists for this session
     const existing = await ctx.db
       .query("waAccounts")
@@ -73,6 +151,7 @@ export const createAccount = mutation({
     }
 
     return await ctx.db.insert("waAccounts", {
+      workspaceId: args.workspaceId,
       sessionId: args.sessionId,
       status: "connected",
       phoneNumber: args.phoneNumber,
@@ -92,8 +171,10 @@ export const updateAccountStatus = mutation({
       v.literal("disconnected"),
       v.literal("reconnect_required"),
     ),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const account = await ctx.db
       .query("waAccounts")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
@@ -111,8 +192,10 @@ export const updateAccountStatus = mutation({
 export const heartbeat = mutation({
   args: {
     sessionId: v.string(),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const account = await ctx.db
       .query("waAccounts")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
@@ -153,8 +236,10 @@ export const ingestMessages = mutation({
         ingestionHash: v.string(),
       }),
     ),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const account = await ctx.db
       .query("waAccounts")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
@@ -237,8 +322,10 @@ export const registerMachine = mutation({
     machineId: v.string(),
     region: v.string(),
     maxWorkers: v.number(),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const existing = await ctx.db
       .query("waMachines")
       .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
@@ -280,8 +367,10 @@ export const updateMachineHealth = mutation({
       v.literal("draining"),
       v.literal("offline"),
     ),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const machine = await ctx.db
       .query("waMachines")
       .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
@@ -290,7 +379,12 @@ export const updateMachineHealth = mutation({
     if (!machine) {
       // Auto-register if not found
       await ctx.db.insert("waMachines", {
-        ...args,
+        machineId: args.machineId,
+        region: args.region,
+        workerCount: args.workerCount,
+        maxWorkers: args.maxWorkers,
+        memoryUsageMB: args.memoryUsageMB,
+        status: args.status,
         lastHealthAt: Date.now(),
       });
       return;
@@ -307,8 +401,12 @@ export const updateMachineHealth = mutation({
 });
 
 export const deregisterMachine = mutation({
-  args: { machineId: v.string() },
+  args: {
+    machineId: v.string(),
+    _sig: sigValidator,
+  },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const machine = await ctx.db
       .query("waMachines")
       .withIndex("by_machineId", (q) => q.eq("machineId", args.machineId))
@@ -321,8 +419,11 @@ export const deregisterMachine = mutation({
 });
 
 export const cleanupStaleMachines = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    _sig: sigValidator,
+  },
+  handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     const staleThreshold = Date.now() - 2 * 60_000; // 2 minutes
     const machines = await ctx.db.query("waMachines").collect();
 
@@ -364,8 +465,10 @@ export const assignSessionToMachine = mutation({
   args: {
     sessionId: v.id("waConnectSessions"),
     machineId: v.string(),
+    _sig: sigValidator,
   },
   handler: async (ctx, args) => {
+    await verifySignatureAsync(args as Record<string, unknown>);
     await ctx.db.patch(args.sessionId, { machineId: args.machineId });
   },
 });
