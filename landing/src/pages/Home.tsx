@@ -359,7 +359,7 @@ export function Home() {
             <a href="#pricing" onClick={closeBurger}>{t.nav.pricing}</a>
             <a href="#faq" onClick={closeBurger}>{t.nav.faq}</a>
           </nav>
-          <a className="button mini desktop-only" href="https://app.ecqqo.com">{t.nav.getStarted}</a>
+          <a className="button mini desktop-only" href="#calculator">{t.nav.getStarted}</a>
           <div className="settings-wrap" ref={settingsRef}>
             <button type="button" className={`settings-trigger ${settingsOpen ? "open" : ""}`} aria-label="Settings" onClick={() => setSettingsOpen((o) => !o)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z" /></svg>
@@ -395,7 +395,7 @@ export function Home() {
               </div>
             </div>
           </div>
-          <a className="button mini mobile-cta" href="https://app.ecqqo.com">{t.nav.getStarted}</a>
+          <a className="button mini mobile-cta" href="#calculator">{t.nav.getStarted}</a>
           <button type="button" className={`burger ${burgerOpen ? "open" : ""}`} aria-label="Menu" onClick={() => setBurgerOpen((o) => !o)}>
             <span /><span /><span />
           </button>
@@ -416,7 +416,7 @@ export function Home() {
             </h1>
             <p className="subtitle">{t.hero.subtitle}</p>
             <div className="hero-actions">
-              <a className="button" href="https://app.ecqqo.com">{t.hero.cta}</a>
+              <a className="button" href="#calculator">{t.hero.cta}</a>
               <a className="ghost" href="#workflow">{t.hero.secondaryCta}</a>
             </div>
             <div className="integrations-strip">
