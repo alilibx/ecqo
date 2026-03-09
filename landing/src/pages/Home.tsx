@@ -19,7 +19,7 @@ function detectIsUAE(): boolean {
 const PLANS = [
   { name: "Starter", nameAr: "\u0627\u0644\u0645\u0628\u062a\u062f\u0626", aed: 179, usd: 49, aedAnnual: 139, usdAnnual: 39 },
   { name: "Founder", nameAr: "\u0627\u0644\u0645\u0624\u0633\u0633", aed: 749, usd: 199, aedAnnual: 549, usdAnnual: 149 },
-  { name: "Dreamer", nameAr: "\u0627\u0644\u062d\u0627\u0644\u0645", aed: 1499, usd: 399, aedAnnual: 1049, usdAnnual: 279 },
+  { name: "Dreamer", nameAr: "\u0627\u0644\u062d\u0627\u0644\u0645", aed: 1499, usd: 399, aedAnnual: 999, usdAnnual: 269 },
 ];
 
 const SLIDER_MAX_USD = 10000;
@@ -648,7 +648,10 @@ export function Home() {
                     onClick={() => setSelectedPlan(i)}
                   >
                     <span className="plan-option-name">{locale === "ar" ? p.nameAr : p.name}</span>
-                    <span className="plan-option-price">{price(p.aedAnnual, p.usdAnnual, currency, t.currencyLabels.AED)}</span>
+                    <span className="plan-option-price">
+                      <span className="plan-option-old">{price(p.aed, p.usd, currency, t.currencyLabels.AED)}</span>
+                      {price(p.aedAnnual, p.usdAnnual, currency, t.currencyLabels.AED)}
+                    </span>
                     <span className="plan-option-period">{t.calculator.perMonth}</span>
                   </button>
                 ))}
@@ -891,7 +894,8 @@ export function Home() {
             </ul>
             <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
-          <article className="info-card reveal delay-1">
+          <article className="info-card highlight reveal delay-1">
+            <div className="popular-badge">{t.pricing.mostPopular}</div>
             <p className="label">{t.pricing.founder}</p>
             <p className="value">
               {billingCycle === "annual" && <span className="price-old">{price(749, 199, currency, t.currencyLabels.AED)}</span>}
@@ -904,12 +908,11 @@ export function Home() {
             </ul>
             <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
-          <article className="info-card highlight reveal delay-2">
-            <div className="popular-badge">{t.pricing.mostPopular}</div>
+          <article className="info-card reveal delay-2">
             <p className="label">{t.pricing.dreamer}</p>
             <p className="value">
               {billingCycle === "annual" && <span className="price-old">{price(1499, 399, currency, t.currencyLabels.AED)}</span>}
-              <span className="price">{billingCycle === "annual" ? price(999, 229, currency, t.currencyLabels.AED) : price(1499, 399, currency, t.currencyLabels.AED)}</span>
+              <span className="price">{billingCycle === "annual" ? price(999, 269, currency, t.currencyLabels.AED) : price(1499, 399, currency, t.currencyLabels.AED)}</span>
               <span>{t.pricing.month}</span>
             </p>
             <p className="billed-note">{billingCycle === "annual" ? t.pricing.billedAnnually : t.pricing.billedMonthly}</p>
