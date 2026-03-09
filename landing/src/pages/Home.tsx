@@ -17,9 +17,13 @@ function detectIsUAE(): boolean {
 /* ── Constants ──────────────────────────────── */
 
 const PLANS = [
-  { name: "Founder", nameAr: "\u0627\u0644\u0645\u0624\u0633\u0633", aed: 749, usd: 199 },
-  { name: "Dreamer", nameAr: "\u0627\u0644\u062d\u0627\u0644\u0645", aed: 1499, usd: 399 },
+  { name: "Starter", nameAr: "\u0627\u0644\u0645\u0628\u062a\u062f\u0626", aed: 179, usd: 49, aedAnnual: 139, usdAnnual: 39 },
+  { name: "Founder", nameAr: "\u0627\u0644\u0645\u0624\u0633\u0633", aed: 749, usd: 199, aedAnnual: 549, usdAnnual: 149 },
+  { name: "Dreamer", nameAr: "\u0627\u0644\u062d\u0627\u0644\u0645", aed: 1499, usd: 399, aedAnnual: 1049, usdAnnual: 279 },
 ];
+
+const SLIDER_MAX_USD = 10000;
+const SLIDER_MAX_AED = 36700;
 
 /* ── Helpers ─────────────────────────────────── */
 
@@ -77,8 +81,13 @@ export function Home() {
 
   const planCost = currency === "AED" ? PLANS[selectedPlan].aed : PLANS[selectedPlan].usd;
   const monthlySavings = Math.max(0, currentCost - planCost);
+  const weeklySavings = Math.round(monthlySavings / 4.33);
   const annualSavings = monthlySavings * 12;
-  const savingsRate = currentCost > 0 ? ((monthlySavings / currentCost) * 100).toFixed(1) : "0.0";
+  const savingsRate = currentCost > 0 ? ((monthlySavings / currentCost) * 100).toFixed(0) : "0";
+  const hourlyRate = currency === "AED" ? 55 : 15;
+  const timeSavedWeekly = Math.round((monthlySavings / hourlyRate) / 4.33);
+  const timeSavedMonthly = Math.round(monthlySavings / hourlyRate);
+  const timeSavedAnnually = timeSavedMonthly * 12;
 
   const chatMessages = t.wa.messages;
   const phrases = t.hero.phrases;
@@ -568,7 +577,7 @@ export function Home() {
               <div className="new-card-left">
                 <img src="/logos/logo-icon-light.png" alt={t.brandName} className="new-card-logo" />
                 <p className="new-label">{t.savings.ecqqoLabel}</p>
-                <p className="new-price">{t.savings.from} {price(749, 199, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
+                <p className="new-price">{t.savings.from} {price(179, 49, currency, t.currencyLabels.AED)}<span>{t.savings.mo}</span></p>
               </div>
               <div className="new-card-right">
                 <p className="new-copy">{t.savings.ecqqoCopy}</p>
@@ -601,50 +610,77 @@ export function Home() {
           </div>
 
           <div className="calculator-main reveal delay-1">
-            <div className="inputs">
-              <label>
-                {t.calculator.currentCost}
-                <input
-                  type="number"
-                  min={0}
-                  value={currentCost}
-                  onChange={(e) => setCurrentCost(Math.max(0, Number(e.target.value) || 0))}
-                />
-              </label>
-              <label>
-                {t.calculator.ecqqoPlan}
-                <select
-                  value={selectedPlan}
-                  onChange={(e) => setSelectedPlan(Number(e.target.value))}
-                >
-                  {PLANS.map((p, i) => (
-                    <option key={i} value={i}>
-                      {locale === "ar" ? p.nameAr : p.name} - {price(p.aed, p.usd, currency, t.currencyLabels.AED)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <div className="slider-group">
+              <div className="slider-header">
+                <span className="slider-label">{t.calculator.currentCost}</span>
+                <span className="slider-value">{fmt(currentCost, currency, t.currencyLabels.AED)}</span>
+              </div>
+              <input
+                type="range"
+                className="cost-slider"
+                min={0}
+                max={currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD}
+                step={currency === "AED" ? 100 : 50}
+                value={currentCost}
+                onChange={(e) => setCurrentCost(Number(e.target.value))}
+                style={{ "--slider-pct": `${(currentCost / (currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD)) * 100}%` } as React.CSSProperties}
+              />
             </div>
 
-            <div className="results">
-              <div className="result-row">
-                <span>{t.calculator.monthlySavings}</span>
-                <strong>{fmt(monthlySavings, currency, t.currencyLabels.AED)}</strong>
+            <label>
+              {t.calculator.ecqqoPlan}
+              <select
+                value={selectedPlan}
+                onChange={(e) => setSelectedPlan(Number(e.target.value))}
+              >
+                {PLANS.map((p, i) => (
+                  <option key={i} value={i}>
+                    {locale === "ar" ? p.nameAr : p.name} - {price(p.aed, p.usd, currency, t.currencyLabels.AED)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="results-grid">
+              <div className="results results-money">
+                <span className="results-heading">{t.calculator.moneySavedHeading}</span>
+                <div className="result-hero-value">{fmt(weeklySavings, currency, t.currencyLabels.AED)}</div>
+                <span className="result-hero-label">{t.calculator.perWeek}</span>
+                <div className="result-details">
+                  <div className="result-row">
+                    <span>{t.calculator.perMonth}</span>
+                    <strong>{fmt(monthlySavings, currency, t.currencyLabels.AED)}</strong>
+                  </div>
+                  <div className="result-row">
+                    <span>{t.calculator.perYear}</span>
+                    <strong>{fmt(annualSavings, currency, t.currencyLabels.AED)}</strong>
+                  </div>
+                  <div className="result-row">
+                    <span>{t.calculator.savingsRate}</span>
+                    <strong>{savingsRate}%</strong>
+                  </div>
+                </div>
               </div>
-              <div className="result-row">
-                <span>{t.calculator.annualSavings}</span>
-                <strong>{fmt(annualSavings, currency, t.currencyLabels.AED)}</strong>
-              </div>
-              <div className="result-row">
-                <span>{t.calculator.savingsRate}</span>
-                <strong>{savingsRate}%</strong>
+              <div className="results results-time">
+                <span className="results-heading">{t.calculator.timeSavedHeading}</span>
+                <div className="result-hero-value">{timeSavedWeekly}h</div>
+                <span className="result-hero-label">{t.calculator.perWeek}</span>
+                <div className="result-details">
+                  <div className="result-row">
+                    <span>{t.calculator.perMonth}</span>
+                    <strong>{timeSavedMonthly}h</strong>
+                  </div>
+                  <div className="result-row">
+                    <span>{t.calculator.perYear}</span>
+                    <strong>{timeSavedAnnually}h</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {waitlistStep === "email" && (
-              <form className="waitlist" onSubmit={handleJoinWaitlist}>
-                <label>
-                  {t.calculator.yourEmail}
+            {waitlistStep === "email" ? (
+              <form className="waitlist-inline" onSubmit={handleJoinWaitlist}>
+                <div className="waitlist-input-row">
                   <input
                     type="email"
                     required
@@ -652,20 +688,18 @@ export function Home() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
-                </label>
-                <button type="submit" className="button" disabled={waitlistSubmitting}>
-                  {waitlistSubmitting ? t.calculator.sending : t.calculator.joinWaitlist}
-                </button>
+                  <button type="submit" className="button" disabled={waitlistSubmitting}>
+                    {waitlistSubmitting ? t.calculator.sending : t.calculator.joinWaitlist}
+                  </button>
+                </div>
                 {waitlistStatus && (
                   <p className="status" role="status" aria-live="polite">{waitlistStatus}</p>
                 )}
               </form>
-            )}
-
-            {waitlistStep === "done" && (
-              <div className="waitlist">
+            ) : (
+              <div className="waitlist-inline waitlist-done">
                 {waitlistStatus && (
-                  <p className="status" role="status" aria-live="polite">{waitlistStatus}</p>
+                  <p className="waitlist-done-msg" role="status" aria-live="polite">{waitlistStatus}</p>
                 )}
                 <button
                   type="button"
@@ -831,10 +865,23 @@ export function Home() {
 
         <section className="cards three-up pricing-grid">
           <article className="info-card reveal">
+            <p className="label">{t.pricing.starter}</p>
+            <p className="value">
+              {billingCycle === "annual" && <span className="price-old">{price(179, 49, currency, t.currencyLabels.AED)}</span>}
+              <span className="price">{billingCycle === "annual" ? price(139, 39, currency, t.currencyLabels.AED) : price(179, 49, currency, t.currencyLabels.AED)}</span>
+              <span>{t.pricing.month}</span>
+            </p>
+            <p className="billed-note">{billingCycle === "annual" ? t.pricing.billedAnnually : t.pricing.billedMonthly}</p>
+            <ul>
+              {t.pricing.starterFeatures.map((f, i) => <li key={i}>{f}</li>)}
+            </ul>
+            <a className="button" href="#calculator">{t.nav.getStarted}</a>
+          </article>
+          <article className="info-card reveal delay-1">
             <p className="label">{t.pricing.founder}</p>
             <p className="value">
               {billingCycle === "annual" && <span className="price-old">{price(749, 199, currency, t.currencyLabels.AED)}</span>}
-              <span className="price">{billingCycle === "annual" ? price(Math.round(749 * 0.7), Math.round(199 * 0.7), currency, t.currencyLabels.AED) : price(749, 199, currency, t.currencyLabels.AED)}</span>
+              <span className="price">{billingCycle === "annual" ? price(549, 149, currency, t.currencyLabels.AED) : price(749, 199, currency, t.currencyLabels.AED)}</span>
               <span>{t.pricing.month}</span>
             </p>
             <p className="billed-note">{billingCycle === "annual" ? t.pricing.billedAnnually : t.pricing.billedMonthly}</p>
@@ -843,12 +890,12 @@ export function Home() {
             </ul>
             <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
-          <article className="info-card highlight reveal delay-1">
+          <article className="info-card highlight reveal delay-2">
             <div className="popular-badge">{t.pricing.mostPopular}</div>
             <p className="label">{t.pricing.dreamer}</p>
             <p className="value">
               {billingCycle === "annual" && <span className="price-old">{price(1499, 399, currency, t.currencyLabels.AED)}</span>}
-              <span className="price">{billingCycle === "annual" ? price(Math.round(1499 * 0.7), Math.round(399 * 0.7), currency, t.currencyLabels.AED) : price(1499, 399, currency, t.currencyLabels.AED)}</span>
+              <span className="price">{billingCycle === "annual" ? price(999, 229, currency, t.currencyLabels.AED) : price(1499, 399, currency, t.currencyLabels.AED)}</span>
               <span>{t.pricing.month}</span>
             </p>
             <p className="billed-note">{billingCycle === "annual" ? t.pricing.billedAnnually : t.pricing.billedMonthly}</p>
@@ -857,15 +904,17 @@ export function Home() {
             </ul>
             <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
-          <article className="info-card reveal delay-2">
-            <p className="label">{t.pricing.custom}</p>
-            <p className="value">{t.pricing.customPrice}</p>
-            <ul>
-              {t.pricing.customFeatures.map((f, i) => <li key={i}>{f}</li>)}
-            </ul>
-            <a className="button" href="#calculator">{t.nav.getStarted}</a>
-          </article>
         </section>
+
+        <div className="custom-plan-banner reveal">
+          <div className="custom-plan-inner">
+            <div className="custom-plan-text">
+              <h3>{t.pricing.customSubtitle}</h3>
+              <p>{t.pricing.customDescription}</p>
+            </div>
+            <a className="button" href="#calculator">{t.pricing.customCta}</a>
+          </div>
+        </div>
 
         <div className="trust-badges reveal">
           <span className="trust-badge">
