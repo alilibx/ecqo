@@ -22,11 +22,12 @@ export function Verify() {
 
   const [verifyState, setVerifyState] = useState<"idle" | "verifying" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [verifiedPosition, setVerifiedPosition] = useState<number | null>(null);
   const attempted = useRef(false);
 
   // If already verified via query, skip the mutation entirely
   const alreadyVerified = status?.verified === true;
-  const position = status?.position ?? 0;
+  const position = verifiedPosition ?? status?.position ?? 0;
 
   useEffect(() => {
     // Don't call mutation if: no params, already verified, already attempted, or query still loading
@@ -36,7 +37,8 @@ export function Verify() {
     setVerifyState("verifying");
 
     verifyApi(email, token)
-      .then(() => {
+      .then((result) => {
+        setVerifiedPosition(result.position);
         setVerifyState("done");
       })
       .catch(() => {
