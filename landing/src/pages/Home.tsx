@@ -79,7 +79,7 @@ export function Home() {
     }
   }, []);
 
-  const planCost = currency === "AED" ? PLANS[selectedPlan].aed : PLANS[selectedPlan].usd;
+  const planCost = currency === "AED" ? PLANS[selectedPlan].aedAnnual : PLANS[selectedPlan].usdAnnual;
   const monthlySavings = Math.max(0, currentCost - planCost);
   const weeklySavings = Math.round(monthlySavings / 4.33);
   const annualSavings = monthlySavings * 12;
@@ -611,35 +611,49 @@ export function Home() {
 
           <div className="calculator-main reveal delay-1">
             <div className="slider-group">
-              <div className="slider-header">
-                <span className="slider-label">{t.calculator.currentCost}</span>
-                <span className="slider-value">{fmt(currentCost, currency, t.currencyLabels.AED)}</span>
+              <span className="slider-label">{t.calculator.currentCost}</span>
+              <div className="slider-value-display">
+                {currency === "USD" && <span className="slider-currency">$</span>}
+                <span className="slider-amount">{new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(currentCost)}</span>
+                {currency === "AED" && <span className="slider-currency">{t.currencyLabels.AED}</span>}
+                <span className="slider-period">{t.calculator.perMonth}</span>
               </div>
-              <input
-                type="range"
-                className="cost-slider"
-                min={0}
-                max={currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD}
-                step={currency === "AED" ? 100 : 50}
-                value={currentCost}
-                onChange={(e) => setCurrentCost(Number(e.target.value))}
-                style={{ "--slider-pct": `${(currentCost / (currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD)) * 100}%` } as React.CSSProperties}
-              />
+              <div className="slider-track-wrap">
+                <input
+                  type="range"
+                  className="cost-slider"
+                  min={0}
+                  max={currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD}
+                  step={currency === "AED" ? 100 : 50}
+                  value={currentCost}
+                  onChange={(e) => setCurrentCost(Number(e.target.value))}
+                  style={{ "--slider-pct": `${(currentCost / (currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD)) * 100}%` } as React.CSSProperties}
+                />
+                <div className="slider-glow" style={{ left: `${(currentCost / (currency === "AED" ? SLIDER_MAX_AED : SLIDER_MAX_USD)) * 100}%` }} />
+              </div>
+              <div className="slider-range-labels">
+                <span>{currency === "USD" ? "$0" : `0 ${t.currencyLabels.AED}`}</span>
+                <span>{currency === "USD" ? `$${(SLIDER_MAX_USD / 1000).toFixed(0)}k` : `${(SLIDER_MAX_AED / 1000).toFixed(0)}k ${t.currencyLabels.AED}`}</span>
+              </div>
             </div>
 
-            <label>
-              {t.calculator.ecqqoPlan}
-              <select
-                value={selectedPlan}
-                onChange={(e) => setSelectedPlan(Number(e.target.value))}
-              >
+            <div className="plan-selector">
+              <span className="plan-selector-label">{t.calculator.ecqqoPlan}</span>
+              <div className="plan-options">
                 {PLANS.map((p, i) => (
-                  <option key={i} value={i}>
-                    {locale === "ar" ? p.nameAr : p.name} - {price(p.aed, p.usd, currency, t.currencyLabels.AED)}
-                  </option>
+                  <button
+                    key={i}
+                    type="button"
+                    className={`plan-option ${selectedPlan === i ? "active" : ""}`}
+                    onClick={() => setSelectedPlan(i)}
+                  >
+                    <span className="plan-option-name">{locale === "ar" ? p.nameAr : p.name}</span>
+                    <span className="plan-option-price">{price(p.aedAnnual, p.usdAnnual, currency, t.currencyLabels.AED)}</span>
+                    <span className="plan-option-period">{t.calculator.perMonth}</span>
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
 
             <div className="results-grid">
               <div className="results results-money">
