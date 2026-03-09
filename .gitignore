@@ -6,3 +6,5 @@ dist
 .env.local
 .vitepress/cache
 .vitepress/dist
+# clerk configuration (can include secrets)
+/.clerk/

@@ -1,30 +1,25 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { verify as verifyApi, getStatus } from "../api";
 
-export const Route = createFileRoute("/verify")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    email: (search.email as string) || "",
-    token: (search.token as string) || "",
-  }),
-  component: VerifyPage,
-  head: () => ({
-    meta: [
-      { title: "Verify Email | Ecqqo" },
-      { name: "robots", content: "noindex,nofollow" },
-    ],
-  }),
-});
-
-function VerifyPage() {
-  const { email, token } = Route.useSearch();
+export function Verify() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Cached query — free for repeat visits, reactive updates
-  const status = useQuery(api.waitlist.getStatus, email ? { email } : "skip");
+  const email = searchParams.get("email") || "";
+  const token = searchParams.get("token") || "";
 
-  const verify = useMutation(api.waitlist.verify);
+  // Poll status on mount
+  const [status, setStatus] = useState<{ found: boolean; verified: boolean; position: number } | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!email) {
+      setStatus(null);
+      return;
+    }
+    getStatus(email).then((result) => setStatus(result ?? null));
+  }, [email]);
+
   const [verifyState, setVerifyState] = useState<"idle" | "verifying" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const attempted = useRef(false);
@@ -40,7 +35,7 @@ function VerifyPage() {
     attempted.current = true;
     setVerifyState("verifying");
 
-    verify({ email, token })
+    verifyApi(email, token)
       .then(() => {
         setVerifyState("done");
       })
@@ -48,7 +43,7 @@ function VerifyPage() {
         setVerifyState("error");
         setErrorMsg("This link is invalid or has expired. Please request a new one.");
       });
-  }, [email, token, alreadyVerified, status, verify]);
+  }, [email, token, alreadyVerified, status]);
 
   // Determine what to show
   const showSuccess = alreadyVerified || verifyState === "done";
@@ -88,7 +83,7 @@ function VerifyPage() {
               Check your email for a confirmation.<br />
               We'll notify you when early access opens.
             </p>
-            <button className="button" onClick={() => navigate({ to: "/" })}>
+            <button className="button" onClick={() => navigate("/")}>
               Back to Ecqqo
             </button>
           </div>
@@ -102,7 +97,7 @@ function VerifyPage() {
             </svg>
             <h1 className="verify-title">Verification failed</h1>
             <p className="verify-msg">{errorMsg}</p>
-            <button className="button" onClick={() => navigate({ to: "/" })}>
+            <button className="button" onClick={() => navigate("/")}>
               Back to Ecqqo
             </button>
           </div>

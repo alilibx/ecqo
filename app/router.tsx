@@ -1,14 +1,17 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { QueryClient } from "@tanstack/react-query";
-import { ConvexProvider } from "convex/react";
+import { ConvexReactClient } from "convex/react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
 import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL!;
 
-  const convexQueryClient = new ConvexQueryClient(CONVEX_URL);
+  const convexClient = new ConvexReactClient(CONVEX_URL);
+  const convexQueryClient = new ConvexQueryClient(convexClient);
 
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -24,12 +27,14 @@ export function getRouter() {
     createTanStackRouter({
       routeTree,
       defaultPreload: "intent",
-      context: { queryClient },
+      context: { queryClient, convexClient, convexQueryClient },
       scrollRestoration: true,
-      Wrap: ({ children }) => (
-        <ConvexProvider client={convexQueryClient.convexClient}>
-          {children}
-        </ConvexProvider>
+      InnerWrap: ({ children }) => (
+        <ClerkProvider>
+          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+            {children}
+          </ConvexProviderWithClerk>
+        </ClerkProvider>
       ),
     }),
     queryClient,

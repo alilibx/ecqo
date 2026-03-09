@@ -1,42 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Layout } from "../components/Layout";
 
-export const Route = createFileRoute("/terms")({
-  component: TermsPage,
-  head: () => ({
-    meta: [
-      { title: "Terms of Service | Ecqqo" },
-      { name: "description", content: "Terms of Service for Ecqqo, a WhatsApp-native executive assistant. Read about account responsibilities, data usage, and service terms." },
-      { property: "og:title", content: "Terms of Service | Ecqqo" },
-      { property: "og:description", content: "Terms of Service for Ecqqo, a WhatsApp-native executive assistant." },
-      { property: "og:url", content: "https://ecqqo.com/terms" },
-    ],
-    links: [
-      { rel: "canonical", href: "https://ecqqo.com/terms" },
-    ],
-  }),
-});
-
-function TermsPage() {
+export function Terms() {
   return (
-    <>
-      <div className="grain" />
-      <div className="bg-orb orb-1" />
-      <div className="bg-orb orb-2" />
-
-      <header className="topbar scrolled">
-        <div className="topbar-inner">
-          <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
-          <nav>
-            <a href="/#savings">Savings</a>
-            <a href="/#calculator">Calculator</a>
-            <a href="/#workflow">Workflow</a>
-            <a href="/#pricing">Pricing</a>
-            <a href="/#faq">FAQ</a>
-          </nav>
-          <a className="button mini desktop-only" href="/#calculator">Get Started</a>
-        </div>
-      </header>
-
+    <Layout>
       <main className="legal-page">
         <h1>Terms of Service</h1>
         <p className="legal-updated">Last updated: March 6, 2026</p>
@@ -101,35 +67,6 @@ function TermsPage() {
           <p>For questions about these Terms of Service, contact us at <a href="mailto:legal@ecqqo.com">legal@ecqqo.com</a>.</p>
         </section>
       </main>
-
-      <footer className="footer">
-        <div className="footer-inner">
-          <div className="footer-top">
-            <div className="footer-brand">
-              <a className="brand" href="/"><img src="/logos/logo-icon.png" alt="" className="brand-icon" />Ecqqo</a>
-              <p>WhatsApp-native executive assistant automation for high-net-worth operators, founders, and family-office teams.</p>
-            </div>
-            <div className="footer-links">
-              <div className="footer-col">
-                <h4>Product</h4>
-                <a href="/#savings">Savings</a>
-                <a href="/#calculator">Calculator</a>
-                <a href="/#workflow">Workflow</a>
-                <a href="/#pricing">Pricing</a>
-              </div>
-              <div className="footer-col">
-                <h4>Company</h4>
-                <a href="/#faq">FAQ</a>
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Service</a>
-              </div>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>&copy; 2026 Ecqqo. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </>
+    </Layout>
   );
 }

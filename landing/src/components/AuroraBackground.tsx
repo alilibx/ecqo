@@ -1,6 +1,6 @@
-import React, { type ReactNode } from "react";
+import type { ReactNode, HTMLProps } from "react";
 
-interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
+interface AuroraBackgroundProps extends HTMLProps<HTMLDivElement> {
   children: ReactNode;
   showRadialGradient?: boolean;
 }
@@ -12,10 +12,7 @@ export const AuroraBackground = ({
   ...props
 }: AuroraBackgroundProps) => {
   return (
-    <div
-      className={`aurora-bg ${className || ""}`}
-      {...props}
-    >
+    <div className={`aurora-bg ${className || ""}`} {...props}>
       <div className="aurora-overflow">
         <div
           className={`aurora-inner ${showRadialGradient ? "aurora-radial-mask" : ""}`}

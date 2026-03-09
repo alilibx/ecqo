@@ -11,6 +11,7 @@
 import type * as connector from "../connector.js";
 import type * as crons from "../crons.js";
 import type * as emails from "../emails.js";
+import type * as http from "../http.js";
 import type * as machineSync from "../machineSync.js";
 import type * as waitlist from "../waitlist.js";
 
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   connector: typeof connector;
   crons: typeof crons;
   emails: typeof emails;
+  http: typeof http;
   machineSync: typeof machineSync;
   waitlist: typeof waitlist;
 }>;

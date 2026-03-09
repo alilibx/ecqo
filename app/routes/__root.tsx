@@ -1,182 +1,45 @@
 import type { QueryClient } from "@tanstack/react-query";
+import type { ConvexReactClient } from "convex/react";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
 import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
-import { LocaleProvider } from "../i18n/locale";
+import { createServerFn } from "@tanstack/react-start";
+import { auth } from "@clerk/tanstack-react-start/server";
 import "../styles.css";
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Organization",
-      name: "Ecqqo",
-      url: "https://ecqqo.com/",
-      logo: "https://ecqqo.com/logos/logo-icon.png",
-      contactPoint: {
-        "@type": "ContactPoint",
-        email: "hello@ecqqo.com",
-        contactType: "customer support",
-      },
-    },
-    {
-      "@type": "WebSite",
-      name: "Ecqqo",
-      url: "https://ecqqo.com/",
-    },
-    {
-      "@type": "SoftwareApplication",
-      name: "Ecqqo",
-      applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
-      offers: [
-        {
-          "@type": "Offer",
-          name: "Founder",
-          price: "199",
-          priceCurrency: "USD",
-        },
-        {
-          "@type": "Offer",
-          name: "Dreamer",
-          price: "399",
-          priceCurrency: "USD",
-        },
-      ],
-      description:
-        "A WhatsApp-native executive assistant that handles scheduling, calendar checks, email digests, reminders, and calendar execution.",
-    },
-    {
-      "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "Is this WhatsApp-only?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Ecqqo is intentionally focused on direct WhatsApp Meta Cloud API integration. Everything happens inside the chat you already use.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Can we enforce approvals before scheduling?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Events remain pending until required participants approve. Nothing gets added to your calendar without your explicit confirmation.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How does calendar check work?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Just ask 'What's on my calendar today?' or 'Am I free Friday afternoon?' and Ecqqo pulls your schedule in real time, giving you a clean summary right in chat.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Which email providers are supported?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Ecqqo integrates with Gmail and Outlook. Ask for unread summaries, search for emails from specific contacts, or get flagged thread digests on demand.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Can Ecqqo set reminders and follow-ups?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Say 'Remind me to call Sarah at 5pm' or 'Follow up with the investor next Monday' and Ecqqo will notify you at the right time via WhatsApp.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Is this still cost-effective vs remote assistant models?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Ecqqo handles the repetitive coordination so your human assistant can focus on high-value work, saving 60-90% compared to VA and EA costs.",
-          },
-        },
-      ],
-    },
-  ],
-};
+const fetchClerkAuth = createServerFn({ method: "GET" }).handler(async () => {
+  const authObj = await auth();
+  const token = await authObj.getToken({ template: "convex" });
+  return { userId: authObj.userId, token };
+});
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
+  convexClient: ConvexReactClient;
+  convexQueryClient: ConvexQueryClient;
 }>()({
+  beforeLoad: async ({ context }) => {
+    const auth = await fetchClerkAuth();
+    if (auth.token) {
+      context.convexQueryClient.serverHttpClient?.setAuth(auth.token);
+    }
+    return { userId: auth.userId };
+  },
   component: RootComponent,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      {
-        title: "Ecqqo | Empower your Human Assistant",
-      },
-      {
-        name: "description",
-        content:
-          "Ecqqo is a WhatsApp-native executive assistant for high-net-worth operators. Replace EA/VA workflows with automated scheduling and approvals.",
-      },
-      {
-        name: "keywords",
-        content:
-          "WhatsApp executive assistant, replace virtual assistant, executive assistant automation, HNWI productivity",
-      },
-      { name: "robots", content: "index,follow,max-image-preview:large" },
-      { name: "msapplication-TileColor", content: "#faf7f0" },
-      { name: "msapplication-TileImage", content: "/favicons/ms-icon-144x144.png" },
-      { name: "msapplication-config", content: "/favicons/browserconfig.xml" },
+      { title: "Ecqqo | Dashboard" },
+      { name: "robots", content: "noindex" },
       { name: "theme-color", content: "#faf7f0" },
-      { property: "og:site_name", content: "Ecqqo" },
-      { property: "og:type", content: "website" },
-      {
-        property: "og:title",
-        content: "Ecqqo | Empower your Human Assistant",
-      },
-      {
-        property: "og:description",
-        content:
-          "From WhatsApp chat to confirmed calendar actions. Built for principals, founders, and family-office teams.",
-      },
-      { property: "og:url", content: "https://ecqqo.com/" },
-      { property: "og:image", content: "https://ecqqo.com/og-image.png" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Ecqqo | Empower" },
-      {
-        name: "twitter:description",
-        content:
-          "Global cost-efficient executive assistant automation, directly inside WhatsApp.",
-      },
-      {
-        name: "twitter:image",
-        content: "https://ecqqo.com/og-image.png",
-      },
     ],
     links: [
-      { rel: "canonical", href: "https://ecqqo.com/" },
-      // Favicons
       { rel: "icon", type: "image/x-icon", href: "/favicons/favicon.ico" },
-      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicons/favicon-16x16.png" },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicons/favicon-32x32.png" },
-      { rel: "icon", type: "image/png", sizes: "96x96", href: "/favicons/favicon-96x96.png" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicons/android-icon-192x192.png" },
-      // Apple touch icons
-      { rel: "apple-touch-icon", sizes: "57x57", href: "/favicons/apple-icon-57x57.png" },
-      { rel: "apple-touch-icon", sizes: "60x60", href: "/favicons/apple-icon-60x60.png" },
-      { rel: "apple-touch-icon", sizes: "72x72", href: "/favicons/apple-icon-72x72.png" },
-      { rel: "apple-touch-icon", sizes: "76x76", href: "/favicons/apple-icon-76x76.png" },
-      { rel: "apple-touch-icon", sizes: "114x114", href: "/favicons/apple-icon-114x114.png" },
-      { rel: "apple-touch-icon", sizes: "120x120", href: "/favicons/apple-icon-120x120.png" },
-      { rel: "apple-touch-icon", sizes: "144x144", href: "/favicons/apple-icon-144x144.png" },
-      { rel: "apple-touch-icon", sizes: "152x152", href: "/favicons/apple-icon-152x152.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/favicons/apple-icon-180x180.png" },
-      // Manifest
-      { rel: "manifest", href: "/favicons/manifest.json" },
-      // Fonts
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "preconnect",
@@ -185,7 +48,7 @@ export const Route = createRootRouteWithContext<{
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap",
       },
     ],
   }),
@@ -197,15 +60,9 @@ function RootComponent() {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme')||'device';var d=t==='device'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',d)})()` }} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
       </head>
       <body>
-        <LocaleProvider>
-          <Outlet />
-        </LocaleProvider>
+        <Outlet />
         <Scripts />
       </body>
     </html>

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "landing",
     "services/*",
     "shared"
   ],
@@ -13,11 +14,14 @@
     "dev:connector": "bun run --filter @ecqqo/connector dev",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
+    "dev:landing": "bun run --filter @ecqqo/landing dev",
+    "build:landing": "bun run --filter @ecqqo/landing build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
+    "@clerk/tanstack-react-start": "^1.0.1",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@convex-dev/react-query": "^0.1.0",
     "@convex-dev/resend": "^0.2.3",
