@@ -5,7 +5,7 @@
 Ecqqo syncs messages from a user's personal WhatsApp account via the **wacli** worker running on a Fly.io Machine. Sync operates on a **dual-cadence model**:
 
 - **Periodic sync** -- Every 5 minutes, a Convex scheduled function triggers a full sync cycle for each connected account. This catches any messages that may have been missed.
-- **Continuous follow** -- While the wacli worker is connected, it streams new messages to Convex in near-real-time as they arrive.
+- **Continuous follow** -- While the wacli worker is connected, it streams new messages to Convex in near-real-time as they arrive via direct mutation calls (`ConvexHttpClient`).
 
 By default, Ecqqo follows a **metadata-first policy**: only chat-level metadata (contact name, last message timestamp, unread count) is synced. Full message bodies are only fetched for chats the user has explicitly allowlisted. This minimizes data exposure and storage costs.
 
@@ -24,7 +24,7 @@ const syncSeqConfig = {
     { over: "si-convex", note: "Create syncJob (queued)\ncursor = lastCursor" },
     { from: "si-convex", to: "si-worker", label: "Dispatch sync command" },
     { over: "si-worker", note: "Fetch msgs since cursor\nSign + version each batch" },
-    { from: "si-worker", to: "si-convex", label: "Batch (signed, versioned)" },
+    { from: "si-worker", to: "si-convex", label: "ingestMessages mutation\n(signed, versioned)" },
     { over: "si-convex", note: "Validate HMAC, version, allowlist\nIdempotent upsert (dedup)\nAdvance cursor" },
     { from: "si-worker", to: "si-convex", label: "SYNC_COMPLETE" },
     { over: "si-convex", note: "syncJob = completed\nprocessed = N, cursor = X\nPublish health to dashboard" },

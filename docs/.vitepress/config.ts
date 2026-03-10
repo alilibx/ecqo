@@ -140,12 +140,17 @@ export default withMermaid(
             { text: "Cost Estimation", link: "/plan/cost-estimation" },
             { text: "Billing (Stripe)", link: "/plan/billing" },
             { text: "Connector Deployment", link: "/plan/connector-deployment" },
+            { text: "Competitive Positioning", link: "/plan/positioning" },
+            { text: "Landing Page Brief", link: "/plan/landing-page-brief" },
           ],
         },
         {
           text: "Security",
           collapsed: false,
-          items: [{ text: "Security Posture", link: "/security/posture" }],
+          items: [
+            { text: "Security Posture", link: "/security/posture" },
+            { text: "vs Self-Hosted Agents", link: "/security/vs-self-hosted" },
+          ],
         },
         {
           text: "Decisions",

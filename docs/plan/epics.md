@@ -45,7 +45,7 @@
 | ID | Title | Priority | Est | Depends On | Acceptance Criteria |
 |---|---|---:|---:|---|---|
 | C1 | Define `waChats`, `waMessages`, `waSyncCursors`, `waSyncJobs` schemas | 1 | 3 | B1 | Sync entities support per-chat policy and cursor progression. |
-| C2 | Implement sync ingest API (`POST /internal/wa/sync/events`) | 1 | 5 | C1, A3 | Signed events validated by schema version and account lease. |
+| C2 | Implement sync ingest API (`POST /internal/wa/sync/events`) | 1 | 5 | C1, A3 | Signed events validated by schema version and account lease. **Complete — implemented as direct `ingestMessages` mutation via `ConvexHttpClient` (no HTTP route needed).** |
 | C3 | Implement message idempotency key enforcement | 1 | 3 | C2 | Duplicate/replayed events do not produce duplicate records. |
 | C4 | Implement periodic sync scheduler (5-min cadence) and nightly reconciliation | 1 | 5 | C2 | Sync freshness maintained and backlog catch-up runs automatically. |
 | C5 | Implement metadata-first + allowlist full-content policy enforcement | 1 | 5 | C1 | Non-allowlisted chats never store full message body. |

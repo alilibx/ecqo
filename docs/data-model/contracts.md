@@ -14,7 +14,7 @@ const apiSurfaceConfig = {
       icon: "fa-globe",
       color: "red",
       nodes: [
-        { id: "api-fly", icon: "si:flydotio", title: "Fly.io Workers", subtitle: "Sync Events" },
+        { id: "api-fly", icon: "si:flydotio", title: "Fly.io Workers", subtitle: "Direct Mutations" },
         { id: "api-meta", icon: "si:meta", title: "Meta Cloud API", subtitle: "WA Webhooks" },
         { id: "api-stripe", icon: "si:stripe", title: "Stripe", subtitle: "Billing Webhooks" },
         { id: "api-dash", icon: "fa-gauge", title: "Dashboard", subtitle: "User Queries" },
@@ -46,7 +46,7 @@ const apiSurfaceConfig = {
     },
   ],
   connections: [
-    { from: "api-fly", to: "api-http", label: "HTTP POST" },
+    { from: "api-fly", to: "api-qm", label: "ConvexHttpClient" },
     { from: "api-meta", to: "api-http", label: "HTTP POST" },
     { from: "api-stripe", to: "api-http", label: "HTTP POST" },
     { from: "api-dash", to: "api-qm", label: "Convex SDK" },
@@ -245,11 +245,13 @@ Receives lifecycle events during the QR connection flow.
 
 ### POST /internal/wa/sync/events
 
+> **Not routed — direct mutation path used instead.** This endpoint is NOT implemented as a Convex HTTP route. The connector worker calls the `ingestMessages` mutation directly via `ConvexHttpClient`, which is the idiomatic Convex pattern for server-to-server calls. HMAC signature verification is performed inside the mutation itself. HTTP routes are only needed for external callers (e.g., Meta webhooks, Stripe). The contract spec below is retained as a reference for the payload shape and error semantics.
+
 Receives batches of synced messages and chat metadata from the connector worker.
 
 **Purpose:** Primary data ingestion endpoint. Called periodically by the worker as it syncs message history.
 
-**Auth:** Service token scoped to the source `waAccountId`.
+**Auth:** HMAC-SHA256 signature verified inside the `ingestMessages` mutation. The worker signs each request and the mutation validates the signature before processing.
 
 **Request:**
 
