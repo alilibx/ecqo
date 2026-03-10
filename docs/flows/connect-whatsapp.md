@@ -160,6 +160,23 @@ The supervisor process exposes an HTTP API on port 8080 for managing worker sess
 
 All endpoints are internal-only, accessed by Convex actions over the Fly.io private network (`fly-local-6pn` addresses) or via the machine's public URL for health checks.
 
+## Dashboard Connection Flow
+
+The dashboard initiates connections through a Convex action (`requestConnection`) that orchestrates the full flow:
+
+1. **User clicks "Connect WhatsApp"** → calls `requestConnection` action
+2. **Action creates session** → `dashboardCreateSession` internal mutation (RBAC: owner/principal)
+3. **Action finds available machine** → `getAvailableMachineInternal` internal query (least-loaded active machine with capacity)
+4. **Action calls supervisor API** → `POST /sessions/:id/start` on the selected machine
+5. **Worker spawns and generates QR** → updates session to `qr_ready` via signed mutation
+6. **Dashboard reactively displays QR** → `getActiveSession` query subscription
+
+The dashboard also supports:
+- **Retry** — on `expired`/`failed` sessions, a new `requestConnection` call starts fresh
+- **Disconnect** — `requestDisconnect` action cancels the session and calls `DELETE /sessions/:id/stop` on the supervisor
+
+Environment variable `CONNECTOR_SUPERVISOR_URL` must be set in Convex dashboard for the action to reach the supervisor.
+
 ## Session Restoration
 
 On machine restart (deploy, crash recovery, or Fly.io maintenance), the supervisor automatically restores previously authenticated sessions:

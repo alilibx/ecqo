@@ -115,9 +115,11 @@ Every calendar event, email, and action gets a dry-run preview sent as a WhatsAp
 
 ### 3. Your WhatsApp stays yours
 
-Ecqo uses the official Meta Cloud Business API with a verified Ecqo number. We never log into the user's personal WhatsApp, never simulate their session, never risk their account.
+By default, Ecqo uses the official Meta Cloud Business API with a verified Ecqo number. The core assistant — scheduling, approvals, email, reminders — never touches the user's personal WhatsApp account.
 
-**Why it matters:** Every OpenClaw-based solution uses Baileys (unofficial, reverse-engineered). Users report bans within 48 hours. WhatsApp's ToS explicitly prohibits unofficial clients. Ecqo is architecturally immune to this risk.
+Optional history sync (Tier 2) connects to the user's WhatsApp for richer context, but is **opt-in only** with full risk disclosure, typed consent, and a strong recommendation to use a secondary number. See [WhatsApp Strategy](/architecture/whatsapp-strategy) for the full tiered model.
+
+**Why it matters:** Every OpenClaw-based solution requires Baileys for basic functionality — it's not optional. Users report bans within 48 hours. Ecqo's core product works entirely on the official API. History sync is an enhancement, not a requirement.
 
 ### 4. Built for the Gulf
 

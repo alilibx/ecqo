@@ -183,10 +183,10 @@ For high-net-worth operators in the Gulf who live in WhatsApp and need to delega
 A: ChatGPT is a conversation tool. Ecqo is an execution tool. It doesn't just answer questions — it takes actions on your behalf (scheduling, email, reminders) with your approval.
 
 **Q: How is this different from self-hosted AI agents like OpenClaw?**
-A: OpenClaw is a powerful tool for developers. Ecqo is a managed service for executives. No setup, no self-hosting, no security risks — and an approval workflow that ensures nothing fires without your permission. We use the official Meta WhatsApp API, so your personal account is never at risk.
+A: OpenClaw is a powerful tool for developers. Ecqo is a managed service for executives. No setup, no self-hosting, no security risks — and an approval workflow that ensures nothing fires without your permission. Our core assistant uses the official Meta WhatsApp API, so your personal account is never at risk. Optional history sync is available for power users who want richer context.
 
 **Q: Will my WhatsApp get banned?**
-A: No. We use the official Meta Business API with a verified Ecqo number. We never log into or simulate your personal WhatsApp account.
+A: Not with the core assistant — it uses the official Meta Business API with a verified Ecqo number and never touches your personal account. If you opt into history sync for richer context, we recommend using a secondary number and provide full risk disclosure upfront.
 
 **Q: Is my data safe?**
 A: Your data is stored on managed infrastructure (Convex), encrypted at rest, with role-based access controls and an immutable audit trail. Nothing is stored on your personal device. You can request full data export or deletion at any time.

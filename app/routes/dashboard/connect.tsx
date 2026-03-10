@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { useState, useEffect } from "react";
+import { useQuery, useAction } from "convex/react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "../../../convex/_generated/api";
 import { useDashboard } from "../../lib/dashboard-context";
 
@@ -10,6 +10,8 @@ export const Route = createFileRoute("/dashboard/connect")({
 
 function ConnectPage() {
   const { workspaceId } = useDashboard();
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const session = useQuery(api.connector.getActiveSession, { workspaceId });
   const account = useQuery(
@@ -19,12 +21,51 @@ function ConnectPage() {
       : "skip",
   );
 
+  const requestConnection = useAction(api.connector.requestConnection);
+  const requestDisconnect = useAction(api.connector.requestDisconnect);
+
+  const handleConnect = useCallback(async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const result = await requestConnection({ workspaceId });
+      if (result.error) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start connection");
+    } finally {
+      setConnecting(false);
+    }
+  }, [requestConnection, workspaceId]);
+
+  const handleDisconnect = useCallback(async () => {
+    if (!session) return;
+    setConnecting(true);
+    setError(null);
+    try {
+      await requestDisconnect({ workspaceId, sessionId: session._id });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to disconnect");
+    } finally {
+      setConnecting(false);
+    }
+  }, [requestDisconnect, workspaceId, session]);
+
   const isConnected = session?.status === "connected" && account;
-  const hasQR =
-    session?.status === "qr_ready" && session.qrCode;
+  const hasQR = session?.status === "qr_ready" && session.qrCode;
+  const canRetry =
+    session?.status === "expired" || session?.status === "failed";
+  const noSession = !session || session.status === "disconnected";
 
   if (isConnected && account) {
-    return <ConnectedView account={account} />;
+    return (
+      <ConnectedView
+        account={account}
+        onDisconnect={handleDisconnect}
+        disconnecting={connecting}
+      />
+    );
   }
 
   return (
@@ -48,22 +89,37 @@ function ConnectPage() {
               <p className="qr-status-text">Connecting...</p>
               <p className="qr-status-sub">QR scanned, completing setup</p>
             </div>
-          ) : session?.status === "expired" || session?.status === "failed" ? (
+          ) : session?.status === "created" ? (
+            <div className="qr-status-box">
+              <div className="qr-placeholder" />
+              <p className="qr-status-text">Generating QR code...</p>
+              <p className="qr-status-sub">Starting WhatsApp session</p>
+            </div>
+          ) : canRetry ? (
             <div className="qr-status-box">
               <div className="status-dot status-dot--error" />
               <p className="qr-status-text">
-                {session.status === "expired" ? "QR Expired" : "Connection Failed"}
+                {session.status === "expired"
+                  ? "QR Expired"
+                  : "Connection Failed"}
               </p>
               {session.errorMessage && (
                 <p className="qr-status-sub">{session.errorMessage}</p>
               )}
+              <button
+                className="connect-btn"
+                onClick={handleConnect}
+                disabled={connecting}
+              >
+                {connecting ? "Retrying..." : "Try Again"}
+              </button>
             </div>
           ) : (
             <div className="qr-status-box">
               <div className="qr-placeholder" />
-              <p className="qr-status-text">Waiting for QR code...</p>
+              <p className="qr-status-text">No active session</p>
               <p className="qr-status-sub">
-                {session ? "Generating..." : "No active session"}
+                Connect your WhatsApp to get started
               </p>
             </div>
           )}
@@ -72,8 +128,24 @@ function ConnectPage() {
         <div className="connect-info-panel">
           <h2 className="connect-title">Connect WhatsApp</h2>
           <div className="connect-status-row">
-            <div className="status-dot status-dot--disconnected" />
-            <span className="connect-status-label">Disconnected</span>
+            <div
+              className={`status-dot ${
+                hasQR || session?.status === "scanned"
+                  ? "status-dot--syncing"
+                  : session?.status === "created"
+                    ? "status-dot--syncing"
+                    : "status-dot--disconnected"
+              }`}
+            />
+            <span className="connect-status-label">
+              {hasQR
+                ? "Scan QR Code"
+                : session?.status === "scanned"
+                  ? "Completing setup..."
+                  : session?.status === "created"
+                    ? "Starting..."
+                    : "Disconnected"}
+            </span>
           </div>
 
           <ol className="connect-steps">
@@ -83,6 +155,18 @@ function ConnectPage() {
             </li>
             <li>Point your phone at the QR code</li>
           </ol>
+
+          {noSession && (
+            <button
+              className="connect-btn connect-btn--primary"
+              onClick={handleConnect}
+              disabled={connecting}
+            >
+              {connecting ? "Starting..." : "Connect WhatsApp"}
+            </button>
+          )}
+
+          {error && <p className="connect-error">{error}</p>}
 
           <p className="connect-note">
             Session will persist across browser sessions.
@@ -95,6 +179,8 @@ function ConnectPage() {
 
 function ConnectedView({
   account,
+  onDisconnect,
+  disconnecting,
 }: {
   account: {
     phoneNumber?: string;
@@ -104,6 +190,8 @@ function ConnectedView({
     machineId?: string;
     status: string;
   };
+  onDisconnect: () => void;
+  disconnecting: boolean;
 }) {
   const [now, setNow] = useState(Date.now());
 
@@ -166,6 +254,14 @@ function ConnectedView({
             </div>
           )}
         </div>
+
+        <button
+          className="connect-btn connect-btn--danger"
+          onClick={onDisconnect}
+          disabled={disconnecting}
+        >
+          {disconnecting ? "Disconnecting..." : "Disconnect"}
+        </button>
       </div>
     </div>
   );
@@ -200,7 +296,7 @@ function QRCountdown({ expiresAt }: { expiresAt?: number }) {
   );
 }
 
-// ── Helpers ──
+// -- Helpers --
 
 function maskPhone(phone: string): string {
   if (phone.length < 4) return phone;

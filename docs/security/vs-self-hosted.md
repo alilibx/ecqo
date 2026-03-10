@@ -52,8 +52,9 @@ User's Device
 
 **Trust boundary:** None. Everything runs as the user's OS process with full permissions. A single prompt injection or malicious skill compromises everything.
 
-### Ecqo (managed model)
+### Ecqo (managed model — two tiers)
 
+**Tier 1 (default — zero ban risk):**
 ```
 User's WhatsApp
 │ (messages Ecqo's verified business number)
@@ -67,21 +68,36 @@ Meta Cloud API (official, webhook-verified)
 │   ├── Rate limiting (@convex-dev/rate-limiter)
 │   └── Immutable audit trail
 │
-├── Fly.io Connector (isolated per-user)
-│   ├── HMAC-SHA256 signed requests
-│   ├── Anti-replay (timestamp + nonce)
-│   ├── Scoped service tokens (per workspace)
-│   ├── AES-256-GCM encrypted session artifacts
-│   └── Kill-switch (< 30s fleet shutdown)
-│
 └── Agent Runtime (server-side)
     ├── Policy engine (approval gates on all side effects)
     ├── Structured memory (4-tier, Convex vector search)
+    ├── Context from: calendar, email, forwards, exports, interactions
     ├── PII redaction in traces
     └── LangSmith observability (no raw secrets)
 ```
 
-**Trust boundaries:** Four layers — user perimeter, platform perimeter (Meta + Clerk + Vercel), trusted core (Convex), connector isolation (Fly.io). Each boundary enforces authentication and authorization independently.
+**Tier 2 (opt-in — history sync with explicit risk acceptance):**
+```
+All of Tier 1, plus:
+│
+├── Fly.io Connector (isolated per-user, opt-in only)
+│   ├── Baileys (unofficial WhatsApp Web protocol)
+│   ├── Residential proxy (user's country)
+│   ├── HMAC-SHA256 signed requests
+│   ├── Anti-replay (timestamp + nonce)
+│   ├── AES-256-GCM encrypted session artifacts
+│   ├── Read-only (no outbound via Baileys)
+│   ├── Ban monitoring + auto-disconnect on warnings
+│   └── Kill-switch (< 30s fleet shutdown)
+│
+└── Consent record in audit log
+    ├── Full risk disclosure shown and scrolled
+    ├── 4 checkboxes including ban acknowledgment
+    ├── Typed "I ACCEPT THE RISK" confirmation
+    └── Burner number recommendation shown
+```
+
+**Trust boundaries:** Tier 1 has three layers — user perimeter, platform perimeter (Meta + Clerk + Vercel), trusted core (Convex). Tier 2 adds a fourth layer — connector isolation (Fly.io) with additional ban monitoring and early warning. See [WhatsApp Strategy](/architecture/whatsapp-strategy) for full details.
 
 ---
 
@@ -89,9 +105,9 @@ Meta Cloud API (official, webhook-verified)
 
 | Dimension | Self-hosted (OpenClaw) | Ecqo (managed) |
 |---|---|---|
-| **WhatsApp method** | Baileys (unofficial, reverse-engineered) | Meta Cloud API (official, verified business) |
-| **Ban risk** | High — accounts banned within 48 hours reported | None — official API, Ecqo's own number |
-| **User credentials exposed** | Yes — personal WhatsApp session on device | No — user never shares credentials |
+| **WhatsApp method** | Baileys (unofficial) — required for basic functionality | Meta Cloud API (official) by default; Baileys opt-in for history sync only |
+| **Ban risk** | High — accounts banned within 48 hours reported | Zero on default tier; opt-in tier carries risk with full consent + mitigations |
+| **User credentials exposed** | Yes — personal WhatsApp session on device | No (Tier 1); opt-in linked device with encrypted storage (Tier 2) |
 | **API keys** | Plaintext in config files | Server-side only, never on client |
 | **Authentication** | Optional (93.4% of instances have none) | Mandatory — Clerk JWT + workspace RBAC |
 | **Network exposure** | WebSocket on localhost (often port-forwarded) | No user-hosted ports, all traffic via managed infra |
@@ -164,11 +180,11 @@ This is the single most important architectural difference for WhatsApp-native p
 
 **Q: How is this different from OpenClaw?**
 
-A: OpenClaw is a powerful open-source tool for developers who want full control. Ecqo is a managed service for executives who want zero setup and zero risk. We use the official Meta WhatsApp API (no ban risk), run on managed infrastructure (no exposed ports or plaintext keys), and include an approval workflow that ensures your AI never acts without permission.
+A: OpenClaw is a powerful open-source tool for developers who want full control. Ecqo is a managed service for executives who want zero setup and zero risk. Our core assistant uses the official Meta WhatsApp API (zero ban risk), runs on managed infrastructure (no exposed ports or plaintext keys), and includes an approval workflow that ensures your AI never acts without permission. Optional history sync is available for users who want richer context, with full risk disclosure and mitigations.
 
 **Q: Will my WhatsApp get banned?**
 
-A: No. We use the official Meta Business API with a verified Ecqo number. We never log into or simulate your personal WhatsApp account. Your account is never at risk.
+A: Not on the default tier. Ecqo's core assistant uses the official Meta Business API with a verified Ecqo number — your personal WhatsApp is never involved. If you choose to enable optional history sync (Tier 2), that connects to your WhatsApp as a linked device using an unofficial protocol, which carries some ban risk. We recommend using a secondary number for this feature and provide full risk disclosure before activation.
 
 **Q: Where is my data stored?**
 

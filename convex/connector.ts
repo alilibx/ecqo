@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getUser, requireRole } from "./users";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
@@ -478,6 +478,23 @@ export const getAvailableMachine = query({
   },
 });
 
+/** Internal version of getAvailableMachine for use in actions. */
+export const getAvailableMachineInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const machines = await ctx.db
+      .query("waMachines")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .collect();
+
+    if (!machines.length) return null;
+
+    return machines
+      .filter((m) => m.workerCount < m.maxWorkers)
+      .sort((a, b) => a.workerCount - b.workerCount)[0] ?? null;
+  },
+});
+
 export const assignSessionToMachine = mutation({
   args: {
     sessionId: v.id("waConnectSessions"),
@@ -661,5 +678,165 @@ export const listMessages = query({
       .withIndex("by_account", (q) => q.eq("waAccountId", account._id))
       .order("desc")
       .take(limit);
+  },
+});
+
+// ── Dashboard-initiated connection flow ──
+
+/** Create a session from the dashboard (RBAC-protected, no signature needed). */
+export const dashboardCreateSession = internalMutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, ["owner", "principal"]);
+
+    // Check for existing active session
+    const sessions = await ctx.db
+      .query("waConnectSessions")
+      .order("desc")
+      .take(50);
+
+    const active = sessions.find(
+      (s) =>
+        s.workspaceId === args.workspaceId &&
+        ["created", "qr_ready", "scanned", "connected"].includes(s.status),
+    );
+
+    if (active) {
+      throw new Error("An active session already exists for this workspace");
+    }
+
+    const now = Date.now();
+    const sessionId = await ctx.db.insert("waConnectSessions", {
+      workspaceId: args.workspaceId,
+      status: "created",
+      retryCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now + 60_000,
+    });
+
+    return sessionId;
+  },
+});
+
+/** Mark a session as failed/expired from the dashboard so it can be retried. */
+export const dashboardCancelSession = internalMutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    sessionId: v.id("waConnectSessions"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, ["owner", "principal"]);
+
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.workspaceId !== args.workspaceId) {
+      throw new Error("Session not found");
+    }
+
+    await ctx.db.patch(args.sessionId, {
+      status: "disconnected",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Action: Request a new WhatsApp connection from the dashboard.
+ * Creates a session, finds an available machine, and calls the supervisor API.
+ */
+export const requestConnection = action({
+  args: {
+    workspaceId: v.id("workspaces"),
+  },
+  handler: async (ctx, args): Promise<{
+    sessionId: string;
+    machineId: string | null;
+    error: string | null;
+  }> => {
+    // 1. Create session (RBAC checked inside mutation)
+    const sessionId: string = await ctx.runMutation(
+      internal.connector.dashboardCreateSession,
+      { workspaceId: args.workspaceId },
+    );
+
+    // 2. Find an available machine
+    const machine: { machineId: string } | null = await ctx.runQuery(
+      internal.connector.getAvailableMachineInternal,
+      {},
+    );
+
+    if (!machine) {
+      return { sessionId, machineId: null, error: "No available machines" };
+    }
+
+    // 3. Call supervisor API to start the worker
+    const supervisorUrl = process.env.CONNECTOR_SUPERVISOR_URL;
+    if (!supervisorUrl) {
+      return {
+        sessionId,
+        machineId: machine.machineId,
+        error: "Supervisor URL not configured",
+      };
+    }
+
+    try {
+      const response = await fetch(
+        `${supervisorUrl}/sessions/${encodeURIComponent(sessionId)}/start`,
+        { method: "POST" },
+      );
+
+      if (!response.ok) {
+        const body = await response.json();
+        return {
+          sessionId,
+          machineId: machine.machineId,
+          error: body.error ?? `Supervisor returned ${response.status}`,
+        };
+      }
+
+      return { sessionId, machineId: machine.machineId, error: null };
+    } catch (err) {
+      return {
+        sessionId,
+        machineId: machine.machineId,
+        error: `Failed to reach supervisor: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  },
+});
+
+/**
+ * Action: Disconnect an active WhatsApp session from the dashboard.
+ */
+export const requestDisconnect = action({
+  args: {
+    workspaceId: v.id("workspaces"),
+    sessionId: v.id("waConnectSessions"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean }> => {
+    // Cancel session in DB (RBAC checked inside mutation)
+    await ctx.runMutation(internal.connector.dashboardCancelSession, {
+      workspaceId: args.workspaceId,
+      sessionId: args.sessionId,
+    });
+
+    // Try to stop the worker on the supervisor
+    const supervisorUrl = process.env.CONNECTOR_SUPERVISOR_URL;
+    if (supervisorUrl) {
+      try {
+        await fetch(
+          `${supervisorUrl}/sessions/${encodeURIComponent(args.sessionId)}/stop`,
+          { method: "DELETE" },
+        );
+      } catch {
+        // Best effort — worker may already be stopped
+      }
+    }
+
+    return { success: true };
   },
 });

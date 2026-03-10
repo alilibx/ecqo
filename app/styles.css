@@ -2990,6 +2990,60 @@ details p {
   margin: 0;
 }
 
+.connect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.connect-btn:hover {
+  background: var(--bg);
+  border-color: var(--muted);
+}
+
+.connect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.connect-btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.connect-btn--primary:hover {
+  background: #0a6355;
+  border-color: #0a6355;
+}
+
+.connect-btn--danger {
+  background: transparent;
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.connect-btn--danger:hover {
+  background: var(--signal);
+  color: #fff;
+}
+
+.connect-error {
+  font-size: 0.8125rem;
+  color: var(--signal);
+  margin: 0;
+}
+
 /* Connected state */
 
 .connected-card {
