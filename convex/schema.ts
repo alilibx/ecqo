@@ -138,12 +138,47 @@ export default defineSchema({
     chatJid: v.string(),
     chatName: v.optional(v.string()),
     isGroup: v.boolean(),
+    /** Content policy: "metadata" (default) stores only metadata, "full" stores message body, "denied" hides from agent */
+    contentPolicy: v.optional(
+      v.union(
+        v.literal("metadata"),
+        v.literal("full"),
+        v.literal("denied"),
+      ),
+    ),
     lastMessageAt: v.optional(v.number()),
     messageCount: v.number(),
     updatedAt: v.number(),
   })
     .index("by_account_chat", ["waAccountId", "chatJid"])
     .index("by_account", ["waAccountId"]),
+
+  // ── Sync tracking ──
+
+  waSyncCursors: defineTable({
+    waAccountId: v.id("waAccounts"),
+    chatExternalId: v.string(),
+    lastMessageTimestamp: v.number(),
+    lastSyncJobId: v.optional(v.id("waSyncJobs")),
+  }).index("by_waAccountId_chatExternalId", [
+    "waAccountId",
+    "chatExternalId",
+  ]),
+
+  waSyncJobs: defineTable({
+    waAccountId: v.id("waAccounts"),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+    ),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    messagesProcessed: v.number(),
+    errors: v.array(v.string()),
+  })
+    .index("by_waAccountId", ["waAccountId"])
+    .index("by_status", ["status"]),
 
   // ── Dead-letter queue for failed ingestion ──
 

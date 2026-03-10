@@ -14,6 +14,7 @@ import type * as deadLetter from "../deadLetter.js";
 import type * as emails from "../emails.js";
 import type * as http from "../http.js";
 import type * as machineSync from "../machineSync.js";
+import type * as sync from "../sync.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
 import type * as workspaces from "../workspaces.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   emails: typeof emails;
   http: typeof http;
   machineSync: typeof machineSync;
+  sync: typeof sync;
   users: typeof users;
   waitlist: typeof waitlist;
   workspaces: typeof workspaces;

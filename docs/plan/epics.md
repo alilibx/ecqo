@@ -47,10 +47,10 @@
 | C1 | Define `waChats`, `waMessages`, `waSyncCursors`, `waSyncJobs` schemas | 1 | 3 | B1 | Sync entities support per-chat policy and cursor progression. |
 | C2 | Implement sync ingest API (`POST /internal/wa/sync/events`) | 1 | 5 | C1, A3 | Signed events validated by schema version and account lease. **Complete — implemented as direct `ingestMessages` mutation via `ConvexHttpClient` (no HTTP route needed).** |
 | C3 | Implement message idempotency key enforcement | 1 | 3 | C2 | Duplicate/replayed events do not produce duplicate records. |
-| C4 | Implement periodic sync scheduler (5-min cadence) and nightly reconciliation | 1 | 5 | C2 | Sync freshness maintained and backlog catch-up runs automatically. |
-| C5 | Implement metadata-first + allowlist full-content policy enforcement | 1 | 5 | C1 | Non-allowlisted chats never store full message body. |
+| C4 | Implement periodic sync scheduler (5-min cadence) and nightly reconciliation | 1 | 5 | C2 | Sync freshness maintained and backlog catch-up runs automatically. **Complete — `waSyncCursors` and `waSyncJobs` tables in `convex/schema.ts`. `convex/sync.ts` implements createSyncJob, completeSyncJob, failSyncJob, advanceCursor, getCursor, getCursorsForAccount, triggerPeriodicSync, failStaleJobs, nightlyReconciliation (all internalMutation/internalQuery). Cron jobs in `convex/crons.ts`: `trigger-periodic-sync` (5 min), `fail-stale-sync-jobs` (5 min), `nightly-sync-reconciliation` (2 AM UTC).** |
+| C5 | Implement metadata-first + allowlist full-content policy enforcement | 1 | 5 | C1 | Non-allowlisted chats never store full message body. **Complete — `contentPolicy` field (`"metadata"` / `"full"` / `"denied"`) added to `waChats`. `ingestMessages` and dead-letter `processRetries` check chat's `contentPolicy` before storing text. `updateChatContentPolicy` mutation is RBAC-protected (owner/principal) with workspace ownership validation.** |
 | C6 | Add dead-letter queue + retry strategy for ingestion failures | 2 | 5 | C2 | Validation/transient failures are recoverable and observable. |
-| C7 | Build sync health dashboard signals (`syncing`, `healthy`, `degraded`, `stale`) | 2 | 3 | C4, B6 | Operators can view sync freshness and failure status per account. |
+| C7 | Build sync health dashboard signals (`syncing`, `healthy`, `degraded`, `stale`) | 2 | 3 | C4, B6 | Operators can view sync freshness and failure status per account. **Complete — `getSyncHealth(workspaceId)` query in `convex/sync.ts`. RBAC-protected, returns per-account health signals (syncing/healthy/degraded/stale/error) based on latest sync job, DLQ status, and account connection state.** |
 
 **Total estimate:** 29 SP | **Milestone:** M1
 

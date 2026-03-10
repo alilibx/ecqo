@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getUser, requireRole } from "./users";
+import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
+import { components } from "./_generated/api";
+
+const rateLimiter = new RateLimiter(components.rateLimiter, {
+  ingestPerAccount: { kind: "fixed window", rate: 60, period: MINUTE },
+});
 
 // ── Signature verification ──
 
@@ -250,6 +256,12 @@ export const ingestMessages = mutation({
       throw new Error(`No account found for session ${args.sessionId}`);
     }
 
+    // Enforce 60 req/min per account
+    await rateLimiter.limit(ctx, "ingestPerAccount", {
+      key: account._id,
+      throws: true,
+    });
+
     let ingested = 0;
     let deduplicated = 0;
 
@@ -267,27 +279,15 @@ export const ingestMessages = mutation({
         continue;
       }
 
-      await ctx.db.insert("waMessages", {
-        waAccountId: account._id,
-        externalId: msg.externalId,
-        chatJid: msg.chatJid,
-        senderJid: msg.senderJid,
-        timestamp: msg.timestamp,
-        type: msg.type,
-        text: msg.text,
-        fromMe: msg.fromMe,
-        pushName: msg.pushName,
-        ingestionHash: msg.ingestionHash,
-        ingestedAt: Date.now(),
-      });
-
-      // Upsert chat metadata
+      // Upsert chat metadata (before message insert to check content policy)
       const existingChat = await ctx.db
         .query("waChats")
         .withIndex("by_account_chat", (q) =>
           q.eq("waAccountId", account._id).eq("chatJid", msg.chatJid),
         )
         .unique();
+
+      const chatPolicy = existingChat?.contentPolicy ?? "metadata";
 
       if (existingChat) {
         await ctx.db.patch(existingChat._id, {
@@ -308,6 +308,21 @@ export const ingestMessages = mutation({
           updatedAt: Date.now(),
         });
       }
+
+      // Enforce content policy: only store message body for allowlisted chats
+      await ctx.db.insert("waMessages", {
+        waAccountId: account._id,
+        externalId: msg.externalId,
+        chatJid: msg.chatJid,
+        senderJid: msg.senderJid,
+        timestamp: msg.timestamp,
+        type: msg.type,
+        text: chatPolicy === "full" ? msg.text : undefined,
+        fromMe: msg.fromMe,
+        pushName: msg.pushName,
+        ingestionHash: msg.ingestionHash,
+        ingestedAt: Date.now(),
+      });
 
       ingested++;
     }
@@ -471,6 +486,42 @@ export const assignSessionToMachine = mutation({
   handler: async (ctx, args) => {
     await verifySignatureAsync(args as Record<string, unknown>);
     await ctx.db.patch(args.sessionId, { machineId: args.machineId });
+  },
+});
+
+// ── Mutations for dashboard (RBAC-protected) ──
+
+/** Update a chat's content policy. Requires owner or principal role. */
+export const updateChatContentPolicy = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    chatId: v.id("waChats"),
+    contentPolicy: v.union(
+      v.literal("metadata"),
+      v.literal("full"),
+      v.literal("denied"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+    ]);
+
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat) throw new Error("Chat not found");
+
+    // Verify chat belongs to this workspace
+    const account = await ctx.db.get(chat.waAccountId);
+    if (!account || account.workspaceId !== args.workspaceId) {
+      throw new Error("Forbidden: chat belongs to another workspace");
+    }
+
+    await ctx.db.patch(args.chatId, {
+      contentPolicy: args.contentPolicy,
+      updatedAt: Date.now(),
+    });
   },
 });
 

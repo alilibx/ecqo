@@ -88,6 +88,7 @@ erDiagram
         string chatExternalId
         string name
         boolean isGroup
+        string contentPolicy
         string allowlistMode
         number lastSyncedAt
     }
@@ -350,6 +351,7 @@ Represents a WhatsApp chat (individual or group) discovered during sync.
 | `chatExternalId` | `string` | WhatsApp JID (e.g., `1234567890@s.whatsapp.net`) |
 | `name` | `string` | Chat display name |
 | `isGroup` | `boolean` | Whether this is a group chat |
+| `contentPolicy` | `string` | `"metadata"` (default), `"full"`, `"denied"` -- controls whether message text is stored. Enforced by `ingestMessages` and dead-letter `processRetries`. Changed via `updateChatContentPolicy` (RBAC: owner/principal). |
 | `allowlistMode` | `string` | `"all"`, `"allowlist"`, `"denylist"` -- controls agent visibility |
 | `lastSyncedAt` | `number?` | Unix timestamp (ms) of last successful sync |
 

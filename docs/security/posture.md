@@ -377,6 +377,7 @@ Convex functions use two distinct auth strategies depending on the caller:
 | `listDeadLetters` | `deadLetter.ts` | `requireRole()` | owner or operator |
 | `getDeadLetterStats` | `deadLetter.ts` | `requireRole()` | owner or operator |
 | `retryDeadLetter` | `deadLetter.ts` | `requireRole()` | owner |
+| `updateChatContentPolicy` | `connector.ts` | `requireRole()` | owner or principal |
 | Service mutations (ingest, heartbeat, etc.) | `connector.ts` | HMAC-SHA256 | n/a (infrastructure) |
 | Supervisor mutations | `connector.ts` | HMAC-SHA256 | n/a (infrastructure) |
 
@@ -400,7 +401,9 @@ All data is scoped to a workspace. Cross-workspace data access is structurally i
 
 ### Metadata-First Sync Policy
 
-By default, the connector syncs only metadata from WhatsApp conversations:
+**Implemented in `convex/connector.ts` (`ingestMessages`), `convex/deadLetter.ts` (`processRetries`), and `convex/schema.ts` (`waChats.contentPolicy`).**
+
+By default, the connector syncs only metadata from WhatsApp conversations. Each chat has a `contentPolicy` field (`"metadata"` | `"full"` | `"denied"`) that is checked at ingestion time -- both in the primary `ingestMessages` path and in the dead-letter retry path. Only chats with `contentPolicy: "full"` have message text stored. The `updateChatContentPolicy` mutation is RBAC-protected (owner/principal only) and validates workspace ownership.
 
 **Default sync (all chats) — metadata only:**
 

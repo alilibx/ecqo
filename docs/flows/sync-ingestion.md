@@ -142,7 +142,9 @@ const healthFlowConfig = {
 
 ## Metadata-First Policy
 
-By default, Ecqqo does **not** sync full message content. This is a deliberate privacy-by-design choice.
+**Implemented — enforced via `waChats.contentPolicy` field (`"metadata"` | `"full"` | `"denied"`).**
+
+By default, Ecqqo does **not** sync full message content. This is a deliberate privacy-by-design choice. The `contentPolicy` field on each chat record is checked by `ingestMessages` (in `convex/connector.ts`) and by `processRetries` (in `convex/deadLetter.ts`) before storing message text. Only chats with `contentPolicy: "full"` have their message body persisted. The policy is managed via the `updateChatContentPolicy` mutation, which is RBAC-protected (owner/principal) and validates workspace ownership.
 
 ### What Gets Synced By Default
 

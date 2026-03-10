@@ -160,27 +160,15 @@ export const processRetries = internalMutation({
             continue;
           }
 
-          await ctx.db.insert("waMessages", {
-            waAccountId: account._id,
-            externalId: msg.externalId,
-            chatJid: msg.chatJid,
-            senderJid: msg.senderJid,
-            timestamp: msg.timestamp,
-            type: msg.type as any,
-            text: msg.text,
-            fromMe: msg.fromMe,
-            pushName: msg.pushName,
-            ingestionHash: msg.ingestionHash,
-            ingestedAt: Date.now(),
-          });
-
-          // Upsert chat
+          // Upsert chat (before message insert to check content policy)
           const existingChat = await ctx.db
             .query("waChats")
             .withIndex("by_account_chat", (q) =>
               q.eq("waAccountId", account._id).eq("chatJid", msg.chatJid),
             )
             .unique();
+
+          const chatPolicy = existingChat?.contentPolicy ?? "metadata";
 
           if (existingChat) {
             await ctx.db.patch(existingChat._id, {
@@ -201,6 +189,21 @@ export const processRetries = internalMutation({
               updatedAt: Date.now(),
             });
           }
+
+          // Enforce content policy: only store message body for allowlisted chats
+          await ctx.db.insert("waMessages", {
+            waAccountId: account._id,
+            externalId: msg.externalId,
+            chatJid: msg.chatJid,
+            senderJid: msg.senderJid,
+            timestamp: msg.timestamp,
+            type: msg.type as any,
+            text: chatPolicy === "full" ? msg.text : undefined,
+            fromMe: msg.fromMe,
+            pushName: msg.pushName,
+            ingestionHash: msg.ingestionHash,
+            ingestedAt: Date.now(),
+          });
 
           ingested++;
         }
