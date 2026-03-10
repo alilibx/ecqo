@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getUser, requireRole } from "./users";
 
 // ── Signature verification ──
 
@@ -473,49 +474,92 @@ export const assignSessionToMachine = mutation({
   },
 });
 
-// ── Queries for dashboard / debugging ──
+// ── Queries for dashboard (RBAC-protected) ──
 
 export const getSession = query({
-  args: { sessionId: v.id("waConnectSessions") },
+  args: {
+    sessionId: v.id("waConnectSessions"),
+    workspaceId: v.id("workspaces"),
+  },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.sessionId);
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+      "operator",
+    ]);
+    const session = await ctx.db.get(args.sessionId);
+    if (session && session.workspaceId !== args.workspaceId) {
+      throw new Error("Forbidden: session belongs to another workspace");
+    }
+    return session;
   },
 });
 
 export const getActiveSession = query({
-  args: {},
-  handler: async (ctx) => {
-    // Get the most recent non-terminal session
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+      "operator",
+    ]);
     const sessions = await ctx.db
       .query("waConnectSessions")
       .order("desc")
-      .take(10);
+      .take(50);
 
     return (
-      sessions.find((s) =>
-        ["created", "qr_ready", "scanned", "connected"].includes(s.status),
+      sessions.find(
+        (s) =>
+          s.workspaceId === args.workspaceId &&
+          ["created", "qr_ready", "scanned", "connected"].includes(s.status),
       ) ?? null
     );
   },
 });
 
 export const getAccount = query({
-  args: { sessionId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("waAccounts")
-      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
-      .unique();
+  args: {
+    sessionId: v.string(),
+    workspaceId: v.id("workspaces"),
   },
-});
-
-export const listChats = query({
-  args: { sessionId: v.string() },
   handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+      "operator",
+    ]);
     const account = await ctx.db
       .query("waAccounts")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
       .unique();
+    if (account && account.workspaceId !== args.workspaceId) {
+      throw new Error("Forbidden: account belongs to another workspace");
+    }
+    return account;
+  },
+});
+
+export const listChats = query({
+  args: {
+    workspaceId: v.id("workspaces"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+      "operator",
+    ]);
+    const account = await ctx.db
+      .query("waAccounts")
+      .withIndex("by_workspace", (q) =>
+        q.eq("workspaceId", args.workspaceId),
+      )
+      .first();
 
     if (!account) return [];
 
@@ -528,15 +572,23 @@ export const listChats = query({
 
 export const listMessages = query({
   args: {
-    sessionId: v.string(),
+    workspaceId: v.id("workspaces"),
     chatJid: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, [
+      "owner",
+      "principal",
+      "operator",
+    ]);
     const account = await ctx.db
       .query("waAccounts")
-      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
-      .unique();
+      .withIndex("by_workspace", (q) =>
+        q.eq("workspaceId", args.workspaceId),
+      )
+      .first();
 
     if (!account) return [];
 

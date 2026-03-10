@@ -363,6 +363,25 @@ Every request to the Convex backend carries a Clerk-issued JWT. Validation happe
 
 <ArchDiagram :config="rolesConfig" />
 
+### Dual Auth Model: HMAC vs RBAC
+
+Convex functions use two distinct auth strategies depending on the caller:
+
+| Function | File | Auth Model | Required Role |
+|----------|------|------------|---------------|
+| `getSession` | `connector.ts` | `requireRole()` | any (owner / principal / operator) |
+| `getActiveSession` | `connector.ts` | `requireRole()` | any |
+| `getAccount` | `connector.ts` | `requireRole()` | any |
+| `listChats` | `connector.ts` | `requireRole()` | any |
+| `listMessages` | `connector.ts` | `requireRole()` | any |
+| `listDeadLetters` | `deadLetter.ts` | `requireRole()` | owner or operator |
+| `getDeadLetterStats` | `deadLetter.ts` | `requireRole()` | owner or operator |
+| `retryDeadLetter` | `deadLetter.ts` | `requireRole()` | owner |
+| Service mutations (ingest, heartbeat, etc.) | `connector.ts` | HMAC-SHA256 | n/a (infrastructure) |
+| Supervisor mutations | `connector.ts` | HMAC-SHA256 | n/a (infrastructure) |
+
+**Service-to-service calls** (connector worker, supervisor) keep HMAC-SHA256 signature verification — these are infrastructure calls, not user actions. **Dashboard-facing functions** accept a `workspaceId` argument and validate the caller's role via the `requireRole()` helper in `convex/users.ts`. Cross-workspace access is prevented by verifying the requested entity belongs to the caller's workspace.
+
 ### Workspace Isolation
 
 All data is scoped to a workspace. Cross-workspace data access is structurally impossible because every Convex query filters by `workspaceId` extracted from the authenticated user's JWT claims. There is no admin API that bypasses workspace scoping.

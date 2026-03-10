@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { getUser, requireRole } from "./users";
 
 /** Max retries for transient errors. Validation errors go straight to dead. */
 const MAX_RETRIES_TRANSIENT = 5;
@@ -237,10 +238,11 @@ export const processRetries = internalMutation({
   },
 });
 
-// ── Dashboard queries ──
+// ── Dashboard queries (RBAC-protected) ──
 
 export const listDeadLetters = query({
   args: {
+    workspaceId: v.id("workspaces"),
     status: v.optional(
       v.union(
         v.literal("pending"),
@@ -252,47 +254,92 @@ export const listDeadLetters = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, ["owner", "operator"]);
+
     const limit = args.limit ?? 50;
 
+    // Get accounts for this workspace to scope DLQ entries
+    const accounts = await ctx.db
+      .query("waAccounts")
+      .withIndex("by_workspace", (q) =>
+        q.eq("workspaceId", args.workspaceId),
+      )
+      .collect();
+    const accountIds = new Set(accounts.map((a) => a._id));
+
+    let entries;
     if (args.status) {
-      return await ctx.db
+      entries = await ctx.db
         .query("waDeadLetters")
         .withIndex("by_status", (q) => q.eq("status", args.status!))
         .order("desc")
-        .take(limit);
+        .take(limit * 2); // over-fetch to filter
+    } else {
+      entries = await ctx.db
+        .query("waDeadLetters")
+        .order("desc")
+        .take(limit * 2);
     }
 
-    return await ctx.db
-      .query("waDeadLetters")
-      .order("desc")
-      .take(limit);
+    return entries
+      .filter((dl) => dl.waAccountId && accountIds.has(dl.waAccountId))
+      .slice(0, limit);
   },
 });
 
 export const getDeadLetterStats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, ["owner", "operator"]);
+
+    const accounts = await ctx.db
+      .query("waAccounts")
+      .withIndex("by_workspace", (q) =>
+        q.eq("workspaceId", args.workspaceId),
+      )
+      .collect();
+    const accountIds = new Set(accounts.map((a) => a._id));
+
     const all = await ctx.db.query("waDeadLetters").collect();
+    const scoped = all.filter(
+      (dl) => dl.waAccountId && accountIds.has(dl.waAccountId),
+    );
 
     return {
-      pending: all.filter((dl) => dl.status === "pending").length,
-      retrying: all.filter((dl) => dl.status === "retrying").length,
-      resolved: all.filter((dl) => dl.status === "resolved").length,
-      dead: all.filter((dl) => dl.status === "dead").length,
-      total: all.length,
+      pending: scoped.filter((dl) => dl.status === "pending").length,
+      retrying: scoped.filter((dl) => dl.status === "retrying").length,
+      resolved: scoped.filter((dl) => dl.status === "resolved").length,
+      dead: scoped.filter((dl) => dl.status === "dead").length,
+      total: scoped.length,
     };
   },
 });
 
 /**
- * Manually retry a dead-lettered batch.
+ * Manually retry a dead-lettered batch. Requires owner role.
  */
 export const retryDeadLetter = mutation({
-  args: { id: v.id("waDeadLetters") },
+  args: {
+    id: v.id("waDeadLetters"),
+    workspaceId: v.id("workspaces"),
+  },
   handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    await requireRole(ctx, user._id, args.workspaceId, ["owner"]);
+
     const dl = await ctx.db.get(args.id);
     if (!dl) throw new Error("Dead letter not found");
     if (dl.status === "resolved") throw new Error("Already resolved");
+
+    // Verify DLQ entry belongs to this workspace
+    if (dl.waAccountId) {
+      const account = await ctx.db.get(dl.waAccountId);
+      if (account && account.workspaceId !== args.workspaceId) {
+        throw new Error("Forbidden: entry belongs to another workspace");
+      }
+    }
 
     await ctx.db.patch(dl._id, {
       status: "pending",
