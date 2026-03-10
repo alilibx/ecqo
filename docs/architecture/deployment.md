@@ -156,11 +156,15 @@ ecqqo/
     routes/                     #   File-based routes
       __root.tsx                #     Root layout (HTML shell, meta, fonts)
       index.tsx                 #     Landing page (waitlist, hero, features)
-      dashboard.tsx             #     Authenticated dashboard shell
-      dashboard/                #     Dashboard sub-routes
+      dashboard/                #     Dashboard layout + sub-routes
+        route.tsx               #       Layout shell (sidebar, bottom tabs, RBAC)
+        inbox.tsx               #       Approval queue
         conversations.tsx       #       Message history view
-        approvals.tsx           #       Pending approvals
-        settings.tsx            #       User preferences & policies
+        runs.tsx                #       Agent run explorer
+        memory.tsx              #       Memory browser
+        integrations.tsx        #       Integration status
+        policy.tsx              #       Policy settings
+        settings.tsx            #       User preferences & workspace config
     styles.css                  #   Design tokens + component styles
     components/                 #   Shared React components
     hooks/                      #   Custom hooks (useConvex, useAuth, etc.)

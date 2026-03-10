@@ -32,7 +32,7 @@
 | B4 | Implement QR/auth event ingest endpoint (`/connect/{sessionId}/events`) | 1 | 5 | B2, B3 | Signed events transition connect states without illegal transitions. |
 | B5 | Implement reconnect + session expiry handling | 1 | 5 | B4 | Expired/invalid sessions move to `reconnect_required` with clear recovery path. |
 | B6 | Add worker heartbeat endpoint and stale detection | 2 | 3 | B3 | Missing heartbeat flips account state to `stale`/`degraded`. |
-| B7 | Build dashboard Connect WhatsApp UX + live QR status | 1 | 5 | B2, B4, A4 | Non-technical user can complete connect flow end to end. |
+| B7 | Build dashboard Connect WhatsApp UX + live QR status | 1 | 5 | B2, B4, A4 | Non-technical user can complete connect flow end to end. **Complete — `app/routes/dashboard/connect.tsx` with RBAC guard (owner + principal), two-state UI (disconnected with QR + connected with account details), live Convex subscriptions, countdown timer, responsive design.** |
 
 **Total estimate:** 29 SP | **Milestone:** M0 (B1), M1 (B2--B7)
 
@@ -96,7 +96,7 @@
 
 | ID | Title | Priority | Est | Depends On | Acceptance Criteria |
 |---|---|---:|---:|---|---|
-| F1 | Build dashboard shell and IA (Connect, Inbox, Conversations, Runs, Memory, Integrations, Policy) | 1 | 5 | A4 | Pages and role navigation are complete and coherent. |
+| F1 | Build dashboard shell and IA (Connect, Inbox, Conversations, Runs, Memory, Integrations, Policy) | 1 | 5 | A4 | Pages and role navigation are complete and coherent. **Complete — `app/routes/dashboard/route.tsx` implements layout shell with fixed 240px sidebar (desktop), collapsible sidebar with overlay (tablet), and bottom tab bar with 4 tabs + More (mobile). Role-aware nav via `canAccess()`, active route highlighting, Escape-key dismiss. 7 placeholder child routes (inbox, conversations, runs, memory, integrations, policy, settings) with `beforeLoad` RBAC guards. ~300 lines dashboard CSS with dark-mode and responsive breakpoints at 1024px/640px.** |
 | F2 | Build Inbox approvals UI with dry-run details | 1 | 5 | D4 | Operator/principal can approve/reject with clear action context. |
 | F3 | Build Conversations timeline with allowlist controls | 1 | 5 | C5 | Chat-level permissions can be managed and reflected instantly. |
 | F4 | Build Runs explorer with state/status and failure diagnostics | 1 | 5 | D6 | Run lifecycle and errors are visible and filterable. |

@@ -94,6 +94,8 @@ const iaNavConfig = {
 
 The Ecqqo dashboard is a role-gated, real-time control surface built with TanStack Start + React 19. It gives principals (the high-net-worth operators who use the assistant) and their support staff visibility into every action the agent takes, with approval controls at every exit point.
 
+> **Implementation status (ECQ-38):** The dashboard layout shell is complete. `app/routes/dashboard/route.tsx` implements a fixed sidebar (240px) on desktop, a collapsible sidebar with hamburger toggle and overlay on tablet (<= 1024px), and a bottom tab bar (4 tabs + More) on mobile (<= 640px). Navigation is role-aware via `canAccess()` from `app/lib/route-guards.ts`, with active route highlighting and Escape-key sidebar dismiss. Seven placeholder child routes are wired with `beforeLoad` RBAC guards: inbox, conversations, runs, memory, integrations, policy, and settings. Dashboard CSS (~300 lines) includes dark-mode support.
+
 ## Navigation Structure
 
 <ArchDiagram :config="iaNavConfig" />

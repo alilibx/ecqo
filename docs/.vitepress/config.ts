@@ -88,6 +88,10 @@ export default withMermaid(
             { text: "Architectural Planes", link: "/architecture/planes" },
             { text: "Deployment & Infra", link: "/architecture/deployment" },
             { text: "Data Flow", link: "/architecture/data-flow" },
+            {
+              text: "WhatsApp Strategy",
+              link: "/architecture/whatsapp-strategy",
+            },
           ],
         },
         {

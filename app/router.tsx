@@ -6,6 +6,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
 import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 import { routeTree } from "./routeTree.gen";
+import { PageSpinner } from "./components/page-spinner";
 
 export function getRouter() {
   const CONVEX_URL = import.meta.env.VITE_CONVEX_URL!;
@@ -27,6 +28,9 @@ export function getRouter() {
     createTanStackRouter({
       routeTree,
       defaultPreload: "intent",
+      defaultPendingComponent: PageSpinner,
+      defaultPendingMs: 150,
+      defaultPendingMinMs: 300,
       context: { queryClient, convexClient, convexQueryClient },
       scrollRestoration: true,
       InnerWrap: ({ children }) => (

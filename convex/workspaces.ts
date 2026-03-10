@@ -4,11 +4,19 @@ import { getUser, getMembership, requireRole } from "./users";
 
 // ── Queries ──
 
-/** List workspaces the current user is a member of. */
+/** List workspaces the current user is a member of. Returns [] if user record doesn't exist yet. */
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const user = await getUser(ctx);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) return [];
 
     const memberships = await ctx.db
       .query("memberships")

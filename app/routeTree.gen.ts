@@ -12,6 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardRunsRouteImport } from './routes/dashboard/runs'
+import { Route as DashboardPolicyRouteImport } from './routes/dashboard/policy'
+import { Route as DashboardMemoryRouteImport } from './routes/dashboard/memory'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
+import { Route as DashboardInboxRouteImport } from './routes/dashboard/inbox'
+import { Route as DashboardConversationsRouteImport } from './routes/dashboard/conversations'
+import { Route as DashboardConnectRouteImport } from './routes/dashboard/connect'
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
@@ -28,33 +37,142 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const SignInSplatRoute = SignInSplatRouteImport.update({
+  id: '/sign-in/$',
+  path: '/sign-in/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardRunsRoute = DashboardRunsRouteImport.update({
+  id: '/runs',
+  path: '/runs',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardPolicyRoute = DashboardPolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardMemoryRoute = DashboardMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardInboxRoute = DashboardInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardConversationsRoute = DashboardConversationsRouteImport.update({
+  id: '/conversations',
+  path: '/conversations',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardConnectRoute = DashboardConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/connect': typeof DashboardConnectRoute
+  '/dashboard/conversations': typeof DashboardConversationsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/memory': typeof DashboardMemoryRoute
+  '/dashboard/policy': typeof DashboardPolicyRoute
+  '/dashboard/runs': typeof DashboardRunsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/sign-in/$': typeof SignInSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/connect': typeof DashboardConnectRoute
+  '/dashboard/conversations': typeof DashboardConversationsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/memory': typeof DashboardMemoryRoute
+  '/dashboard/policy': typeof DashboardPolicyRoute
+  '/dashboard/runs': typeof DashboardRunsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/sign-in/$': typeof SignInSplatRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/dashboard/connect': typeof DashboardConnectRoute
+  '/dashboard/conversations': typeof DashboardConversationsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
+  '/dashboard/memory': typeof DashboardMemoryRoute
+  '/dashboard/policy': typeof DashboardPolicyRoute
+  '/dashboard/runs': typeof DashboardRunsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/sign-in/$': typeof SignInSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/dashboard/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/connect'
+    | '/dashboard/conversations'
+    | '/dashboard/inbox'
+    | '/dashboard/integrations'
+    | '/dashboard/memory'
+    | '/dashboard/policy'
+    | '/dashboard/runs'
+    | '/dashboard/settings'
+    | '/sign-in/$'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard'
-  id: '__root__' | '/' | '/dashboard' | '/dashboard/'
+  to:
+    | '/'
+    | '/dashboard/connect'
+    | '/dashboard/conversations'
+    | '/dashboard/inbox'
+    | '/dashboard/integrations'
+    | '/dashboard/memory'
+    | '/dashboard/policy'
+    | '/dashboard/runs'
+    | '/dashboard/settings'
+    | '/sign-in/$'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/dashboard/connect'
+    | '/dashboard/conversations'
+    | '/dashboard/inbox'
+    | '/dashboard/integrations'
+    | '/dashboard/memory'
+    | '/dashboard/policy'
+    | '/dashboard/runs'
+    | '/dashboard/settings'
+    | '/sign-in/$'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  SignInSplatRoute: typeof SignInSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -80,14 +198,93 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/sign-in/$': {
+      id: '/sign-in/$'
+      path: '/sign-in/$'
+      fullPath: '/sign-in/$'
+      preLoaderRoute: typeof SignInSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/runs': {
+      id: '/dashboard/runs'
+      path: '/runs'
+      fullPath: '/dashboard/runs'
+      preLoaderRoute: typeof DashboardRunsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/policy': {
+      id: '/dashboard/policy'
+      path: '/policy'
+      fullPath: '/dashboard/policy'
+      preLoaderRoute: typeof DashboardPolicyRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/memory': {
+      id: '/dashboard/memory'
+      path: '/memory'
+      fullPath: '/dashboard/memory'
+      preLoaderRoute: typeof DashboardMemoryRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/inbox': {
+      id: '/dashboard/inbox'
+      path: '/inbox'
+      fullPath: '/dashboard/inbox'
+      preLoaderRoute: typeof DashboardInboxRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/conversations': {
+      id: '/dashboard/conversations'
+      path: '/conversations'
+      fullPath: '/dashboard/conversations'
+      preLoaderRoute: typeof DashboardConversationsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/connect': {
+      id: '/dashboard/connect'
+      path: '/connect'
+      fullPath: '/dashboard/connect'
+      preLoaderRoute: typeof DashboardConnectRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
   }
 }
 
 interface DashboardRouteRouteChildren {
+  DashboardConnectRoute: typeof DashboardConnectRoute
+  DashboardConversationsRoute: typeof DashboardConversationsRoute
+  DashboardInboxRoute: typeof DashboardInboxRoute
+  DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
+  DashboardMemoryRoute: typeof DashboardMemoryRoute
+  DashboardPolicyRoute: typeof DashboardPolicyRoute
+  DashboardRunsRoute: typeof DashboardRunsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardConnectRoute: DashboardConnectRoute,
+  DashboardConversationsRoute: DashboardConversationsRoute,
+  DashboardInboxRoute: DashboardInboxRoute,
+  DashboardIntegrationsRoute: DashboardIntegrationsRoute,
+  DashboardMemoryRoute: DashboardMemoryRoute,
+  DashboardPolicyRoute: DashboardPolicyRoute,
+  DashboardRunsRoute: DashboardRunsRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
@@ -98,7 +295,18 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  SignInSplatRoute: SignInSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

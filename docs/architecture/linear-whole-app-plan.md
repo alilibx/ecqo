@@ -100,7 +100,7 @@ Objective: Deliver operational console for approvals, monitoring, and control.
 ### Issues
 | ID | Title | Priority | Est | Depends On | Acceptance Criteria |
 |---|---|---:|---:|---|---|
-| F1 | Build dashboard shell and IA (Connect, Inbox, Conversations, Runs, Memory, Integrations, Policy) | 1 | 5 | A4 | Pages and role navigation are complete and coherent. |
+| F1 | Build dashboard shell and IA (Connect, Inbox, Conversations, Runs, Memory, Integrations, Policy) | 1 | 5 | A4 | Pages and role navigation are complete and coherent. **Complete — `app/routes/dashboard/route.tsx` implements layout shell with fixed 240px sidebar (desktop), collapsible sidebar with overlay (tablet), and bottom tab bar with 4 tabs + More (mobile). Role-aware nav via `canAccess()`, active route highlighting, Escape-key dismiss. 7 placeholder child routes with `beforeLoad` RBAC guards. ~300 lines dashboard CSS with dark-mode and responsive breakpoints at 1024px/640px.** |
 | F2 | Build Inbox approvals UI with dry-run details | 1 | 5 | D4 | Operator/principal can approve/reject with clear action context. |
 | F3 | Build Conversations timeline with allowlist controls | 1 | 5 | C5 | Chat-level permissions can be managed and reflected instantly. |
 | F4 | Build Runs explorer with state/status and failure diagnostics | 1 | 5 | D6 | Run lifecycle and errors are visible and filterable. |

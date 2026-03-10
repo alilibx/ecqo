@@ -57,14 +57,14 @@ export async function requireDashboardRole(opts: {
   const { convexClient, userId, page } = opts;
 
   if (!userId) {
-    throw redirect({ to: "/" });
+    throw redirect({ to: "/sign-in/$" });
   }
 
   // Get user's workspaces (V1: single workspace per user)
   const workspaces = await convexClient.query(api.workspaces.list);
 
   if (!workspaces || workspaces.length === 0) {
-    throw redirect({ to: "/" });
+    throw redirect({ to: "/sign-in/$" });
   }
 
   const workspace = workspaces[0]!;
@@ -75,7 +75,7 @@ export async function requireDashboardRole(opts: {
     if (canAccess("home", role)) {
       throw redirect({ to: "/dashboard" });
     }
-    throw redirect({ to: "/" });
+    throw redirect({ to: "/sign-in/$" });
   }
 
   return { role, workspaceId: workspace._id as Id<"workspaces"> };
