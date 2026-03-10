@@ -13,7 +13,7 @@
 | A1 | Integrate Clerk with TanStack Start and Convex identity mapping | 1 | 5 | -- | User session resolves in frontend and Convex with stable user identity. |
 | A2 | Implement workspace membership and roles (`owner`, `principal`, `operator`) | 1 | 5 | A1 | Role assignment persisted and queryable with membership invariants enforced. |
 | A3 | Enforce RBAC in all privileged Convex mutations/actions | 1 | 3 | A2 | Unauthorized requests return deterministic 403 errors. **Complete — dual auth model: HMAC-SHA256 for service-to-service (connector/supervisor), `requireRole()` for all 8 dashboard-facing functions. Cross-workspace access prevented by entity-to-workspace verification.** |
-| A4 | Add role-aware route guards for dashboard sections | 1 | 3 | A2 | Principal/operator views are correctly restricted in UI navigation and loaders. |
+| A4 | Add role-aware route guards for dashboard sections | 1 | 3 | A2 | Principal/operator views are correctly restricted in UI navigation and loaders. **Complete — `PAGE_ACCESS` map, `canAccess()`, `getAccessiblePages()`, and `requireDashboardRole()` in `app/lib/route-guards.ts`. Dashboard layout (`app/routes/dashboard/route.tsx`) enforces auth via `beforeLoad()` and passes workspaceId/role/workspaceName through route context. `getMyRole` query added to `convex/workspaces.ts`.** |
 | A5 | Add auth + RBAC audit events for sensitive actions | 2 | 3 | A3 | Role changes and denied actions are logged and traceable. |
 
 **Total estimate:** 19 SP | **Milestone:** M0

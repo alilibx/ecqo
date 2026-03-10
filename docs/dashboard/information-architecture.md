@@ -102,6 +102,8 @@ The Ecqqo dashboard is a role-gated, real-time control surface built with TanSta
 
 Three roles govern dashboard access. Every Convex query and mutation checks the caller's Clerk JWT and workspace membership before returning data.
 
+> **Implementation note:** Route-level RBAC is enforced by `app/lib/route-guards.ts` (defines `PAGE_ACCESS` map, `canAccess()`, `getAccessiblePages()`, `requireDashboardRole()`) and `app/routes/dashboard/route.tsx` (runs auth check in `beforeLoad()`, passes `workspaceId`, `role`, and `workspaceName` via route context to all child routes).
+
 | Page           | Owner              | Principal          | Operator           |
 |----------------|--------------------|--------------------|---------------------|
 | Home           | Full               | Full               | Limited (no billing stats) |

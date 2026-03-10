@@ -51,6 +51,17 @@ export const listMembers = query({
   },
 });
 
+/** Get the current user's role in a workspace. Returns null if not a member. */
+export const getMyRole = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, { workspaceId }) => {
+    const user = await getUser(ctx);
+    const membership = await getMembership(ctx, user._id, workspaceId);
+    if (!membership) return null;
+    return { role: membership.role, workspaceId };
+  },
+});
+
 // ── Mutations ──
 
 /** Invite a member to a workspace. Requires owner role. */
