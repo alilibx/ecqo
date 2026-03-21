@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { getUser, requireRole } from "./users";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
@@ -326,6 +326,16 @@ export const ingestMessages = mutation({
       });
 
       ingested++;
+
+      // Trigger agent for incoming user text messages on chats with full content policy
+      if (!msg.fromMe && msg.type === "text" && msg.text && chatPolicy === "full") {
+        await ctx.scheduler.runAfter(0, internal.agent.processMessage, {
+          waAccountId: account._id,
+          chatJid: msg.chatJid,
+          messageText: msg.text,
+          triggerId: msg.ingestionHash,
+        });
+      }
     }
 
     return { ingested, deduplicated };
