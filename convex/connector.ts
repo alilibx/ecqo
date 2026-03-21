@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { getUser, requireRole } from "./users";
+import { resolveContact } from "./contacts";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 
@@ -327,14 +328,27 @@ export const ingestMessages = mutation({
 
       ingested++;
 
-      // Trigger agent for incoming user text messages on chats with full content policy
-      if (!msg.fromMe && msg.type === "text" && msg.text && chatPolicy === "full") {
-        await ctx.scheduler.runAfter(0, internal.agent.processMessage, {
+      // Resolve contact for incoming messages (not from self)
+      if (!msg.fromMe) {
+        const { isFirstMessage } = await resolveContact(ctx, {
           waAccountId: account._id,
-          chatJid: msg.chatJid,
+          senderJid: msg.senderJid,
+          pushName: msg.pushName,
           messageText: msg.text,
-          triggerId: msg.ingestionHash,
+          timestamp: msg.timestamp,
         });
+
+        // Trigger agent for incoming user text messages on chats with full content policy
+        if (msg.type === "text" && msg.text && chatPolicy === "full") {
+          await ctx.scheduler.runAfter(0, internal.agent.processMessage, {
+            waAccountId: account._id,
+            chatJid: msg.chatJid,
+            senderJid: msg.senderJid,
+            messageText: msg.text,
+            triggerId: msg.ingestionHash,
+            isFirstMessage,
+          });
+        }
       }
     }
 

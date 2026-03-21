@@ -98,6 +98,18 @@ erDiagram
         number lastSyncedAt
     }
 
+    waContacts {
+        id _id
+        id waAccountId FK
+        string jid
+        string phone
+        string name
+        string locale
+        number firstSeenAt
+        number lastSeenAt
+        number messageCount
+    }
+
     waMessages {
         id _id
         id waAccountId FK
@@ -202,6 +214,7 @@ erDiagram
 
     waAccounts ||--o{ waConnectSessions : "has sessions"
     waAccounts ||--o{ waConnectorWorkers : "has workers"
+    waAccounts ||--o{ waContacts : "has contacts"
     waAccounts ||--o{ waChats : "has chats"
     waAccounts ||--o{ waMessages : "has messages"
     waAccounts ||--o{ waSyncCursors : "has cursors"
@@ -340,6 +353,37 @@ Tracks Fly.io machine state for each wacli connector worker.
 **Invariants:**
 - At most one worker with `leaseStatus = "active"` per waAccountId.
 - If `lastHeartbeat` is older than 90 seconds, a scheduled function marks the worker as `"draining"` and attempts restart.
+
+---
+
+### Contacts
+
+#### waContacts
+
+WhatsApp contacts (end-users) identified by phone number during message ingestion. Created automatically on first interaction.
+
+| Field | Type | Description |
+|---|---|---|
+| `_id` | `Id<"waContacts">` | Convex document ID |
+| `waAccountId` | `Id<"waAccounts">` | FK to the parent WA account |
+| `jid` | `string` | WhatsApp JID (e.g., `1234567890@s.whatsapp.net`) |
+| `phone` | `string` | Normalized phone number (digits only) |
+| `name` | `string?` | Display name from WhatsApp pushName |
+| `locale` | `string` | Preferred language: `"en"` or `"ar"` (auto-detected from message text) |
+| `firstSeenAt` | `number` | Unix timestamp (ms) of first message |
+| `lastSeenAt` | `number` | Unix timestamp (ms) of most recent message |
+| `messageCount` | `number` | Total messages received from this contact |
+
+**Indexes:**
+- `by_account_jid` on `(waAccountId, jid)` -- unique lookup during ingestion
+- `by_account_phone` on `(waAccountId, phone)` -- phone-based lookup
+- `by_account` on `(waAccountId)` -- list all contacts for an account
+
+**Invariants:**
+- `(waAccountId, jid)` is a unique compound key.
+- Created atomically during message ingestion via `resolveContact()`.
+- `locale` is auto-detected using Arabic Unicode character ratio heuristic.
+- `messageCount` increments on every ingested message from this contact.
 
 ---
 

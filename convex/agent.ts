@@ -257,8 +257,10 @@ export const processMessage = internalAction({
   args: {
     waAccountId: v.id("waAccounts"),
     chatJid: v.string(),
+    senderJid: v.optional(v.string()),
     messageText: v.string(),
     triggerId: v.string(),
+    isFirstMessage: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<{ response: string; provider: string } | { error: string }> => {
     const startTime = Date.now();
@@ -285,7 +287,25 @@ export const processMessage = internalAction({
       return { error: "No principal found for workspace" };
     }
 
-    // 2. Create agent run record
+    // 2. Load contact info for personalization
+    let contactContext = "";
+    if (args.senderJid) {
+      const contact = await ctx.runQuery(internal.contacts.getByJid, {
+        waAccountId: args.waAccountId,
+        jid: args.senderJid,
+      });
+
+      if (contact) {
+        const namePart = contact.name ? `Their name is ${contact.name}. ` : "";
+        const localePart = `Their preferred language is ${contact.locale === "ar" ? "Arabic" : "English"}. `;
+        const firstTimePart = args.isFirstMessage
+          ? "This is their FIRST message ever. Welcome them warmly, introduce yourself, and explain what you can help with. "
+          : "";
+        contactContext = `\n\n## About this user\n${namePart}${localePart}Phone: ${contact.phone}. ${firstTimePart}`;
+      }
+    }
+
+    // Create agent run record
     const runId = await ctx.runMutation(internal.agent.createAgentRun, {
       workspaceId: account.workspaceId,
       principalId: principalId as Id<"users">,
@@ -347,7 +367,7 @@ export const processMessage = internalAction({
         try {
           const result = await generateText({
             model: provider.createModel(),
-            system: SYSTEM_PROMPT,
+            system: SYSTEM_PROMPT + contactContext,
             messages: conversationMessages,
             maxTokens: 1024,
           });

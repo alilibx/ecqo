@@ -184,6 +184,29 @@ export default defineSchema({
     .index("by_account_chat", ["waAccountId", "chatJid"])
     .index("by_account", ["waAccountId"]),
 
+  // ── WhatsApp contacts (end-user identification) ──
+
+  waContacts: defineTable({
+    waAccountId: v.id("waAccounts"),
+    /** WhatsApp JID (e.g. "1234567890@s.whatsapp.net") */
+    jid: v.string(),
+    /** Normalized phone number (digits only, e.g. "1234567890") */
+    phone: v.string(),
+    /** Display name from WhatsApp pushName */
+    name: v.optional(v.string()),
+    /** Preferred locale for responses */
+    locale: v.union(v.literal("en"), v.literal("ar")),
+    /** First message timestamp */
+    firstSeenAt: v.number(),
+    /** Last message timestamp */
+    lastSeenAt: v.number(),
+    /** Total messages received from this contact */
+    messageCount: v.number(),
+  })
+    .index("by_account_jid", ["waAccountId", "jid"])
+    .index("by_account_phone", ["waAccountId", "phone"])
+    .index("by_account", ["waAccountId"]),
+
   // ── Sync tracking ──
 
   waSyncCursors: defineTable({

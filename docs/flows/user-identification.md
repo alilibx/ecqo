@@ -1,5 +1,45 @@
 # User Identification (Single Number)
 
+## M0 Implementation: Contact Auto-Resolution (wacli/Baileys)
+
+In M0, Ecqqo connects to a user's personal WhatsApp via a Baileys-based connector. User identification happens automatically during message ingestion:
+
+### Flow
+
+1. **Message arrives** via `connector.ingestMessages()` mutation
+2. **Contact resolution** runs inline for every non-self message via `resolveContact()` (in `convex/contacts.ts`)
+3. **JID → phone extraction**: `senderJid` (e.g., `1234567890@s.whatsapp.net`) → phone `1234567890`
+4. **Lookup or create**: Query `waContacts` by `(waAccountId, jid)` index
+   - **Existing contact**: Update `lastSeenAt`, increment `messageCount`, refresh locale detection
+   - **New contact**: Create `waContacts` record with phone, pushName, auto-detected locale
+5. **First-message flag**: `isFirstMessage` is passed to `agent.processMessage()` to trigger a welcome message
+6. **Agent enrichment**: Contact info (name, locale, phone) is injected into the LLM system prompt
+
+### Locale Detection
+
+Language is auto-detected from message text using Arabic Unicode character ratio:
+- If >30% of non-whitespace characters are in the Arabic Unicode range (`\u0600-\u077F`), locale = `ar`
+- Otherwise, locale = `en`
+
+The locale updates on each message, so the agent always responds in the user's most recent language.
+
+### Welcome Message
+
+On first interaction (`isFirstMessage = true`), the agent system prompt is augmented with instructions to welcome the user, introduce itself, and explain capabilities.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `convex/contacts.ts` | Contact resolution helper, dashboard queries |
+| `convex/connector.ts` | Ingestion hook (calls `resolveContact` inline) |
+| `convex/agent.ts` | Contact-enriched system prompt, welcome flow |
+| `convex/schema.ts` | `waContacts` table definition |
+
+---
+
+## Future: Single Business Number (Meta Cloud API)
+
 ## Problem Statement
 
 Ecqqo operates through a **single WhatsApp Business number** powered by the Meta Cloud API. Every user -- whether an owner, principal, or operator -- messages this same number. The system must reliably identify which user is sending each inbound message and route it to the correct agent context, workspace, and conversation state.

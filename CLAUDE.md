@@ -26,6 +26,7 @@ Use bun as the package manager and script runner.
 - `convex/schema.ts` — Database schema. Tables: `waitlist` (email, position, joinedAt) with indexes by_email and by_position
 - `convex/waitlist.ts` — `join` mutation (add to waitlist, send confirmation email via Resend) and `getCount` query
 - `convex/emails.ts` — Resend component instance and branded HTML email template for waitlist confirmation
+- `convex/contacts.ts` — WhatsApp contact identification: auto-resolves senderJid → contact record during ingestion, locale detection, dashboard queries
 - `convex/convex.config.ts` — App config with `@convex-dev/resend` component
 
 ### Config
