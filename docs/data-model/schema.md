@@ -47,10 +47,15 @@ erDiagram
     subscriptions {
         id _id
         id workspaceId FK
-        string stripeSubscriptionId
+        string stripeCustomerId
+        string stripeSubId
+        string stripePriceId
         string plan
         string status
+        string currency
         number currentPeriodEnd
+        number trialEnd
+        boolean cancelAtPeriodEnd
     }
 
     auditEvents {

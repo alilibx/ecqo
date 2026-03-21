@@ -33,6 +33,37 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_workspace", ["userId", "workspaceId"]),
 
+  // ── Billing ──
+
+  subscriptions: defineTable({
+    workspaceId: v.id("workspaces"),
+    stripeCustomerId: v.string(),
+    stripeSubId: v.string(),
+    stripePriceId: v.string(),
+    plan: v.union(
+      v.literal("founder"),
+      v.literal("dreamer"),
+      v.literal("custom"),
+    ),
+    status: v.union(
+      v.literal("trialing"),
+      v.literal("active"),
+      v.literal("past_due"),
+      v.literal("canceled"),
+      v.literal("unpaid"),
+    ),
+    currency: v.union(v.literal("usd"), v.literal("aed")),
+    currentPeriodEnd: v.number(),
+    trialEnd: v.optional(v.number()),
+    cancelAtPeriodEnd: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_stripe_sub", ["stripeSubId"])
+    .index("by_stripe_cust", ["stripeCustomerId"])
+    .index("by_status", ["status", "currentPeriodEnd"]),
+
   // ── Waitlist ──
 
   waitlist: defineTable({
