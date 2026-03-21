@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    pageTitle: "Ecqqo | Empower your Human Assistant",
+    pageTitle: "Ecqqo | Your Executive Assistant in WhatsApp",
     brandName: "Ecqqo",
     agent: "Agent",
     currencyLabels: { AED: "AED", USD: "USD" },
@@ -18,10 +18,10 @@ export const translations = {
     },
     hero: {
       eyebrow: "WhatsApp-Native Executive Assistant",
-      titleLine1: "Empower your",
-      phrases: ["Human Assistant", "Entire Workflow", "Morning Routine", "Creative Energy"],
-      subtitle: "Ecqqo watches your WhatsApp chats for scheduling, calendar checks, email summaries, reminders, and more — then acts on your behalf. No extra apps. No handoffs. No follow-up leaks.",
-      cta: "Get Started",
+      titleLine1: "Your executive assistant lives in",
+      phrases: ["WhatsApp. Finally.", "your pocket.", "your language.", "your workflow."],
+      subtitle: "Delegate scheduling, email, and admin tasks through the app you already use — with guardrails that mean nothing happens without your say-so.",
+      cta: "Start Your Free Trial",
       secondaryCta: "See How It Works",
     },
     agentFeed: [
@@ -162,12 +162,12 @@ export const translations = {
     faq: {
       title: "Frequently Asked Questions",
       items: [
-        { q: "Is this WhatsApp-only?", a: "Yes. Ecqqo is intentionally focused on direct WhatsApp Meta Cloud API integration. Everything happens inside the chat you already use." },
-        { q: "Can we enforce approvals before scheduling?", a: "Yes. Events remain pending until required participants approve. Nothing gets added to your calendar without your explicit confirmation." },
-        { q: "How does calendar check work?", a: 'Just ask "What\'s on my calendar today?" or "Am I free Friday afternoon?" and Ecqqo pulls your schedule in real time, giving you a clean summary right in chat.' },
-        { q: "Which email providers are supported?", a: "Ecqqo integrates with Gmail and Outlook. Ask for unread summaries, search for emails from specific contacts, or get flagged thread digests on demand." },
-        { q: "Can Ecqqo set reminders and follow-ups?", a: 'Yes. Say "Remind me to call Sarah at 5pm" or "Follow up with the investor next Monday" and Ecqqo will notify you at the right time via WhatsApp.' },
-        { q: "Is this still cost-effective vs remote assistant models?", a: "Yes. The calculator above compares against both remote VA midpoint and EA averages. Ecqqo handles the repetitive coordination so your human assistant can focus on high-value work." },
+        { q: "How is this different from ChatGPT or other AI assistants?", a: "ChatGPT is a conversation tool. Ecqqo is an execution tool. It doesn't just answer questions — it takes actions on your behalf (scheduling, email, reminders) with your approval." },
+        { q: "How is this different from self-hosted AI agents?", a: "Self-hosted agents are powerful tools for developers. Ecqqo is a managed service for executives. No setup, no self-hosting, no security risks — and an approval workflow that ensures nothing fires without your permission. Our core assistant uses the official Meta WhatsApp API, so your personal account is never at risk." },
+        { q: "Will my WhatsApp get banned?", a: "Not with the core assistant — it uses the official Meta Business API with a verified Ecqqo number and never touches your personal account. If you opt into history sync for richer context, we recommend using a secondary number and provide full risk disclosure upfront." },
+        { q: "Is my data safe?", a: "Your data is stored on managed infrastructure, encrypted at rest, with role-based access controls and an immutable audit trail. Nothing is stored on your personal device. You can request full data export or deletion at any time." },
+        { q: "Do you support Arabic?", a: "Yes. Ecqqo responds in the language you message in — English or Arabic (Gulf dialect)." },
+        { q: "What happens during the free trial?", a: "Full access to all features for 14 days. No credit card required to start. Cancel anytime." },
       ],
     },
     integrations: {
@@ -189,7 +189,7 @@ export const translations = {
     },
   },
   ar: {
-    pageTitle: "ايكو | عزّز قدرات مساعدك البشري",
+    pageTitle: "ايكو | مساعدك التنفيذي في واتساب",
     brandName: "ايكو",
     agent: "وكيل",
     currencyLabels: { AED: "درهم", USD: "USD" },
@@ -207,10 +207,10 @@ export const translations = {
     },
     hero: {
       eyebrow: "مساعد تنفيذي عبر واتساب",
-      titleLine1: "عزّز قدرات",
-      phrases: ["مساعدك البشري", "سير عملك", "روتينك الصباحي", "طاقتك الإبداعية"],
-      subtitle: "ايكو يراقب محادثات واتساب الخاصة بك لجدولة المواعيد، والتحقق من التقويم، وملخصات البريد الإلكتروني، والتذكيرات، والمزيد — ثم ينفّذ نيابةً عنك. بدون تطبيقات إضافية. بدون تحويلات. بدون متابعات ضائعة.",
-      cta: "ابدأ الآن",
+      titleLine1: "مساعدك التنفيذي يعيش في",
+      phrases: ["واتساب. أخيراً.", "جيبك.", "لغتك.", "سير عملك."],
+      subtitle: "فوّض الجدولة والبريد والمهام الإدارية من التطبيق الذي تستخدمه بالفعل — مع ضمانات تعني أن لا شيء يحدث بدون موافقتك.",
+      cta: "ابدأ تجربتك المجانية",
       secondaryCta: "شاهد كيف يعمل",
     },
     agentFeed: [
@@ -351,12 +351,12 @@ export const translations = {
     faq: {
       title: "الأسئلة الشائعة",
       items: [
-        { q: "هل هذا لواتساب فقط؟", a: "نعم. ايكو مصمم خصيصاً للتكامل المباشر مع واجهة برمجة تطبيقات واتساب السحابية من Meta. كل شيء يحدث داخل المحادثة التي تستخدمها بالفعل." },
-        { q: "هل يمكن فرض موافقات قبل الجدولة؟", a: "نعم. تبقى الأحداث معلقة حتى يوافق المشاركون المطلوبون. لا يُضاف شيء لتقويمك بدون تأكيدك الصريح." },
-        { q: "كيف يعمل فحص التقويم؟", a: 'فقط اسأل "ما مواعيدي اليوم؟" أو "هل أنا متاح بعد ظهر الجمعة؟" وسيسحب ايكو جدولك فوراً ويعطيك ملخصاً نظيفاً في المحادثة.' },
-        { q: "ما مزودو البريد المدعومون؟", a: "ايكو يتكامل مع Gmail وOutlook. اطلب ملخصات الرسائل غير المقروءة، أو ابحث عن رسائل من جهات اتصال محددة." },
-        { q: "هل يمكن لايكو ضبط تذكيرات ومتابعات؟", a: 'نعم. قل "ذكّرني بالاتصال بسارة الساعة 5 مساءً" أو "تابع مع المستثمر يوم الإثنين القادم" وسينبّهك ايكو في الوقت المناسب عبر واتساب.' },
-        { q: "هل هذا فعّال من حيث التكلفة مقارنة بنماذج المساعد عن بُعد؟", a: "نعم. الحاسبة أعلاه تقارن مع متوسط المساعد الافتراضي والتنفيذي. ايكو يتولى التنسيق المتكرر حتى يركز مساعدك البشري على العمل عالي القيمة." },
+        { q: "كيف يختلف هذا عن ChatGPT أو مساعدات الذكاء الاصطناعي الأخرى؟", a: "ChatGPT أداة محادثة. ايكو أداة تنفيذ. لا يكتفي بالإجابة على الأسئلة — بل يتخذ إجراءات نيابةً عنك (جدولة، بريد، تذكيرات) بموافقتك." },
+        { q: "كيف يختلف هذا عن وكلاء الذكاء الاصطناعي المستضافة ذاتياً؟", a: "الوكلاء المستضافون ذاتياً أدوات قوية للمطورين. ايكو خدمة مُدارة للمدراء التنفيذيين. بدون إعداد، بدون استضافة ذاتية، بدون مخاطر أمنية — وتدفق موافقات يضمن أن لا شيء يحدث بدون إذنك. مساعدنا يستخدم واجهة Meta الرسمية لواتساب، فحسابك الشخصي لن يتأثر أبداً." },
+        { q: "هل سيُحظر واتساب الخاص بي؟", a: "ليس مع المساعد الأساسي — فهو يستخدم واجهة Meta Business الرسمية برقم ايكو الموثّق ولا يلمس حسابك الشخصي أبداً. إذا اخترت مزامنة السجل لسياق أغنى، ننصح باستخدام رقم ثانوي ونقدم إفصاحاً كاملاً بالمخاطر مقدماً." },
+        { q: "هل بياناتي آمنة؟", a: "بياناتك مخزنة على بنية تحتية مُدارة، مشفرة في حالة السكون، مع ضوابط وصول قائمة على الأدوار وسجل تدقيق غير قابل للتغيير. لا شيء يُخزن على جهازك الشخصي. يمكنك طلب تصدير أو حذف بياناتك في أي وقت." },
+        { q: "هل تدعمون اللغة العربية؟", a: "نعم. ايكو يرد بنفس اللغة التي تراسله بها — الإنجليزية أو العربية (اللهجة الخليجية)." },
+        { q: "ماذا يحدث خلال الفترة التجريبية المجانية؟", a: "وصول كامل لجميع الميزات لمدة 14 يوماً. لا حاجة لبطاقة ائتمان للبدء. إلغاء في أي وقت." },
       ],
     },
     integrations: {
