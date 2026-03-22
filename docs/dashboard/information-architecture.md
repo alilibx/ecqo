@@ -94,7 +94,15 @@ const iaNavConfig = {
 
 The Ecqqo dashboard is a role-gated, real-time control surface built with TanStack Start + React 19. It gives principals (the high-net-worth operators who use the assistant) and their support staff visibility into every action the agent takes, with approval controls at every exit point.
 
-> **Implementation status (ECQ-38):** The dashboard layout shell is complete. `app/routes/dashboard/route.tsx` implements a fixed sidebar (240px) on desktop, a collapsible sidebar with hamburger toggle and overlay on tablet (<= 1024px), and a bottom tab bar (4 tabs + More) on mobile (<= 640px). Navigation is role-aware via `canAccess()` from `app/lib/route-guards.ts`, with active route highlighting and Escape-key sidebar dismiss. Seven placeholder child routes are wired with `beforeLoad` RBAC guards: inbox, conversations, runs, memory, integrations, policy, and settings. Dashboard CSS (~300 lines) includes dark-mode support.
+> **Implementation status (ECQ-9):** The dashboard layout shell is complete with live data pages. `app/routes/dashboard/route.tsx` implements a fixed sidebar (240px) on desktop, a collapsible sidebar with hamburger toggle and overlay on tablet (<= 1024px), and a bottom tab bar (4 tabs + More) on mobile (<= 640px). Navigation is role-aware via `canAccess()` from `app/lib/route-guards.ts`, with active route highlighting and Escape-key sidebar dismiss.
+>
+> **Implemented pages:**
+> - **Home** (`app/routes/dashboard/index.tsx`): Stats grid (contacts, conversations, messages, agent runs today), WhatsApp connection status badge, recent conversations list with links to detail view. Data via `convex/dashboard.ts` queries (`stats`, `recentChats`).
+> - **Conversations list** (`app/routes/dashboard/conversations.index.tsx`): Full chat list with contact names, message previews, timestamps, and message counts. Real-time via `dashboard.listChats` Convex subscription.
+> - **Conversation detail** (`app/routes/dashboard/conversations.$chatJid.tsx`): Message thread with date separators, incoming/outgoing bubble styling, agent message labels, auto-scroll to latest. Contact info sidebar (phone, language, message count, first/last seen). Real-time via `dashboard.listMessages` Convex subscription.
+> - Remaining pages (inbox, runs, memory, integrations, policy, settings) are placeholder stubs with `beforeLoad` RBAC guards.
+>
+> **Backend queries** (`convex/dashboard.ts`): `stats` (aggregate workspace stats), `listChats` (enriched chat list with contacts + last message), `listMessages` (message thread + contact info), `recentChats` (top 5 for home overview). All RBAC-protected.
 
 ## Navigation Structure
 

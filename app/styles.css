@@ -3801,3 +3801,486 @@ details p {
     display: flex;
   }
 }
+
+/* ════════════════════════════════════════════════════════
+   Dashboard Home
+   ════════════════════════════════════════════════════════ */
+
+.dash-home-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dash-home-title {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.dash-home-status {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--muted);
+}
+
+.dash-home-status.is-connected {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+
+/* Stat cards */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.stat-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Home sections */
+
+.dash-home-section {
+  margin-bottom: 24px;
+}
+
+.dash-home-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dash-home-section-title {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.dash-home-link {
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.dash-home-link:hover {
+  text-decoration: underline;
+}
+
+.dash-home-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ════════════════════════════════════════════════════════
+   Chat list (shared between home + conversations)
+   ════════════════════════════════════════════════════════ */
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.chat-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.chat-list-item:last-child {
+  border-bottom: none;
+}
+
+.chat-list-item:hover {
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.chat-list-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.chat-list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-list-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-list-preview {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-list-you {
+  color: var(--accent);
+}
+
+.chat-list-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.chat-list-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.chat-list-time {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.chat-list-badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  background: var(--border);
+  color: var(--muted);
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+/* ════════════════════════════════════════════════════════
+   Conversations page
+   ════════════════════════════════════════════════════════ */
+
+.conversations-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.conversations-title {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+.conversations-count {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ════════════════════════════════════════════════════════
+   Conversation detail
+   ════════════════════════════════════════════════════════ */
+
+.conv-detail {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+}
+
+.conv-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.conv-back {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.conv-back:hover {
+  color: var(--ink);
+  background: var(--border);
+}
+
+.conv-header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.conv-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.conv-header-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.conv-header-phone {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Body: messages + sidebar */
+
+.conv-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+.conv-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.conv-date-sep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.conv-date-sep span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+/* Bubbles */
+
+.conv-bubble {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  position: relative;
+  margin-bottom: 2px;
+}
+
+.conv-bubble.is-incoming {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.conv-bubble.is-outgoing {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  color: var(--ink);
+}
+
+.conv-bubble-agent {
+  display: block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: var(--accent);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.conv-bubble-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.conv-bubble-media {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.conv-bubble-time {
+  display: block;
+  text-align: right;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Contact sidebar */
+
+.conv-sidebar {
+  width: 240px;
+  border-left: 1px solid var(--border);
+  padding: 24px 20px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.conv-sidebar-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin: 0 auto 12px;
+}
+
+.conv-sidebar-name {
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 0 16px;
+  color: var(--ink);
+}
+
+.conv-sidebar-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.conv-sidebar-details dt {
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.conv-sidebar-details dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+/* ── Responsive: stat grid + conversation detail ── */
+
+@media (max-width: 1024px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .conv-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.35rem;
+  }
+
+  .conv-detail {
+    height: calc(100vh - 140px);
+    max-height: calc(100vh - 140px);
+  }
+
+  .conv-bubble {
+    max-width: 85%;
+  }
+}
