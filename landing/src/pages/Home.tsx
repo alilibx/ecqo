@@ -17,7 +17,6 @@ function detectIsUAE(): boolean {
 /* ── Constants ──────────────────────────────── */
 
 const PLANS = [
-  { name: "Starter", nameAr: "\u0627\u0644\u0645\u0628\u062a\u062f\u0626", aed: 179, usd: 49, aedAnnual: 139, usdAnnual: 39 },
   { name: "Founder", nameAr: "\u0627\u0644\u0645\u0624\u0633\u0633", aed: 749, usd: 199, aedAnnual: 549, usdAnnual: 149 },
   { name: "Dreamer", nameAr: "\u0627\u0644\u062d\u0627\u0644\u0645", aed: 1499, usd: 399, aedAnnual: 999, usdAnnual: 269 },
 ];
@@ -880,21 +879,8 @@ export function Home() {
           </div>
         </div>
 
-        <section className="cards three-up pricing-grid">
-          <article className="info-card reveal">
-            <p className="label">{t.pricing.starter}</p>
-            <p className="value">
-              {billingCycle === "annual" && <span className="price-old">{price(179, 49, currency, t.currencyLabels.AED)}</span>}
-              <span className="price">{billingCycle === "annual" ? price(139, 39, currency, t.currencyLabels.AED) : price(179, 49, currency, t.currencyLabels.AED)}</span>
-              <span>{t.pricing.month}</span>
-            </p>
-            <p className="billed-note">{billingCycle === "annual" ? t.pricing.billedAnnually : t.pricing.billedMonthly}</p>
-            <ul>
-              {t.pricing.starterFeatures.map((f, i) => <li key={i}>{f}</li>)}
-            </ul>
-            <a className="button" href="#calculator">{t.nav.getStarted}</a>
-          </article>
-          <article className="info-card highlight reveal delay-1">
+        <section className="cards two-up pricing-grid">
+          <article className="info-card highlight reveal">
             <div className="popular-badge">{t.pricing.mostPopular}</div>
             <p className="label">{t.pricing.founder}</p>
             <p className="value">
@@ -908,7 +894,7 @@ export function Home() {
             </ul>
             <a className="button" href="#calculator">{t.nav.getStarted}</a>
           </article>
-          <article className="info-card reveal delay-2">
+          <article className="info-card reveal delay-1">
             <p className="label">{t.pricing.dreamer}</p>
             <p className="value">
               {billingCycle === "annual" && <span className="price-old">{price(1499, 399, currency, t.currencyLabels.AED)}</span>}

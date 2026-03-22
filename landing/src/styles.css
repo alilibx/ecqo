@@ -1177,6 +1177,12 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 720px;
+  margin-inline: auto;
+}
+
 .info-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2713,6 +2719,7 @@ details p {
   .hero,
   .calculator,
   .three-up,
+  .two-up,
   .usecase-grid,
   .referral,
   .new-card-inner {
